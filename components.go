@@ -42,11 +42,12 @@ const (
 	DisplayNewLine                    // Перенос строки
 )
 
-// Текст. Может быть покрашен
+// Текст. Может быть декорирован
 type Label struct {
 	decoration string
 	Text       string
 	maxLength  int
+	Block      bool
 }
 
 func (l *Label) innerText() string {
@@ -59,49 +60,81 @@ func (l *Label) innerText() string {
 // Создание объекта текста без возможности изменения.
 func NewStaticLabel(txt string) *Label { return &Label{Text: txt, maxLength: len(txt)} }
 
-// Создание объекта текста с возможностью изменения.
-// maxLength это место, зарезервированное под метку в символах
+// Создание объекта текста с возможностью изменения содержимого в будущем.
+// maxLength это место, зарезервированное под метку в символах.
 func NewDynamicLabel(txt string, maxLength int) *Label {
 	return &Label{Text: txt, maxLength: maxLength}
 }
 
-// Окрасить Label. Возвращает тот же объект.
-func (lbl *Label) Colorize(clr Color) *Label {
+// Окрасить текст в один из стандартных цветов.
+// Добавлено в TUI v1.1.0
+func (lbl *Label) ColorizeForeground(clr Color) *Label {
 	lbl.decoration += fmt.Sprintf("\033[%dm", clr)
 	return lbl
 }
 
-// Сделать жирным.
+// Окрасить фон текста в один из стандартных цветов.
+// Добавлено в TUI v1.1.0
+func (lbl *Label) ColorizeBackground(clr Color) *Label {
+	lbl.decoration += fmt.Sprintf("\033[%dm", clr+10)
+	return lbl
+}
+
+// Окрасить текст в RGB.
+// Добавлено в TUI v1.1.0
+func (lbl *Label) ColorizeForegroundRGB(r, g, b uint8) *Label {
+	lbl.decoration += fmt.Sprintf("\033[38;2;%d;%d;%dm", r, g, b)
+	return lbl
+}
+
+// Окрасить фон текста в RGB.
+// Добавлено в TUI v1.1.0
+func (lbl *Label) ColorizeBackgroundRGB(r, g, b uint8) *Label {
+	lbl.decoration += fmt.Sprintf("\033[48;2;%d;%d;%dm", r, g, b)
+	return lbl
+}
+
+// Сделать текст жирным.
 func (lbl *Label) Bold() *Label {
 	lbl.decoration += "\033[1m"
 	return lbl
 }
 
-// Сделать курсивом.
+// Сделать текст курсивом.
 func (lbl *Label) Italic() *Label {
 	lbl.decoration += "\033[3m"
 	return lbl
 }
 
-// Подчеркнуть.
+// Подчеркнуть текст.
 func (lbl *Label) Underline() *Label {
 	lbl.decoration += "\033[4m"
 	return lbl
 }
 
-// Реверсировать цвет.
+// Реверсировать цвет текста.
 func (lbl *Label) Reverse() *Label {
 	lbl.decoration += "\033[7m"
 	return lbl
 }
 
-// Реализация tui.Component
+// Сделать текст мигающим(работает не во всем терминалах).
+// Добавлено в TUI v1.1.0
+func (lbl *Label) Blink() *Label {
+	lbl.decoration += "\033[7m"
+	return lbl
+}
+
+// Реализация tui.Component.
 func (lbl *Label) MaxWidth() int {
 	return lbl.maxLength
 }
 
-// Реализация tui.Component
+// Реализация tui.Component.
 func (lbl *Label) DisplayMode() DisplayMode {
+	if lbl.Block {
+		return DisplayBlock
+	}
 	return DisplayInline
 }
 
