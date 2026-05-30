@@ -121,7 +121,7 @@ func (l *spaser) DisplayMode() DisplayMode {
 }
 
 func (l *spaser) MaxWidth() int {
-	return -1
+	return 0
 }
 
 func (l *spaser) setIndex(int) {}
@@ -142,7 +142,7 @@ func (l *newLine) DisplayMode() DisplayMode {
 }
 
 func (l *newLine) MaxWidth() int {
-	return -1
+	return 0
 }
 
 func (l *newLine) setIndex(int) {}
