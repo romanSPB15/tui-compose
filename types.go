@@ -22,6 +22,8 @@ type App interface {
 
 	Window() Window
 
+	AddKeyHandler(key keyboard.Key, h func())
+
 	// Встроенное логирование.
 	LogInfo(message string, args ...any)
 	LogFatal(message string, args ...any)
