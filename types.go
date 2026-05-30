@@ -34,5 +34,5 @@ type App interface {
 // Объект окна приложения
 type Window interface {
 	Width() int  // Ширина окна в символах
-	Height() int // Ширина окна в символах
+	Height() int // Высота окна в символах
 }
