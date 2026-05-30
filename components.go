@@ -195,7 +195,7 @@ type Button struct {
 // Создаёт tui.Button
 func NewButton(text string, key keyboard.Key) *Button {
 	btn := &Button{
-		clicked: NewStaticLabel(text).Colorize(Blue),
+		clicked: NewStaticLabel(text).ColorizeForeground(Blue),
 		base:    NewStaticLabel(text),
 		OnClick: func() {},
 	}
