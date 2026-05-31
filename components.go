@@ -240,3 +240,12 @@ func (p *ColorProgress) setIndex(idx int) {
 	p.idx = idx
 	p.base.setIndex(idx)
 }
+
+func NewColorProgress(len int, on, off Color) *ColorProgress {
+	return &ColorProgress{
+		base:   *NewDynamicLabel(strings.Repeat(" ", len), len),
+		size:   len,
+		clrOn:  on,
+		clrOff: off,
+	}
+}
