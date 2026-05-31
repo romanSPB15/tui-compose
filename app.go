@@ -98,7 +98,7 @@ func (a *app) Redraw() {
 
 }
 
-// Перерисовать конкретный компонент
+// Перерисовать конкретный компонент.
 func (a *app) RedrawComponent(index int) {
 	a.access.components(func() {
 		a.LogInfo("RedrawComponent %v", a.posComponents)
