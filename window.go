@@ -1,4 +1,3 @@
-// Библитека TUI для Go
 package tui
 
 import (

@@ -1,4 +1,3 @@
-// Package tui provides a simple framework for creating Text User Interfaces (TUI) in Go.
 package tui
 
 import (
