@@ -4,7 +4,7 @@
 [![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui)](https://github.com/romanSPB15/tui/releases)
 
 ## Обзор
-Лёгкая библиотека для TUI на Golang. Умеет:
+Лёгкая библиотека для TUI на Go. Умеет:
 * Создавать надписи
 * Создавать кнопки и настраивать
 * Обрабатывать нажатия клавиатуры

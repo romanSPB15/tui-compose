@@ -1,3 +1,4 @@
+// Библитека TUI для Go
 package tui
 
 import (
@@ -22,7 +23,7 @@ const (
 	White
 )
 
-// Яркие цвета
+// Яркие цвета(работают не во всем терминалах)
 const (
 	BrightBlack Color = iota + 90
 	BrightRed

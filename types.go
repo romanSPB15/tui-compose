@@ -1,3 +1,4 @@
+// Библитека TUI для Go
 package tui
 
 import "github.com/eiannone/keyboard"
@@ -27,6 +28,7 @@ type App interface {
 	AddKeyHandler(key keyboard.Key, h func())
 
 	// Встроенное логирование.
+
 	LogInfo(message string, args ...any)
 	LogFatal(message string, args ...any)
 }
