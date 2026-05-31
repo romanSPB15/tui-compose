@@ -224,7 +224,7 @@ func (btn *Button) setIndex(idx int) {
 }
 
 type ColorProgress struct {
-	base          Label
+	text          string
 	size          int
 	clrOn, clrOff Color
 	idx           int
@@ -232,13 +232,12 @@ type ColorProgress struct {
 
 func (p *ColorProgress) SetValue(f float64) {
 	on := int(float64(p.size) * f)
-	p.base.Text = fmt.Sprintf("\033[%dm%s\033[%dm%s\033[0m", p.clrOn+10, strings.Repeat(" ", on), p.clrOff+10, strings.Repeat(" ", p.size-on))
+	p.text = fmt.Sprintf("\033[%dm%s\033[%dm%s\033[0m", p.clrOn+10, strings.Repeat(" ", on), p.clrOff+10, strings.Repeat(" ", p.size-on))
 	currentApp.RedrawComponent(p.idx)
 }
 
 func (p *ColorProgress) setIndex(idx int) {
 	p.idx = idx
-	p.base.setIndex(idx)
 }
 
 func (p *ColorProgress) DisplayMode() DisplayMode {
@@ -249,9 +248,13 @@ func (p *ColorProgress) MaxWidth() int {
 	return p.size
 }
 
+func (p *ColorProgress) innerText() string {
+	return p.text
+}
+
 func NewColorProgress(len int, on, off Color) *ColorProgress {
 	return &ColorProgress{
-		base:   *NewDynamicLabel(strings.Repeat(" ", len), len),
+		text:   strings.Repeat(" ", len),
 		size:   len,
 		clrOn:  on,
 		clrOff: off,
