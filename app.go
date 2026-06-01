@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"runtime"
 	"strings"
-	"sync"
 	"syscall"
 
 	"github.com/acarl005/stripansi"
@@ -60,6 +59,11 @@ type pos struct {
 	Col  int
 }
 
+type task struct {
+	done chan struct{}
+	f    func()
+}
+
 type app struct {
 	comp        []Widget
 	f           *os.File
@@ -72,6 +76,7 @@ type app struct {
 	debug       bool
 	access      *accessManager
 	runned      bool
+	work        chan *task
 }
 
 var currentApp *app
@@ -89,7 +94,7 @@ func (a *app) Window() Window {
 // Redraw() перерисовывает все компоненты.
 // Важно: такая перерисовка вызывает мерцание.
 func (a *app) Redraw() {
-	a.access.Widgets(func() {
+	a.DoAndWait(func() {
 		fmt.Fprint(a.f, "\033[2J\033[H")
 		a.posWidgets = []pos{}
 		a.currentPos = pos{0, 0}
@@ -142,7 +147,7 @@ func (a *app) Redraw() {
 // RedrawWidget() перерисовывает конкретный компонент.
 // index - это номер компонента, который нужно перерисовать.
 func (a *app) RedrawWidget(index int) {
-	a.access.Widgets(func() {
+	a.DoAndWait(func() {
 		a.LogInfo("RedrawWidget %v", a.posWidgets)
 		pos := a.posWidgets[index]
 		fmt.Fprintf(a.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
@@ -153,7 +158,9 @@ func (a *app) RedrawWidget(index int) {
 
 // AddWidgets() добавляет компонент в приложение.
 func (a *app) AddWidgets(c ...Widget) {
-	a.comp = append(a.comp, c...)
+	a.DoAndWait(func() {
+		a.comp = append(a.comp, c...)
+	})
 }
 
 // Clear() очищает список компонентов приложения без перерисовки.
@@ -166,37 +173,13 @@ func (a *app) Clear() {
 // hide \033[?25l
 // show \033[?25h
 
-type accessManager struct {
-	mtxWidgets *sync.Mutex
-	mtxEvents  *sync.Mutex
-}
-
-func newAccessManager() *accessManager {
-	return &accessManager{
-		mtxWidgets: &sync.Mutex{},
-		mtxEvents:  &sync.Mutex{},
-	}
-}
-
-func (am *accessManager) Widgets(f func()) {
-	am.mtxWidgets.Lock()
-	f()
-	am.mtxWidgets.Unlock()
-}
-
-func (am *accessManager) events(f func()) {
-	am.mtxEvents.Lock()
-	f()
-	am.mtxEvents.Unlock()
-}
-
 // Run() - это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
 func (a *app) Run() {
 	if !term.IsTerminal(currentApp.f.Fd()) {
 		a.LogFatal("tui: stdout is not terminal")
 	}
-	if runtime.GOOS == "windows" { // Windows не поддерживает ANSI escape sequnces по умолчанию.
-		go EnableANSI()
+	if runtime.GOOS == "windows" {
+		EnableANSI()
 	}
 	a.runned = true
 	a.Redraw()
@@ -212,8 +195,6 @@ func (a *app) Run() {
 
 	fmt.Fprint(a.f, "\033[?25l")
 
-	// Реализация graceful shutdown
-
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
@@ -224,8 +205,11 @@ func (a *app) Run() {
 
 	go func() {
 		<-stop
-
-		close(a.stopCh)
+		select {
+		case <-a.stopCh:
+		default:
+			close(a.stopCh)
+		}
 	}()
 
 	// Обработка нажатий клавиш
@@ -234,11 +218,10 @@ func (a *app) Run() {
 			if ev.Key == keyboard.KeyCtrlC {
 				close(a.stopCh)
 			}
-			a.access.events(func() {
+			a.DoAndWait(func() {
 				if v, ok := a.keyHandlers[ev.Key]; ok {
-					v()
-				}
-				if ev.Err != nil {
+					a.Do(v)
+				} else if ev.Err != nil {
 					if err.Error() == "operation canceled" {
 						close(a.stopCh)
 						return
@@ -249,10 +232,20 @@ func (a *app) Run() {
 		}
 	}()
 
-	<-a.stopCh
-	fmt.Print("\033[?25l")
-	fmt.Fprint(a.f, "\033[2J\033[H\033[?25h")
-	a.runned = false
+	// Основной поток GUI
+	for {
+		select {
+		case <-a.stopCh:
+			a.runned = false
+			keyboard.Close()
+			fmt.Print("\033[?25l")
+			fmt.Fprint(a.f, "\033[2J\033[H\033[?25h")
+		case tsk := <-a.work:
+			tsk.f()
+			close(tsk.done)
+			return
+		}
+	}
 }
 
 // Quit() — это принудительный выход из приложения.
@@ -273,7 +266,7 @@ func (a *app) IsRunned() bool {
 // NewApp() создаёт объект приложения без логирования.
 func NewApp() App {
 	app := &app{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[keyboard.Key]func()),
-		window: &window{}, debug: false, access: newAccessManager(),
+		window: &window{}, debug: false, access: newAccessManager(), work: make(chan task, 4),
 	}
 	currentApp = app
 	return app
@@ -286,7 +279,7 @@ func NewDebugApp() App {
 		log.Fatal(err)
 	}
 	app := &app{log: f, f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[keyboard.Key]func()),
-		window: &window{}, debug: true, access: newAccessManager(),
+		window: &window{}, debug: true, access: newAccessManager(), work: make(chan task, 4),
 	}
 	currentApp = app
 	return app
@@ -310,4 +303,21 @@ func (a *app) LogFatal(message string, args ...any) {
 		fmt.Fprintf(a.log, message+"\r\n", args...)
 	}
 	os.Exit(1)
+}
+
+func (a *app) Do(f func()) {
+	tsk := &task{
+		f:    f,
+		done: make(chan struct{}),
+	}
+	a.work <- tsk
+}
+
+func (a *app) DoAndWait(f func()) {
+	tsk := &task{
+		f:    f,
+		done: make(chan struct{}),
+	}
+	a.work <- tsk
+	<-tsk.done
 }
