@@ -10,42 +10,6 @@ import (
 	"github.com/eiannone/keyboard"
 )
 
-// Color — это код цвета.
-type Color int
-
-// Обычные цвета.
-const (
-	Black Color = iota + 30
-	Red
-	Green
-	Yellow
-	Blue
-	Magenta
-	Cyan
-	White
-)
-
-// Яркие цвета(работают не во всем терминалах).
-const (
-	BrightBlack Color = iota + 90
-	BrightRed
-	BrightGreen
-	BrightYellow
-	BrightBlue
-	BrightMagenta
-	BrightCyan
-	BrightWhite
-)
-
-// DisplayMode — это режим отображения виджета.
-type DisplayMode int
-
-const (
-	DisplayInline  DisplayMode = iota // В одну строку.
-	DisplayBlock                      // На отдельной строке.
-	DisplayNewLine                    // Перенос строки.
-)
-
 // Label — это виджет текстовой метки.
 type Label struct {
 	ANSI      string // Приставка ANSI escape последовательности
