@@ -20,6 +20,8 @@ import (
 // Color — это код цвета.
 type Color int
 
+const NoColor Color = 0
+
 // Обычные цвета.
 const (
 	Black Color = iota + 30
