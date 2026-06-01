@@ -90,7 +90,7 @@ func (a *app) Window() Window {
 	return a.window
 }
 
-// Redraw() перерисовывает все компоненты.
+// Redraw() перерисовывает все компоненты. Он потокобезопасен.
 // Важно: такая перерисовка вызывает мерцание.
 func (a *app) Redraw() {
 	a.DoAndWait(func() {
@@ -143,7 +143,7 @@ func (a *app) Redraw() {
 
 }
 
-// RedrawWidget() перерисовывает конкретный компонент.
+// RedrawWidget() перерисовывает конкретный компонент. Потокобезопасен.
 // index - это номер компонента, который нужно перерисовать.
 func (a *app) RedrawWidget(index int) {
 	a.DoAndWait(func() {
@@ -155,17 +155,19 @@ func (a *app) RedrawWidget(index int) {
 	})
 }
 
-// AddWidgets() добавляет компонент в приложение.
+// AddWidgets() добавляет компонент в приложение. Потокобезопасен.
 func (a *app) AddWidgets(c ...Widget) {
 	a.DoAndWait(func() {
 		a.comp = append(a.comp, c...)
 	})
 }
 
-// Clear() очищает список компонентов приложения без перерисовки.
+// Clear() очищает список компонентов приложения без перерисовки. Потокобезопасен.
 func (a *app) Clear() {
-	a.comp = []Widget{}
-	a.posWidgets = []pos{}
+	a.DoAndWait(func() {
+		a.comp = []Widget{}
+		a.posWidgets = []pos{}
+	})
 }
 
 // cursor
@@ -221,7 +223,7 @@ func (a *app) Run() {
 				if v, ok := a.keyHandlers[ev.Key]; ok {
 					a.Do(v)
 				} else if ev.Err != nil {
-					if err.Error() == "operation canceled" {
+					if ev.Err.Error() == "operation canceled" {
 						close(a.stopCh)
 						return
 					}
@@ -239,10 +241,12 @@ func (a *app) Run() {
 			keyboard.Close()
 			fmt.Print("\033[?25l")
 			fmt.Fprint(a.f, "\033[2J\033[H\033[?25h")
+			return
 		case tsk := <-a.work:
 			tsk.f()
-			close(tsk.done)
-			return
+			if tsk.done != nil {
+				close(tsk.done)
+			}
 		}
 	}
 }
@@ -306,14 +310,12 @@ func (a *app) LogFatal(message string, args ...any) {
 	os.Exit(1)
 }
 
+// Do() запускает функцию f в потоке GUI, что спасает от data racing при изменении виджетов.
 func (a *app) Do(f func()) {
-	tsk := &task{
-		f:    f,
-		done: make(chan struct{}),
-	}
-	a.work <- tsk
+	a.work <- &task{f: f}
 }
 
+// Do() запускает функцию f в потоке GUI и ждёт завершения.
 func (a *app) DoAndWait(f func()) {
 	tsk := &task{
 		f:    f,

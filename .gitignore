@@ -1,1 +1,3 @@
-send.cmd
+*.cmd
+log.*
+log

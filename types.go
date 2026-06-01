@@ -32,6 +32,9 @@ type App interface {
 
 	LogInfo(message string, args ...any)  // LogInfo() логирует указанное сообщение подобно fmt.Printf() в файл, если приложение создано как Debug.
 	LogFatal(message string, args ...any) // LogFatal() логирует указанное сообщение подобно fmt.Printf() в файл, если приложение создано как Debug. Потом в любом случае выходит
+
+	Do(f func())
+	DoAndWait(f func())
 }
 
 // Window — это объект окна приложения.
