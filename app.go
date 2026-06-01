@@ -183,7 +183,6 @@ func (a *app) Run() {
 		EnableANSI()
 	}
 	a.runned = true
-	a.Redraw()
 
 	defer func() {
 		if a.debug {
@@ -233,22 +232,7 @@ func (a *app) Run() {
 		}
 	}()
 
-	// Основной поток GUI
-	for {
-		select {
-		case <-a.stopCh:
-			a.runned = false
-			keyboard.Close()
-			fmt.Print("\033[?25l")
-			fmt.Fprint(a.f, "\033[2J\033[H\033[?25h")
-			return
-		case tsk := <-a.work:
-			tsk.f()
-			if tsk.done != nil {
-				close(tsk.done)
-			}
-		}
-	}
+	<-a.stopCh
 }
 
 // Quit() — это принудительный выход из приложения.
@@ -261,7 +245,7 @@ func (a *app) OnQuit() <-chan struct{} {
 	return a.stopCh
 }
 
-// IsRunned() возращает true, если приложение запущено. Иначе возвращает false.
+// IsRunned() возращает true, если приложение уже запущено. Иначе возвращает false.
 func (a *app) IsRunned() bool {
 	return a.runned
 }
@@ -274,6 +258,7 @@ func NewApp() App {
 		window: &window{}, debug: false, work: make(chan *task, taskBufSize),
 	}
 	currentApp = app
+	go app.runWorker()
 	return app
 }
 
@@ -287,6 +272,7 @@ func NewDebugApp() App {
 		window: &window{}, debug: true, work: make(chan *task, taskBufSize),
 	}
 	currentApp = app
+	go app.runWorker()
 	return app
 }
 
@@ -323,4 +309,22 @@ func (a *app) DoAndWait(f func()) {
 	}
 	a.work <- tsk
 	<-tsk.done
+}
+
+func (a *app) runWorker() {
+	for {
+		select {
+		case <-a.stopCh:
+			a.runned = false
+			keyboard.Close()
+			fmt.Print("\033[?25l")
+			fmt.Fprint(a.f, "\033[2J\033[H\033[?25h")
+			return
+		case tsk := <-a.work:
+			tsk.f()
+			if tsk.done != nil {
+				close(tsk.done)
+			}
+		}
+	}
 }
