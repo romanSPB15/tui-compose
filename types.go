@@ -16,7 +16,6 @@ type Focusable interface {
 	Widget
 	OnFocus()
 	OnBlur()
-	Index() int
 }
 
 // Clickable это интерфейс виджетов, которые могут получить фокус и быть нажатыми

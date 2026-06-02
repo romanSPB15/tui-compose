@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/eiannone/keyboard"
 )
 
 // Label — это виджет текстовой метки.
@@ -161,6 +159,7 @@ func NewLine() Widget { return &newLine{} }
 // Button это виджет кнопки Обработчик в OnClicked.
 type Button struct {
 	clicked   Widget
+	selected  Widget
 	base      Widget
 	OnClicked func()
 	Widget
@@ -169,9 +168,10 @@ type Button struct {
 
 // NewButton() создаёт кнопку.
 // key это её клавиша.
-func NewButton(text string, key keyboard.Key) *Button {
+func NewButton(text string) *Button {
 	btn := &Button{
 		clicked:   NewStaticLabel(text).ColorizeForeground(Blue),
+		selected:  NewStaticLabel(text).ColorizeBackground(White),
 		base:      NewStaticLabel(text),
 		OnClicked: func() {},
 	}
@@ -179,8 +179,15 @@ func NewButton(text string, key keyboard.Key) *Button {
 	return btn
 }
 
-func (btn *Button) OnFocus() {}
-func (btn *Button) OnBlur()  {}
+func (btn *Button) OnFocus() {
+	// os.Exit(2)
+	btn.Widget = btn.selected
+	currentWindow.RedrawWidget(btn.idx)
+}
+func (btn *Button) OnBlur() {
+	btn.Widget = btn.base
+	currentWindow.RedrawWidget(btn.idx)
+}
 func (btn *Button) OnClick() {
 	btn.Widget = btn.clicked
 	currentWindow.RedrawWidget(btn.idx)
