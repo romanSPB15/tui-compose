@@ -3,16 +3,19 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 func recoveryScreen(message string) {
 	currentApp.Quit()
 	fmt.Fprint(currentApp.f, "\033[2J\033[H")
 	fmt.Fprint(currentApp.f, "\033[44m")
+	time.Sleep(time.Millisecond)
 	w := currentApp.Window().Width()
-	fmt.Fprintf(currentApp.f, fmt.Sprintf("%%-%ds", w)+"\r\n", "Ошибка")
-	fmt.Fprintf(currentApp.f, fmt.Sprintf("%%-%ds", w)+"\r\n", message)
-	fmt.Fprintf(currentApp.f, fmt.Sprintf("%%-%ds", w)+"\r\n", "Нажмите ENTER для выхода...")
+	format := fmt.Sprintf("%%-%ds", w) + "\r\n"
+	fmt.Fprintf(currentApp.f, format, "Ошибка")
+	fmt.Fprintf(currentApp.f, format, message)
+	fmt.Fprintf(currentApp.f, format, "Нажмите ENTER для выхода...")
 	for range currentApp.Window().Height() - 3 {
 		fmt.Println(strings.Repeat(" ", w))
 	}
