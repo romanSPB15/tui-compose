@@ -1,4 +1,4 @@
-//go:build !debug || !recovery
+//go:build no_recovery
 
 package tui
 

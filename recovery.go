@@ -1,4 +1,4 @@
-//go:build !no_recovery && debug
+//go:build !no_recovery
 
 package tui
 
@@ -15,12 +15,12 @@ func recoveryScreen(message string) {
 	fmt.Fprint(currentWindow.f, "\033[2J\033[H")
 	fmt.Fprint(currentWindow.f, "\033[44m")
 	time.Sleep(time.Millisecond * 300)
-	w := currentWindow.Window().Width()
+	w := currentWindow.Width()
 	format := fmt.Sprintf("%%-%ds", w) + "\r\n"
 	fmt.Fprintf(currentWindow.f, format, "go-tui")
 	fmt.Fprintf(currentWindow.f, format, message)
 	fmt.Fprintf(currentWindow.f, format, "Нажмите ENTER для выхода...")
-	for range currentWindow.Window().Height() - 4 {
+	for range currentWindow.Height() - 4 {
 		fmt.Println(strings.Repeat(" ", w))
 	}
 	fmt.Fprint(currentWindow.f, "\033[0m")

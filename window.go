@@ -65,7 +65,7 @@ type task struct {
 	msg  string
 }
 
-var currentWindow Window
+var currentWindow *window
 
 type window struct {
 	comp                []Widget
