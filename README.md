@@ -4,11 +4,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/romanSPB15/go-tui.svg)](https://pkg.go.dev/github.com/romanSPB15/go-tui)
 
 ## Обзор
-Лёгкая библиотека для TUI на Go. Может:
-* Создавать надписи
-* Создавать и настраивать кнопки
-* Обрабатывать нажатия клавиатуры
-* Красить текст
+Фреймворк для разработки TUI-интерфейсов на Go.
 ## Установка
 ```
 go get -u github.com/romanSPB15/go-tui
@@ -24,10 +20,12 @@ import (
 
 func main() {
 	w := tui.NewWindow()
-	w.AddWidgets(tui.NewStaticLabel("Привет, Go!"))
+	w.AddWidgets(tui.NewStaticLabel("Привет, go-tui!"))
 	btn := tui.NewButton("Нажми ↑", keyboard.KeyArrowUp)
 	btn.OnClick = w.Quit
 	w.AddWidgets(btn)
 	w.Run()
 }
 ```
+## Обновление v2.0.0!
+[Release Notes](https://github.com/romanSPB15/go-tui/blob/main/Release-Notes.md)
