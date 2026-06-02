@@ -68,7 +68,7 @@ func (c *Canvas) InnerText() (res string) {
 
 // MaxLength() реализует интерфейс Widget
 func (c *Canvas) MaxLength() int {
-	return (c.width + 2) * c.height
+	return (c.width*2 + 2) * c.height
 }
 
 // DisplayMode() реализует интерфейс Widget
