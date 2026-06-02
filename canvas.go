@@ -10,6 +10,7 @@ type Canvas struct {
 	width, height int
 	pole          [][]Color
 	idx           int
+	wnd           Window
 }
 
 // NewCanvas() создаёт виждет Canvas.ы
@@ -40,8 +41,8 @@ func (c *Canvas) DrawAndRender(x, y int, clr Color) {
 		return
 	}
 	c.pole[x][y] = clr
-	if currentApp.IsRunned() && c.idx != -1 {
-		currentApp.RedrawWidget(c.idx)
+	if c.wnd != nil && c.idx != -1 {
+		c.wnd.RedrawWidget(c.idx)
 	}
 }
 

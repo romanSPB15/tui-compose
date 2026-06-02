@@ -6,35 +6,35 @@ import (
 )
 
 func main() {
-	a := tui.NewApp()
+	w := tui.NewWindow()
 	cnv := tui.NewCanvas(10, 10)
 
 	x, y := 0, 0
 	cnv.Draw(0, 0, tui.White)
 
 	// Назначаем обработчики
-	a.RegisterKeyHandler(keyboard.KeyArrowDown, func() {
+	w.RegisterKeyHandler(keyboard.KeyArrowDown, func() {
 		cnv.DrawAndRender(x, y, tui.NoColor) // Замазываем следы
 		y++
 		cnv.DrawAndRender(x, y, tui.White)
 	})
-	a.RegisterKeyHandler(keyboard.KeyArrowUp, func() {
+	w.RegisterKeyHandler(keyboard.KeyArrowUp, func() {
 		cnv.DrawAndRender(x, y, tui.NoColor)
 		y--
 		cnv.DrawAndRender(x, y, tui.White)
 	})
-	a.RegisterKeyHandler(keyboard.KeyArrowLeft, func() {
+	w.RegisterKeyHandler(keyboard.KeyArrowLeft, func() {
 		cnv.DrawAndRender(x, y, tui.NoColor)
 		x--
 		cnv.DrawAndRender(x, y, tui.White)
 	})
-	a.RegisterKeyHandler(keyboard.KeyArrowRight, func() {
+	w.RegisterKeyHandler(keyboard.KeyArrowRight, func() {
 		cnv.DrawAndRender(x, y, tui.NoColor) //
 		x++
 		cnv.DrawAndRender(x, y, tui.White)
 	})
 
-	a.AddWidgets(cnv)
+	w.AddWidgets(cnv)
 
-	a.Run()
+	w.Run()
 }

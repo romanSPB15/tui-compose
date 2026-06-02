@@ -176,17 +176,17 @@ func NewButton(text string, key keyboard.Key) *Button {
 		OnClick: func() {},
 	}
 	btn.Widget = btn.base
-	currentApp.RegisterKeyHandler(key, func() {
+	currentWindow.RegisterKeyHandler(key, func() {
 		if btn.OnClick != nil {
 			btn.OnClick()
 		}
 		btn.Widget = btn.clicked
-		currentApp.RedrawWidget(btn.idx)
-		currentApp.LogInfo("%d %s", btn.idx, btn.InnerText())
+		currentWindow.RedrawWidget(btn.idx)
+		currentWindow.LogInfo("%d %s", btn.idx, btn.InnerText())
 		time.Sleep(time.Millisecond * 50)
 		btn.Widget = btn.base
-		currentApp.LogInfo("%d %s", btn.idx, btn.InnerText())
-		currentApp.RedrawWidget(btn.idx)
+		currentWindow.LogInfo("%d %s", btn.idx, btn.InnerText())
+		currentWindow.RedrawWidget(btn.idx)
 	})
 	return btn
 }
@@ -225,8 +225,8 @@ func NewColorProgress(len int, on, off Color) *ColorProgress {
 func (p *ColorProgress) SetValue(f float64) {
 	on := int(float64(p.size) * f)
 	p.text = fmt.Sprintf("\033[%dm%s\033[%dm%s\033[0m", p.clrOn+10, strings.Repeat(" ", on), p.clrOff+10, strings.Repeat(" ", p.size-on))
-	if currentApp.IsRunned() {
-		currentApp.RedrawWidget(p.idx)
+	if currentWindow.IsRunned() {
+		currentWindow.RedrawWidget(p.idx)
 	}
 }
 

@@ -11,8 +11,8 @@ type Widget interface {
 	DisplayMode() DisplayMode
 }
 
-// App — это объект приложения.
-type App interface {
+// App — это объект окна приложения.
+type Window interface {
 	Widgets() []Widget    // Widgets() возвращает список компонентов, добавленных в приложение.
 	AddWidgets(...Widget) // AddWidgets() добавляет компонент в приложение.
 	Clear()               // Clear() очищает список компонентов приложения без перерисовки.
@@ -26,8 +26,6 @@ type App interface {
 	Quit()                   // Quit() — это принудительный выход из приложения.
 	OnQuit() <-chan struct{} // Run() возвращает канал сигнализации о выходе.
 
-	Window() Window // Window() возвращает интерфейс окна приложения. Из него можно получить длину и ширину окна в символах.
-
 	RegisterKeyHandler(key keyboard.Key, h func()) // RegisterKeyHandler() регистрирует обработчик нажатия указанной клавиши
 
 	LogInfo(message string, args ...any)  // LogInfo() логирует указанное сообщение подобно fmt.Printf() в файл, если приложение создано как Debug.
@@ -35,10 +33,7 @@ type App interface {
 
 	Do(f func())
 	DoAndWait(f func())
-}
 
-// Window — это объект окна приложения.
-type Window interface {
 	Width() int  // Ширина окна в символах
 	Height() int // Высота окна в символах
 }

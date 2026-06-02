@@ -65,76 +65,70 @@ type task struct {
 	msg  string
 }
 
-type app struct {
+var currentWindow Window
+
+type window struct {
 	comp        []Widget
 	f           *os.File
 	stopCh      chan struct{}
 	keyHandlers map[keyboard.Key]func()
 	currentPos  pos
 	posWidgets  []pos
-	window      Window
 	log         io.WriteCloser
 	runned      bool
 	work        chan *task
 }
 
-var currentApp *app
-
 // Widgets() возвращает список компонентов, добавленных в приложение.
-func (a *app) Widgets() []Widget {
-	return a.comp
-}
-
-// Window() возвращает интерфейс окна приложения. Из него можно получить длину и ширину окна в символах.
-func (a *app) Window() Window {
-	return a.window
+func (w *window) Widgets() []Widget {
+	return w.comp
 }
 
 // Redraw() перерисовывает все компоненты. Он потокобезопасен.
 // Важно: такая перерисовка вызывает мерцание.
-func (a *app) Redraw() {
-	a.doWithMessage(func() {
-		fmt.Fprint(a.f, "\033[2J\033[H")
-		a.posWidgets = []pos{}
-		a.currentPos = pos{0, 0}
-		for idx, c := range a.comp {
+func (w *window) Redraw() {
+	w.doWithMessage(func() {
+		fmt.Fprint(w.f, "\033[2J\033[H")
+		w.posWidgets = []pos{}
+		w.currentPos = pos{0, 0}
+		for idx, c := range w.comp {
 			if c != nil {
 				if len(stripansi.Strip(c.InnerText())) > c.MaxLength() {
-					a.LogFatal("Ошибка перерисовки: MaxLength() не верен.")
+					w.LogFatal("Ошибка перерисовки: MaxLength() не верен.")
 				}
 				c.SetIndex(idx)
 				switch c.DisplayMode() {
 				case DisplayInline:
-					if a.currentPos.Col+c.MaxLength() >= a.window.Width() {
-						a.currentPos.Col = 0
-						a.currentPos.Line++
+					if w.currentPos.Col+c.MaxLength() >= w.Width() {
+						w.currentPos.Col = 0
+						w.currentPos.Line++
 					}
-					a.posWidgets = append(a.posWidgets, a.currentPos)
+					w.posWidgets = append(w.posWidgets, w.currentPos)
 
-					fmt.Fprint(a.f, c.InnerText()+strings.Repeat(" ", c.MaxLength()-len([]rune(stripansi.Strip(c.InnerText())))))
-					a.currentPos.Col += c.MaxLength()
+					fmt.Fprint(w.f, c.InnerText()+strings.Repeat(" ", c.MaxLength()-len([]rune(stripansi.Strip(c.InnerText())))))
+					w.currentPos.Col += c.MaxLength()
 				case DisplayBlock:
-					a.currentPos.Col = 0
-					a.currentPos.Line++
+					w.currentPos.Col = 0
+					w.currentPos.Line++
 
-					fmt.Fprintln(a.f)
+					fmt.Fprintln(w.f)
 
-					a.posWidgets = append(a.posWidgets, a.currentPos)
+					w.posWidgets = append(w.posWidgets, w.currentPos)
 
-					fmt.Fprint(a.f, c.InnerText()+strings.Repeat(" ", c.MaxLength()-len([]rune(stripansi.Strip(c.InnerText())))))
+					fmt.Fprint(w.f, c.InnerText()+strings.Repeat(" ", c.MaxLength()-len([]rune(stripansi.Strip(c.InnerText())))))
 
-					fmt.Fprintln(a.f)
+					fmt.Fprintln(w.f)
 
-					a.currentPos.Col = 0
-					a.currentPos.Line++
+					w.currentPos.Col = 0
+					w.currentPos.Line++
 				case DisplayNewLine:
 
-					a.posWidgets = append(a.posWidgets, a.currentPos)
+					w.posWidgets = append(w.posWidgets, w.currentPos)
 
-					a.currentPos.Col = 0
-					a.currentPos.Line++
+					w.currentPos.Col = 0
+					w.currentPos.Line++
 
-					fmt.Fprintln(a.f)
+					fmt.Fprintln(w.f)
 
 				}
 			}
@@ -144,28 +138,28 @@ func (a *app) Redraw() {
 
 // RedrawWidget() перерисовывает конкретный компонент. Потокобезопасен.
 // index - это номер компонента, который нужно перерисовать.
-func (a *app) RedrawWidget(index int) {
-	a.doWithMessage(func() {
-		a.LogInfo("RedrawWidget %v", a.posWidgets)
-		pos := a.posWidgets[index]
-		fmt.Fprintf(a.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
-		a.LogInfo("%v %d", pos, index)
-		fmt.Print(a.comp[index].InnerText() + strings.Repeat(" ", a.comp[index].MaxLength()-len(stripansi.Strip(a.comp[index].InnerText()))))
+func (w *window) RedrawWidget(index int) {
+	w.doWithMessage(func() {
+		w.LogInfo("RedrawWidget %v", w.posWidgets)
+		pos := w.posWidgets[index]
+		fmt.Fprintf(w.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
+		w.LogInfo("%v %d", pos, index)
+		fmt.Print(w.comp[index].InnerText() + strings.Repeat(" ", w.comp[index].MaxLength()-len(stripansi.Strip(w.comp[index].InnerText()))))
 	}, "redraw widget")
 }
 
 // AddWidgets() добавляет компонент в приложение. Потокобезопасен.
-func (a *app) AddWidgets(c ...Widget) {
-	a.doWithMessageAndWait(func() {
-		a.comp = append(a.comp, c...)
+func (w *window) AddWidgets(c ...Widget) {
+	w.doWithMessageAndWait(func() {
+		w.comp = append(w.comp, c...)
 	}, "add widget")
 }
 
 // Clear() очищает список компонентов приложения без перерисовки. Потокобезопасен.
-func (a *app) Clear() {
-	a.doWithMessageAndWait(func() {
-		a.comp = []Widget{}
-		a.posWidgets = []pos{}
+func (w *window) Clear() {
+	w.doWithMessageAndWait(func() {
+		w.comp = []Widget{}
+		w.posWidgets = []pos{}
 	}, "clear")
 }
 
@@ -174,42 +168,42 @@ func (a *app) Clear() {
 // show \033[?25h
 
 // Run() - это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
-func (a *app) Run() {
+func (w *window) Run() {
 	defer func() {
 		if DEBUG {
-			a.log.Close()
+			w.log.Close()
 		}
 		if err := recover(); err != nil {
-			a.LogFatal("Произошла panic: %v", err)
+			w.LogFatal("Произошла panic: %v", err)
 		}
 	}()
-	fmt.Fprintln(a.f, "Загрузка...")
-	if !term.IsTerminal(currentApp.f.Fd()) {
-		fmt.Fprintln(a.f, "Приложение запущено не в терминале. Выход...")
+	fmt.Fprintln(w.f, "Загрузка...")
+	if !term.IsTerminal(w.f.Fd()) {
+		fmt.Fprintln(w.f, "Приложение запущено не в терминале. Выход...")
 		time.Sleep(time.Second * 3)
-		a.LogFatal("tui: stdout is not terminal")
+		w.LogFatal("tui: stdout is not terminal")
 	}
 	if runtime.GOOS == "windows" {
 		enableANSI()
 	}
-	a.runned = true
+	w.runned = true
 
-	fmt.Fprint(a.f, "\033[?25l")
+	fmt.Fprint(w.f, "\033[?25l")
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
 	keys, err := keyboard.GetKeys(2)
 	if err != nil {
-		a.LogFatal("tui: keyboard errror")
+		w.LogFatal("tui: keyboard errror")
 	}
 
 	go func() {
 		<-stop
 		select {
-		case <-a.stopCh:
+		case <-w.stopCh:
 		default:
-			close(a.stopCh)
+			close(w.stopCh)
 		}
 	}()
 
@@ -217,125 +211,140 @@ func (a *app) Run() {
 	go func() {
 		for ev := range keys {
 			if ev.Key == keyboard.KeyCtrlC {
-				close(a.stopCh)
+				close(w.stopCh)
 			}
-			a.doWithMessageAndWait(func() {
-				if v, ok := a.keyHandlers[ev.Key]; ok {
-					a.Do(v)
+			w.doWithMessageAndWait(func() {
+				if v, ok := w.keyHandlers[ev.Key]; ok {
+					w.Do(v)
 				} else if ev.Err != nil {
 					if ev.Err.Error() == "operation canceled" {
-						close(a.stopCh)
+						close(w.stopCh)
 						return
 					}
-					a.LogFatal("tui: keyboard error")
+					w.LogFatal("tui: keyboard error")
 				}
 			}, "key handler")
 		}
 	}()
 
-	a.Redraw()
+	w.Redraw()
 
-	<-a.stopCh
+	<-w.stopCh
 }
 
 // Quit() — это принудительный выход из приложения.
-func (a *app) Quit() {
-	close(a.stopCh)
+func (w *window) Quit() {
+	close(w.stopCh)
 }
 
 // Run() возвращает канал сигнализации о выходе.
-func (a *app) OnQuit() <-chan struct{} {
-	return a.stopCh
+func (w *window) OnQuit() <-chan struct{} {
+	return w.stopCh
 }
 
 // IsRunned() возращает true, если приложение уже запущено. Иначе возвращает false.
-func (a *app) IsRunned() bool {
-	return a.runned
+func (w *window) IsRunned() bool {
+	return w.runned
 }
 
 const taskBufSize = 32
 
-// NewApp() создаёт объект приложения без логирования.
-func NewApp() App {
-
-	app := &app{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[keyboard.Key]func()),
-		window: &window{}, work: make(chan *task, taskBufSize),
+// NewWindow() создаёт объект приложения без логирования.
+func NewWindow() Window {
+	wnd := &window{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[keyboard.Key]func()),
+		work: make(chan *task, taskBufSize),
 	}
 	if DEBUG {
 		f, err := os.Create(fmt.Sprintf("debug_log_%d", time.Now().UnixMilli()))
 		if err != nil {
 			log.Fatal(err)
 		}
-		app.log = f
+		wnd.log = f
 	}
-	currentApp = app
-	go app.runWorker()
-	return app
+	currentWindow = wnd
+	go wnd.runWorker()
+	return wnd
 }
 
 // RegisterKeyHandler() добавляет обработчик нажатия клавиши.
-func (a *app) RegisterKeyHandler(key keyboard.Key, h func()) {
-	a.keyHandlers[key] = h
+func (w *window) RegisterKeyHandler(key keyboard.Key, h func()) {
+	w.keyHandlers[key] = h
 }
 
 // Do() запускает функцию f в потоке GUI, что спасает от data racing при изменении виджетов.
-func (a *app) Do(f func()) {
-	a.work <- &task{f: f}
+func (w *window) Do(f func()) {
+	w.work <- &task{f: f}
 }
 
 // Do() запускает функцию f в потоке GUI и ждёт завершения.
-func (a *app) DoAndWait(f func()) {
+func (w *window) DoAndWait(f func()) {
 	tsk := &task{
 		f:    f,
 		done: make(chan struct{}),
 	}
-	a.work <- tsk
+	w.work <- tsk
 	<-tsk.done
 }
 
-func (a *app) doWithMessage(f func(), msg string) {
-	a.work <- &task{
+func (w *window) doWithMessage(f func(), msg string) {
+	w.work <- &task{
 		f:   f,
 		msg: msg,
 	}
 }
 
-func (a *app) doWithMessageAndWait(f func(), msg string) {
+func (w *window) doWithMessageAndWait(f func(), msg string) {
 	tsk := &task{
 		f:    f,
 		done: make(chan struct{}),
 		msg:  msg,
 	}
-	a.work <- tsk
+	w.work <- tsk
 	<-tsk.done
 }
 
-func (a *app) runWorker() {
-	a.LogInfo("Воркер запущен...")
+func (w *window) runWorker() {
+	w.LogInfo("Воркер запущен...")
 	for {
 		select {
-		case <-a.stopCh:
-			a.runned = false
+		case <-w.stopCh:
+			w.runned = false
 			keyboard.Close()
 			fmt.Print("\033[?25l")
-			fmt.Fprint(a.f, "\033[2J\033[H\033[?25h")
-			a.LogInfo("Воркер остановлен...")
+			fmt.Fprint(w.f, "\033[2J\033[H\033[?25h")
+			w.LogInfo("Воркер остановлен...")
 			return
-		case tsk := <-a.work:
+		case tsk := <-w.work:
 			if tsk.msg != "" {
-				a.LogInfo("Принята задача: '%s'", tsk.msg)
+				w.LogInfo("Принята задача: '%s'", tsk.msg)
 			} else {
-				a.LogInfo("Принята задача")
+				w.LogInfo("Принята задача")
 			}
 			tsk.f()
 			if tsk.done != nil {
 				close(tsk.done)
 			}
 			if tsk.msg != "" {
-				a.LogInfo("Завершена задача: '%s'", tsk.msg)
+				w.LogInfo("Завершена задача: '%s'", tsk.msg)
 			} else {
-				a.LogInfo("Завершена задача")
+				w.LogInfo("Завершена задача")
 			}
 		}
 	}
+}
+
+func (wnd *window) Width() int {
+	w, _, err := term.GetSize(wnd.f.Fd())
+	if err != nil {
+		wnd.LogFatal("tui: get window size error")
+	}
+	return w
+}
+
+func (wnd *window) Height() int {
+	_, h, err := term.GetSize(wnd.f.Fd())
+	if err != nil {
+		wnd.LogFatal("tui: get window size error")
+	}
+	return h
 }
