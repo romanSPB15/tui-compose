@@ -14,8 +14,9 @@ type Widget interface {
 // Focusable это интерфейс виджетов, которые могут получить фокус
 type Focusable interface {
 	Widget
-	OnFocus() // вызывается, когда виджет получил фокус
-	OnBlur()  // вызывается, когда фокус ушёл
+	OnFocus()
+	OnBlur()
+	Index() int
 }
 
 // Window — это объект окна приложения.

@@ -68,18 +68,17 @@ type task struct {
 var currentWindow *window
 
 type window struct {
-	comp                []Widget
-	compF               []Focusable
-	f                   *os.File
-	focusIndex          int
-	stopCh              chan struct{}
-	keyHandlers         map[keyboard.Key]func()
-	currentPos          pos
-	posWidgets          []pos
-	posWidgetsFocusable []pos
-	log                 io.WriteCloser
-	runned              bool
-	work                chan *task
+	comp        []Widget
+	compF       []Focusable
+	f           *os.File
+	focusIndex  int
+	stopCh      chan struct{}
+	keyHandlers map[keyboard.Key]func()
+	currentPos  pos
+	posWidgets  []pos
+	log         io.WriteCloser
+	runned      bool
+	work        chan *task
 }
 
 // Widgets() возвращает список компонентов, добавленных в приложение.
@@ -109,7 +108,6 @@ func (w *window) Redraw() {
 func (w *window) index() {
 	w.compF = []Focusable{}
 	w.posWidgets = []pos{}
-	w.posWidgetsFocusable = []pos{}
 	for idx, c := range w.comp {
 		if c != nil {
 			if len(stripansi.Strip(c.InnerText())) > c.MaxLength() {
@@ -172,7 +170,6 @@ func (w *window) Clear() {
 		w.comp = []Widget{}
 		w.compF = []Focusable{}
 		w.posWidgets = []pos{}
-		w.posWidgetsFocusable = []pos{}
 	}, "clear")
 }
 
@@ -241,6 +238,29 @@ func (w *window) Run() {
 		}
 	}()
 
+	w.RegisterKeyHandler(keyboard.KeyArrowLeft, func() {
+		if w.focusIndex <= 0 {
+			return
+		}
+		w.compF[w.focusIndex].OnBlur()
+		w.focusIndex--
+		w.compF[w.focusIndex].OnFocus()
+	})
+
+	w.RegisterKeyHandler(keyboard.KeyArrowRight, func() {
+		if w.focusIndex > len(w.compF) {
+			return
+		}
+		if w.focusIndex == -1 {
+			w.compF[0].OnFocus()
+			w.focusIndex = 0
+			return
+		}
+		w.compF[w.focusIndex].OnBlur()
+		w.focusIndex--
+		w.compF[w.focusIndex].OnFocus()
+	})
+
 	w.Redraw()
 
 	<-w.stopCh
@@ -266,7 +286,7 @@ const taskBufSize = 32
 // NewWindow() создаёт объект приложения без логирования.
 func NewWindow() Window {
 	wnd := &window{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[keyboard.Key]func()),
-		work: make(chan *task, taskBufSize),
+		work: make(chan *task, taskBufSize), focusIndex: -1,
 	}
 	if DEBUG {
 		f, err := os.Create(fmt.Sprintf("debug_log_%d", time.Now().UnixMilli()))
