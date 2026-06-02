@@ -14,18 +14,19 @@ go get -u github.com/romanSPB15/go-tui
 package main
 
 import (
-	"github.com/eiannone/keyboard"
 	"github.com/romanSPB15/go-tui"
 )
 
 func main() {
-	w := tui.NewWindow()
-	w.AddWidgets(tui.NewStaticLabel("Привет, go-tui!"))
-	btn := tui.NewButton("Нажми ↑", keyboard.KeyArrowUp)
-	btn.OnClick = w.Quit
-	w.AddWidgets(btn)
-	w.Run()
+	w := tui.NewWindow()                             // Создаём приложение
+	w.AddWidgets(tui.NewStaticLabel("Привет, TUI!")) // Добавляем надпись
+	btn := tui.NewButton("Нажми на меня!")           // Создаём кнопку
+	btn.OnClicked = w.Quit                           // Назначаем обработчик
+	w.AddWidgets(btn)                                // Добавляем кнопку
+	w.Run()                                          // Запускаем приложение
 }
 ```
 ## Обновление v2.0.0!
 [Release Notes](https://github.com/romanSPB15/go-tui/blob/main/Release-Notes.md)
+|
+[Документация](https://pkg.go.dev/github.com/romanSPB15/go-tui@v2.0.0)
