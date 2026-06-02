@@ -22,6 +22,7 @@ func NewCanvas(width, height int) *Canvas {
 		pole:   p,
 		width:  width,
 		height: height,
+		idx:    -1,
 	}
 }
 
@@ -39,7 +40,7 @@ func (c *Canvas) DrawAndRender(x, y int, clr Color) {
 		return
 	}
 	c.pole[x][y] = clr
-	if currentApp.IsRunned() {
+	if currentApp.IsRunned() && c.idx != -1 {
 		currentApp.RedrawWidget(c.idx)
 	}
 }
@@ -49,7 +50,7 @@ func (c *Canvas) InnerText() (res string) {
 	lastClr := Color(-1)
 	for y := 0; y < c.height; y++ {
 		for x := 0; x < c.width; x++ {
-			clr := c.pole[y][x]
+			clr := c.pole[x][y]
 			if lastClr != clr {
 				if clr == 0 {
 					res += "\033[0m"

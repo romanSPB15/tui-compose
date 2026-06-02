@@ -95,7 +95,7 @@ func (a *app) Window() Window {
 // Redraw() перерисовывает все компоненты. Он потокобезопасен.
 // Важно: такая перерисовка вызывает мерцание.
 func (a *app) Redraw() {
-	a.doWithMessageAndWait(func() {
+	a.doWithMessage(func() {
 		fmt.Fprint(a.f, "\033[2J\033[H")
 		a.posWidgets = []pos{}
 		a.currentPos = pos{0, 0}
@@ -147,7 +147,7 @@ func (a *app) Redraw() {
 // RedrawWidget() перерисовывает конкретный компонент. Потокобезопасен.
 // index - это номер компонента, который нужно перерисовать.
 func (a *app) RedrawWidget(index int) {
-	a.doWithMessageAndWait(func() {
+	a.doWithMessage(func() {
 		a.LogInfo("RedrawWidget %v", a.posWidgets)
 		pos := a.posWidgets[index]
 		fmt.Fprintf(a.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
@@ -354,6 +354,11 @@ func (a *app) runWorker() {
 			tsk.f()
 			if tsk.done != nil {
 				close(tsk.done)
+			}
+			if tsk.msg != "" {
+				a.LogInfo("Завершена задача: '%s'", tsk.msg)
+			} else {
+				a.LogInfo("Завершена задача")
 			}
 		}
 	}
