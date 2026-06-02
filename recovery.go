@@ -7,13 +7,15 @@ import (
 )
 
 func recoveryScreen(message string) {
-	currentApp.Quit()
+	if currentApp.IsRunned() {
+		currentApp.Quit()
+	}
 	fmt.Fprint(currentApp.f, "\033[2J\033[H")
 	fmt.Fprint(currentApp.f, "\033[44m")
-	time.Sleep(time.Millisecond)
+	time.Sleep(time.Millisecond * 300)
 	w := currentApp.Window().Width()
 	format := fmt.Sprintf("%%-%ds", w) + "\r\n"
-	fmt.Fprintf(currentApp.f, format, "Ошибка")
+	fmt.Fprintf(currentApp.f, format, "go-tui")
 	fmt.Fprintf(currentApp.f, format, message)
 	fmt.Fprintf(currentApp.f, format, "Нажмите ENTER для выхода...")
 	for range currentApp.Window().Height() - 4 {
