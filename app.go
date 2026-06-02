@@ -14,7 +14,6 @@ import (
 	"github.com/acarl005/stripansi"
 	"github.com/charmbracelet/x/term"
 	"github.com/eiannone/keyboard"
-	"github.com/google/uuid"
 )
 
 // Color — это код цвета.
@@ -75,7 +74,6 @@ type app struct {
 	posWidgets  []pos
 	window      Window
 	log         io.WriteCloser
-	debug       bool
 	runned      bool
 	work        chan *task
 }
@@ -178,7 +176,7 @@ func (a *app) Clear() {
 // Run() - это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
 func (a *app) Run() {
 	defer func() {
-		if a.debug {
+		if DEBUG {
 			a.log.Close()
 		}
 		if err := recover(); err != nil {
@@ -259,22 +257,16 @@ const taskBufSize = 32
 
 // NewApp() создаёт объект приложения без логирования.
 func NewApp() App {
-	app := &app{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[keyboard.Key]func()),
-		window: &window{}, debug: false, work: make(chan *task, taskBufSize),
-	}
-	currentApp = app
-	go app.runWorker()
-	return app
-}
 
-// NewDebugApp() создаёт объект приложения с логированием.
-func NewDebugApp() App {
-	f, err := os.Create(fmt.Sprintf("debug_log_%s", uuid.New().String()))
-	if err != nil {
-		log.Fatal(err)
+	app := &app{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[keyboard.Key]func()),
+		window: &window{}, work: make(chan *task, taskBufSize),
 	}
-	app := &app{log: f, f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[keyboard.Key]func()),
-		window: &window{}, debug: true, work: make(chan *task, taskBufSize),
+	if DEBUG {
+		f, err := os.Create(fmt.Sprintf("debug_log_%d", time.Now().UnixMilli()))
+		if err != nil {
+			log.Fatal(err)
+		}
+		app.log = f
 	}
 	currentApp = app
 	go app.runWorker()

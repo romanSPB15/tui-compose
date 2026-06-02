@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+const DEBUG = false
+
 // LogInfo() логирует указанное сообщение подобно fmt.Printf() в файл, если приложение создано как Debug.
 func (a *app) LogInfo(message string, args ...any) {}
 
