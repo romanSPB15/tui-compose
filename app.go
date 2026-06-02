@@ -69,12 +69,14 @@ var currentWindow Window
 
 type window struct {
 	comp                []Widget
+	compF               []Focusable
 	f                   *os.File
+	focusIndex          int
 	stopCh              chan struct{}
 	keyHandlers         map[keyboard.Key]func()
 	currentPos          pos
 	posWidgets          []pos
-	WidgetsposFocusable []pos
+	posWidgetsFocusable []pos
 	log                 io.WriteCloser
 	runned              bool
 	work                chan *task
@@ -93,47 +95,56 @@ func (w *window) Redraw() {
 
 		for idx, c := range w.comp {
 			if c != nil {
-				if len(stripansi.Strip(c.InnerText())) > c.MaxLength() {
-					w.LogFatal("Ошибка перерисовки: MaxLength() не верен.")
+				if idx >= len(w.posWidgets) {
+					w.LogFatal("позиция для виджета %d не найдена", idx)
 				}
-				c.SetIndex(idx)
-				switch c.DisplayMode() {
-				case DisplayInline:
-					if w.currentPos.Col+c.MaxLength() >= w.Width() {
-						w.currentPos.Col = 0
-						w.currentPos.Line++
-					}
-					w.posWidgets = append(w.posWidgets, w.currentPos)
-
-					fmt.Fprint(w.f, c.InnerText()+strings.Repeat(" ", c.MaxLength()-len([]rune(stripansi.Strip(c.InnerText())))))
-					w.currentPos.Col += c.MaxLength()
-				case DisplayBlock:
-					w.currentPos.Col = 0
-					w.currentPos.Line++
-
-					fmt.Fprintln(w.f)
-
-					w.posWidgets = append(w.posWidgets, w.currentPos)
-
-					fmt.Fprint(w.f, c.InnerText()+strings.Repeat(" ", c.MaxLength()-len([]rune(stripansi.Strip(c.InnerText())))))
-
-					fmt.Fprintln(w.f)
-
-					w.currentPos.Col = 0
-					w.currentPos.Line++
-				case DisplayNewLine:
-
-					w.posWidgets = append(w.posWidgets, w.currentPos)
-
-					w.currentPos.Col = 0
-					w.currentPos.Line++
-
-					fmt.Fprintln(w.f)
-
-				}
+				pos := w.posWidgets[idx]
+				fmt.Fprintf(w.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
+				fmt.Fprint(w.f, c.InnerText())
 			}
 		}
 	}, "redraw all")
+}
+
+func (w *window) index() {
+	w.compF = []Focusable{}
+	w.posWidgets = []pos{}
+	w.posWidgetsFocusable = []pos{}
+	for idx, c := range w.comp {
+		if c != nil {
+			if len(stripansi.Strip(c.InnerText())) > c.MaxLength() {
+				w.LogFatal("Ошибка индексации: MaxLength() не верен.")
+			}
+			if f, ok := c.(Focusable); ok {
+				w.compF = append(w.compF, f)
+			}
+			c.SetIndex(idx)
+			switch c.DisplayMode() {
+			case DisplayInline:
+				if w.currentPos.Col+c.MaxLength() >= w.Width() {
+					w.currentPos.Col = 0
+					w.currentPos.Line++
+				}
+				w.posWidgets = append(w.posWidgets, w.currentPos)
+
+				w.currentPos.Col += c.MaxLength()
+			case DisplayBlock:
+				w.currentPos.Col = 0
+				w.currentPos.Line++
+
+				w.posWidgets = append(w.posWidgets, w.currentPos)
+
+				w.currentPos.Col = 0
+				w.currentPos.Line++
+			case DisplayNewLine:
+				w.posWidgets = append(w.posWidgets, w.currentPos)
+
+				w.currentPos.Col = 0
+				w.currentPos.Line++
+
+			}
+		}
+	}
 }
 
 // RedrawWidget() перерисовывает конкретный компонент. Потокобезопасен.
@@ -159,7 +170,9 @@ func (w *window) AddWidgets(c ...Widget) {
 func (w *window) Clear() {
 	w.doWithMessageAndWait(func() {
 		w.comp = []Widget{}
+		w.compF = []Focusable{}
 		w.posWidgets = []pos{}
+		w.posWidgetsFocusable = []pos{}
 	}, "clear")
 }
 
@@ -186,6 +199,7 @@ func (w *window) Run() {
 	if runtime.GOOS == "windows" {
 		enableANSI()
 	}
+	w.index()
 	w.runned = true
 
 	fmt.Fprint(w.f, "\033[?25l")
@@ -230,11 +244,6 @@ func (w *window) Run() {
 	w.Redraw()
 
 	<-w.stopCh
-}
-
-func (w *window) index() {
-	w.posWidgets = []pos{}
-	w.currentPos = pos{0, 0}
 }
 
 // Quit() — это принудительный выход из приложения.
