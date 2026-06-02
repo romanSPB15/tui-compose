@@ -16,7 +16,7 @@ func recoveryScreen(message string) {
 	fmt.Fprintf(currentApp.f, format, "Ошибка")
 	fmt.Fprintf(currentApp.f, format, message)
 	fmt.Fprintf(currentApp.f, format, "Нажмите ENTER для выхода...")
-	for range currentApp.Window().Height() - 3 {
+	for range currentApp.Window().Height() - 4 {
 		fmt.Println(strings.Repeat(" ", w))
 	}
 	fmt.Fprint(currentApp.f, "\033[0m")
