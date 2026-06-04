@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/eiannone/keyboard"
-	"github.com/romanSPB15/tui-compose"
+	"github.com/romanSPB15/tui-compose/v2"
 )
 
 func main() {
