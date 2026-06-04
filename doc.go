@@ -1,4 +1,4 @@
-// Package tui provides w framework for creating Text User Interfaces (TUI) in Go.
+// Package tui provides framework for creating Text User Interfaces (TUI) in Go.
 //
 // Библиотека go-tui позволяет легко создавать интерактивные TUI-приложения.
 // Она включает в себя набор готовых компонентов: кнопки, надписи,
