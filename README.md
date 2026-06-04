@@ -1,6 +1,6 @@
 # TUI Compose
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/v2/releases)
+[![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/releases)
 [![Go Reference](https://pkg.go.dev/badge/github.com/romanSPB15/tui-compose/v2.svg)](https://pkg.go.dev/github.com/romanSPB15/tui-compose/v2)
 
 ## Обзор
@@ -36,8 +36,8 @@ func main() {
 }
 ```
 ## Обновление v2.0.0!
-[Release Notes](https://github.com/romanSPB15/tui-compose/v2/blob/main/Release-Notes.md)
+[Release Notes](https://github.com/romanSPB15/tui-compose/blob/main/Release-Notes.md)
 |
-[Документация](https://pkg.go.dev/github.com/romanSPB15/tui-compose/v2@v2.0.0)
+[Документация](https://pkg.go.dev/github.com/romanSPB15/tui-compose/v2)
 |
-[Примеры](https://github.com/romanSPB15/tui-compose/v2/tree/main/examples)
+[Примеры](https://github.com/romanSPB15/tui-compose/tree/main/examples)
