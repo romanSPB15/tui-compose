@@ -20,7 +20,7 @@ func recoveryScreen(message string) {
 	fmt.Fprintf(currentWindow.f, format, "TUI Compose Framework")
 	fmt.Fprintf(currentWindow.f, format, message)
 	fmt.Fprintf(currentWindow.f, format, "Нажмите ENTER для выхода...")
-	for range currentWindow.Height() - 5 {
+	for range currentWindow.Height() - 3 {
 		fmt.Fprintln(currentWindow.f, strings.Repeat(" ", w))
 	}
 	fmt.Fprint(currentWindow.f, "\033[0m")
