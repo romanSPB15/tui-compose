@@ -23,6 +23,7 @@ func recoveryScreen(message string) {
 	for range currentWindow.Height() - 4 {
 		fmt.Fprintln(currentWindow.f, strings.Repeat(" ", w))
 	}
+	fmt.Fprint(currentWindow.f, strings.Repeat(" ", w))
 	fmt.Fprint(currentWindow.f, "\033[0m")
 	fmt.Scanln()
 }
