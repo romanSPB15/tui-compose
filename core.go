@@ -45,6 +45,11 @@ const (
 	BrightWhite
 )
 
+// ColorRGB — это цвет в RGB.
+type ColorRGB struct {
+	R, G, B uint8
+}
+
 // DisplayMode — это режим отображения виджета.
 type DisplayMode int
 

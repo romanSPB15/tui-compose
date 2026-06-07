@@ -48,15 +48,15 @@ func (lbl *Label) ColorizeBackground(clr Color) *Label {
 
 // ColorizeForegroundRGB() окрашивает текст в RGB.
 // Добавлено в TUI v1.1.0
-func (lbl *Label) ColorizeForegroundRGB(r, g, b uint8) *Label {
-	lbl.ANSI += fmt.Sprintf("\033[38;2;%d;%d;%dm", r, g, b)
+func (lbl *Label) ColorizeForegroundRGB(clr ColorRGB) *Label {
+	lbl.ANSI += fmt.Sprintf("\033[38;2;%d;%d;%dm", clr.R, clr.G, clr.B)
 	return lbl
 }
 
 // ColorizeBackgroundRGB() окрашивает фон текста в RGB.
 // Добавлено в TUI v1.1.0
-func (lbl *Label) ColorizeBackgroundRGB(r, g, b uint8) *Label {
-	lbl.ANSI += fmt.Sprintf("\033[48;2;%d;%d;%dm", r, g, b)
+func (lbl *Label) ColorizeBackgroundRGB(clr ColorRGB) *Label {
+	lbl.ANSI += fmt.Sprintf("\033[48;2;%d;%d;%dm", clr.R, clr.G, clr.B)
 	return lbl
 }
 
