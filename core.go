@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -81,10 +80,12 @@ type window struct {
 	keyHandlers map[keyboard.Key]func()
 	currentPos  pos
 	posWidgets  []pos
-	log         io.WriteCloser
+	log         *os.File
 	runned      bool
 	work        chan *task
 	focusChange bool
+	stdout      *os.File
+	stderr      *os.File
 }
 
 // Widgets() возвращает список компонентов, добавленных в приложение.
@@ -185,6 +186,9 @@ func (w *window) Clear() {
 
 // Run() - это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
 func (w *window) Run() {
+	w.stdout = os.Stdout
+	w.stderr = os.Stderr
+	os.Stdout, os.Stderr = w.log, w.log
 	defer func() {
 		if DEBUG {
 			w.log.Close()
@@ -285,6 +289,12 @@ func (w *window) Run() {
 		})
 	}
 	<-w.stopCh
+	w.restoreOut()
+}
+
+func (w *window) restoreOut() {
+	os.Stdout = w.stdout
+	os.Stderr = w.stderr
 }
 
 // Quit() — это принудительный выход из приложения.
