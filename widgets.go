@@ -320,53 +320,58 @@ func (p *TextProgress) InnerText() string {
 // Check — виджет чекбокса.
 // Вызов OnChanged происходит при изменении состояния (после переключения).
 type Check struct {
-	base     Widget
-	checked  Widget
-	selected Widget
-	Widget
-	idx          int
-	checkedState bool
-	OnChanged    func()
+	text                    string
+	idx                     int
+	checkedState            bool
+	focused                 bool
+	OnChanged               func()
+	base, checked, selected *Label
 }
 
-// NewCheck создаёт новый чекбокс с текстовой меткой.
 func NewCheck(text string) *Check {
 	c := &Check{
-		base:      NewStaticLabel(text),
-		checked:   NewStaticLabel(text).ColorizeForeground(Blue),
-		selected:  NewStaticLabel(text).ColorizeBackground(White).ColorizeForeground(Black),
+		text:      text,
 		OnChanged: func() {},
 	}
-	c.checkedState = false
-	c.Widget = c.base
+	c.updateWidgets()
 	return c
 }
 
-func (c *Check) OnFocus() {
-	if c.checkedState {
-		c.Widget = c.selected
-	} else {
-		c.Widget = c.selected
+func (c *Check) updateWidgets() {
+	unchecked := "[ ] " + c.text
+	checked := "[x] " + c.text
+
+	c.base = NewStaticLabel(unchecked)
+	c.checked = NewStaticLabel(checked).ColorizeForeground(Blue)
+	c.selected = NewStaticLabel(checked).ColorizeBackground(White).ColorizeForeground(Black)
+	if !c.checkedState {
+		c.selected = NewStaticLabel(unchecked).ColorizeBackground(White).ColorizeForeground(Black)
 	}
+}
+
+func (c *Check) InnerText() string {
+	if c.focused {
+		return c.selected.InnerText()
+	}
+	if c.checkedState {
+		return c.checked.InnerText()
+	}
+	return c.base.InnerText()
+}
+
+func (c *Check) OnFocus() {
+	c.focused = true
 	currentWindow.RedrawWidget(c.idx)
 }
 
 func (c *Check) OnBlur() {
-	if c.checkedState {
-		c.Widget = c.checked
-	} else {
-		c.Widget = c.base
-	}
+	c.focused = false
 	currentWindow.RedrawWidget(c.idx)
 }
 
 func (c *Check) OnClick() {
 	c.checkedState = !c.checkedState
-	if c.checkedState {
-		c.Widget = c.checked
-	} else {
-		c.Widget = c.base
-	}
+	c.updateWidgets()
 	currentWindow.RedrawWidget(c.idx)
 	if c.OnChanged != nil {
 		c.OnChanged()
@@ -388,10 +393,8 @@ func (c *Check) State() bool {
 // SetState() устанавливает значение чекбокса.
 func (c *Check) SetState(b bool) {
 	c.checkedState = b
-	if c.checkedState {
-		c.Widget = c.checked
-	} else {
-		c.Widget = c.base
+	c.updateWidgets()
+	if currentWindow.IsRunned() {
+		currentWindow.RedrawWidget(c.idx)
 	}
-	currentWindow.RedrawWidget(c.idx)
 }
