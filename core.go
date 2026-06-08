@@ -281,6 +281,7 @@ func (w *window) Run() {
 	if len(w.compF) != 0 {
 		w.Do(func() {
 			w.compF[0].OnFocus()
+			w.focusIndex = 0
 		})
 	}
 	<-w.stopCh
