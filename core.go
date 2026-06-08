@@ -45,6 +45,11 @@ const (
 	BrightWhite
 )
 
+// ColorRGB — это цвет в RGB.
+type ColorRGB struct {
+	R, G, B uint8
+}
+
 // DisplayMode — это режим отображения виджета.
 type DisplayMode int
 
@@ -91,7 +96,7 @@ func (w *window) Widgets() []Widget {
 // Важно: такая перерисовка вызывает мерцание.
 func (w *window) Redraw() {
 	w.doWithMessage(func() {
-		fmt.Fprint(w.f, "\033[3J")
+		fmt.Fprint(w.f, "\033[3J\033[H")
 
 		for idx, c := range w.comp {
 			if c != nil {
