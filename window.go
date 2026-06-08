@@ -91,7 +91,7 @@ func (w *window) Widgets() []Widget {
 // Важно: такая перерисовка вызывает мерцание.
 func (w *window) Redraw() {
 	w.doWithMessage(func() {
-		fmt.Fprint(w.f, "\033[2J\033[H")
+		fmt.Fprint(w.f, "\033[3J")
 
 		for idx, c := range w.comp {
 			if c != nil {
