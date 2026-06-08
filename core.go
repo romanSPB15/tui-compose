@@ -193,7 +193,6 @@ func (w *window) Run() {
 			w.LogFatal("Произошла panic: %v", err)
 		}
 	}()
-	fmt.Fprintln(w.f, "Загрузка...")
 	if !term.IsTerminal(w.f.Fd()) {
 		fmt.Fprintln(w.f, "Приложение запущено не в терминале. Выход...")
 		time.Sleep(time.Second * 3)
