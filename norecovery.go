@@ -5,5 +5,5 @@ package tui
 import "fmt"
 
 func recoveryScreen(message string) {
-	fmt.Fprint(w.f, "\033[2J\033[H")
+	fmt.Fprint(wnd.f, "\033[2J\033[H")
 }

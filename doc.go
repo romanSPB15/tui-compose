@@ -13,11 +13,11 @@
 // )
 
 //	func main() {
-//		w := tui.NewWindow()
-//		w.AddWidgets(tui.NewStaticLabel("Привет, Go!"))
+//		wnd := tui.NewWindow()
+//		wnd.AddWidgets(tui.NewStaticLabel("Привет, Go!"))
 //		btn := tui.NewButton("Нажми ↑", keyboard.KeyArrowUp)
-//		btn.OnClick = w.Quit
-//		w.AddWidgets(btn)
-//		w.Run()
+//		btn.OnClick = wnd.Quit
+//		wnd.AddWidgets(btn)
+//		wnd.Run()
 //	}
 package tui

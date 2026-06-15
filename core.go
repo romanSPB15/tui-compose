@@ -5,14 +5,14 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/acarl005/stripansi"
-	"github.com/charmbracelet/x/term"
 	"github.com/eiannone/keyboard"
+	"golang.org/x/term"
 )
 
 // Color — это код цвета.
@@ -58,6 +58,8 @@ const (
 	DisplayNewLine                    // Перенос строки.
 )
 
+type MouseEventHandler func(*MouseEvent)
+
 type pos struct {
 	Line int
 	Col  int
@@ -72,81 +74,96 @@ type task struct {
 var currentWindow *window
 
 type window struct {
-	comp        []Widget
-	compF       []Focusable
-	f           *os.File
-	focusIndex  int
-	stopCh      chan struct{}
-	keyHandlers map[keyboard.Key]func()
-	currentPos  pos
-	posWidgets  []pos
-	log         *os.File
-	runned      bool
-	work        chan *task
-	focusChange bool
-	stdout      *os.File
-	stderr      *os.File
+	comp          []Widget
+	compF         []Focusable
+	f             *os.File
+	focusIndex    int
+	stopCh        chan struct{}
+	keyHandlers   map[keyboard.Key]func()
+	currentPos    pos
+	posWidgets    []pos
+	posWidgetsF   []pos
+	log           *os.File
+	runned        bool
+	work          chan *task
+	focusChange   bool
+	stdout        *os.File
+	stderr        *os.File
+	oldMode       *term.State
+	mouseHandlers []MouseEventHandler
 }
 
 // Widgets() возвращает список компонентов, добавленных в приложение.
-func (w *window) Widgets() []Widget {
-	return w.comp
+func (wnd *window) Widgets() []Widget {
+	return wnd.comp
 }
 
 // Redraw() перерисовывает все компоненты. Он потокобезопасен.
 // Важно: такая перерисовка вызывает мерцание.
-func (w *window) Redraw() {
-	w.doWithMessage(func() {
-		fmt.Fprint(w.f, "\033[2J\033[H")
+func (wnd *window) Redraw() {
+	wnd.doWithMessage(func() {
+		fmt.Fprint(wnd.f, "\033[2J\033[H")
 
-		for idx, c := range w.comp {
+		for idx, c := range wnd.comp {
 			if c != nil {
-				if idx >= len(w.posWidgets) {
-					w.LogFatal("позиция для виджета %d не найдена", idx)
+				if idx >= len(wnd.posWidgets) {
+					wnd.LogFatal("позиция для виджета %d не найдена", idx)
 				}
-				pos := w.posWidgets[idx]
-				fmt.Fprintf(w.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
-				fmt.Fprint(w.f, c.InnerText())
+				pos := wnd.posWidgets[idx]
+				fmt.Fprintf(wnd.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
+				fmt.Fprint(wnd.f, c.InnerText())
 			}
 		}
 	}, "redraw all")
 }
 
-func (w *window) index() {
-	w.compF = []Focusable{}
-	w.posWidgets = []pos{}
-	w.currentPos = pos{0, 0}
-	for idx, c := range w.comp {
+func (wnd *window) index() {
+	wnd.compF = []Focusable{}
+	wnd.posWidgets = []pos{}
+	wnd.posWidgetsF = []pos{}
+	wnd.currentPos = pos{0, 0}
+	for idx, c := range wnd.comp {
 		if c != nil {
 			if len(stripansi.Strip(c.InnerText())) > c.MaxLength() {
-				w.LogFatal("Ошибка индексации: MaxLength() не верен.")
+				wnd.LogFatal("Ошибка индексации: MaxLength() не верен.")
 			}
+			focusable := false
 			if f, ok := c.(Focusable); ok {
-				w.compF = append(w.compF, f)
+				wnd.compF = append(wnd.compF, f)
+				focusable = true
 			}
 			c.SetIndex(idx)
 			switch c.DisplayMode() {
 			case DisplayInline:
-				if w.currentPos.Col+c.MaxLength() >= w.Width() {
-					w.currentPos.Col = 0
-					w.currentPos.Line++
+				if wnd.currentPos.Col+c.MaxLength() >= wnd.Width() {
+					wnd.currentPos.Col = 0
+					wnd.currentPos.Line++
 				}
-				w.posWidgets = append(w.posWidgets, w.currentPos)
+				wnd.posWidgets = append(wnd.posWidgets, wnd.currentPos)
+				if focusable {
+					wnd.posWidgetsF = append(wnd.posWidgetsF, wnd.currentPos)
+				}
 
-				w.currentPos.Col += c.MaxLength()
+				wnd.currentPos.Col += c.MaxLength()
 			case DisplayBlock:
-				w.currentPos.Col = 0
-				w.currentPos.Line++
+				wnd.currentPos.Col = 0
+				wnd.currentPos.Line++
 
-				w.posWidgets = append(w.posWidgets, w.currentPos)
+				wnd.posWidgets = append(wnd.posWidgets, wnd.currentPos)
+				if focusable {
+					wnd.posWidgetsF = append(wnd.posWidgetsF, wnd.currentPos)
+				}
 
-				w.currentPos.Col = 0
-				w.currentPos.Line++
+				wnd.currentPos.Col = 0
+				wnd.currentPos.Line++
 			case DisplayNewLine:
-				w.posWidgets = append(w.posWidgets, w.currentPos)
+				wnd.posWidgets = append(wnd.posWidgets, wnd.currentPos)
+				if focusable {
+					wnd.posWidgetsF = append(wnd.posWidgetsF, wnd.currentPos)
+				}
 
-				w.currentPos.Col = 0
-				w.currentPos.Line++
+				wnd.currentPos.Col = 0
+				wnd.currentPos.Line++
 			}
 		}
 	}
@@ -154,167 +171,100 @@ func (w *window) index() {
 
 // RedrawWidget() перерисовывает конкретный компонент. Потокобезопасен.
 // index - это номер компонента, который нужно перерисовать.
-func (w *window) RedrawWidget(index int) {
-	w.doWithMessage(func() {
-		w.LogInfo("RedrawWidget %v", w.posWidgets)
-		pos := w.posWidgets[index]
-		fmt.Fprintf(w.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
-		w.LogInfo("%v %d", pos, index)
-		fmt.Print(w.comp[index].InnerText() + strings.Repeat(" ", w.comp[index].MaxLength()-len(stripansi.Strip(w.comp[index].InnerText()))))
+func (wnd *window) RedrawWidget(index int) {
+	wnd.doWithMessage(func() {
+		wnd.LogInfo("RedrawWidget %v", wnd.posWidgets)
+		pos := wnd.posWidgets[index]
+		fmt.Fprintf(wnd.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
+		wnd.LogInfo("%v %d", pos, index)
+		fmt.Print(wnd.comp[index].InnerText() + strings.Repeat(" ", wnd.comp[index].MaxLength()-len(stripansi.Strip(wnd.comp[index].InnerText()))))
 	}, "redraw widget")
 }
 
 // AddWidgets() добавляет компонент в приложение. Потокобезопасен.
-func (w *window) AddWidgets(c ...Widget) {
-	w.doWithMessageAndWait(func() {
-		w.comp = append(w.comp, c...)
+func (wnd *window) AddWidgets(c ...Widget) {
+	wnd.doWithMessageAndWait(func() {
+		wnd.comp = append(wnd.comp, c...)
 	}, "add widget")
 }
 
 // Clear() очищает список компонентов приложения без перерисовки. Потокобезопасен.
-func (w *window) Clear() {
-	w.doWithMessageAndWait(func() {
-		w.comp = []Widget{}
-		w.compF = []Focusable{}
-		w.posWidgets = []pos{}
+func (wnd *window) Clear() {
+	wnd.doWithMessageAndWait(func() {
+		wnd.comp = []Widget{}
+		wnd.compF = []Focusable{}
+		wnd.posWidgets = []pos{}
 	}, "clear")
 }
 
-// cursor
-// hide \033[?25l
-// show \033[?25h
-
 // Run() - это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
-func (w *window) Run() {
-	w.stdout = os.Stdout
-	w.stderr = os.Stderr
-	os.Stdout, os.Stderr = w.log, w.log
+func (wnd *window) Run() {
 	defer func() {
 		if DEBUG {
-			w.log.Close()
+			wnd.log.Close()
 		}
 		if err := recover(); err != nil {
-			w.LogFatal("Произошла panic: %v", err)
+			wnd.LogFatal("Произошла panic: %v", err)
 		}
 	}()
-	if !term.IsTerminal(w.f.Fd()) {
-		fmt.Fprintln(w.f, "Приложение запущено не в терминале. Выход...")
+	if !term.IsTerminal(int(wnd.f.Fd())) {
+		fmt.Fprintln(wnd.f, "Приложение запущено не в терминале. Выход...")
 		time.Sleep(time.Second * 3)
-		w.LogFatal("tui: stdout is not terminal")
+		wnd.LogFatal("tui: stdout is not terminal")
 	}
+	wnd.stdout = os.Stdout
+	wnd.stderr = os.Stderr
+	os.Stdout, os.Stderr = wnd.log, wnd.log
 
-	w.index()
-	w.runned = true
+	wnd.enableRawMode()
+	defer wnd.restoreTerminalMode()
 
-	fmt.Fprint(w.f, "\033[?25l")
+	wnd.index()
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+	fmt.Fprint(wnd.f, "\033[?25l")
 
-	keys, err := keyboard.GetKeys(2)
-	if err != nil {
-		w.LogFatal("tui: keyboard errror")
-	}
+	wnd.Redraw()
 
-	go func() {
-		<-stop
-		select {
-		case <-w.stopCh:
-		default:
-			close(w.stopCh)
-		}
-	}()
+	go wnd.startStopSignalCatcher()
+	go wnd.startScreenResizeChecker()
+	go wnd.startMouseCatcher()
+	go wnd.startKeyCatcher()
 
-	// Обработка нажатий клавиш
-	go func() {
-		for ev := range keys {
-			if ev.Key == keyboard.KeyCtrlC {
-				close(w.stopCh)
-			}
-			w.doWithMessageAndWait(func() {
-				if v, ok := w.keyHandlers[ev.Key]; ok {
-					w.Do(v)
-				} else if ev.Err != nil {
-					if ev.Err.Error() == "operation canceled" {
-						close(w.stopCh)
-						return
-					}
-					w.LogFatal("tui: keyboard error")
-				}
-			}, "key handler")
-		}
-	}()
-
-	if w.focusChange && len(w.compF) != 0 {
-		w.RegisterKeyHandler(keyboard.KeyArrowLeft, func() {
-			if w.focusIndex <= 0 {
-				return
-			}
-			w.compF[w.focusIndex].OnBlur()
-			w.focusIndex--
-			w.compF[w.focusIndex].OnFocus()
-		})
-
-		w.RegisterKeyHandler(keyboard.KeyArrowRight, func() {
-			if w.focusIndex > len(w.compF)-2 {
-				return
-			}
-			if w.focusIndex == -1 {
-				w.compF[0].OnFocus()
-				w.focusIndex = 0
-				return
-			}
-			w.compF[w.focusIndex].OnBlur()
-			w.focusIndex++
-			w.compF[w.focusIndex].OnFocus()
+	if len(wnd.compF) != 0 {
+		wnd.Do(func() {
+			wnd.compF[0].OnFocus()
+			wnd.focusIndex = 0
 		})
 	}
 
-	w.RegisterKeyHandler(keyboard.KeyEnter, func() {
-		if w.focusIndex != -1 {
-			if cl, ok := w.compF[w.focusIndex].(Clickable); ok {
-				cl.OnClick()
-			}
-		}
-	})
-
-	w.Redraw()
-
-	w.startScreenResizeChecker()
-
-	if len(w.compF) != 0 {
-		w.Do(func() {
-			w.compF[0].OnFocus()
-			w.focusIndex = 0
-		})
-	}
-	<-w.stopCh
-	w.restoreOut()
+	wnd.runned = true
+	<-wnd.stopCh
+	wnd.restoreOut()
 }
 
-func (w *window) restoreOut() {
-	os.Stdout = w.stdout
-	os.Stderr = w.stderr
+func (wnd *window) restoreOut() {
+	os.Stdout = wnd.stdout
+	os.Stderr = wnd.stderr
 }
 
 // Quit() — это принудительный выход из приложения.
-func (w *window) Quit() {
-	close(w.stopCh)
+func (wnd *window) Quit() {
+	close(wnd.stopCh)
 }
 
 // Run() возвращает канал сигнализации о выходе.
-func (w *window) OnQuit() <-chan struct{} {
-	return w.stopCh
+func (wnd *window) OnQuit() <-chan struct{} {
+	return wnd.stopCh
 }
 
 // IsRunned() возращает true, если приложение уже запущено. Иначе возвращает false.
-func (w *window) IsRunned() bool {
-	return w.runned
+func (wnd *window) IsRunned() bool {
+	return wnd.runned
 }
 
 const taskBufSize = 32
 
-// NewWindow() создаёт объект приложения без логирования.
+// NewWindow() создаёт объект приложения.
 func NewWindow() Window {
 	wnd := &window{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[keyboard.Key]func()),
 		work: make(chan *task, taskBufSize), focusIndex: -1, focusChange: true,
@@ -326,99 +276,278 @@ func NewWindow() Window {
 		}
 		wnd.log = f
 	}
-	if runtime.GOOS == "windows" {
-		enableANSI()
-	}
+	enableANSI()
 	currentWindow = wnd
 	go wnd.runWorker()
 	return wnd
 }
 
 // RegisterKeyHandler() добавляет обработчик нажатия клавиши.
-func (w *window) RegisterKeyHandler(key keyboard.Key, h func()) {
-	w.keyHandlers[key] = h
+func (wnd *window) RegisterKeyHandler(key keyboard.Key, h func()) {
+	wnd.keyHandlers[key] = h
 }
 
 // Do() запускает функцию f в потоке GUI, что спасает от data racing при изменении виджетов.
-func (w *window) Do(f func()) {
-	w.work <- &task{f: f}
+func (wnd *window) Do(f func()) {
+	wnd.work <- &task{f: f}
 }
 
 // Do() запускает функцию f в потоке GUI и ждёт завершения.
-func (w *window) DoAndWait(f func()) {
+func (wnd *window) DoAndWait(f func()) {
 	tsk := &task{
 		f:    f,
 		done: make(chan struct{}),
 	}
-	w.work <- tsk
+	wnd.work <- tsk
 	<-tsk.done
 }
 
-func (w *window) doWithMessage(f func(), msg string) {
-	w.work <- &task{
+func (wnd *window) doWithMessage(f func(), msg string) {
+	wnd.work <- &task{
 		f:   f,
 		msg: msg,
 	}
 }
 
-func (w *window) doWithMessageAndWait(f func(), msg string) {
+func (wnd *window) doWithMessageAndWait(f func(), msg string) {
 	tsk := &task{
 		f:    f,
 		done: make(chan struct{}),
 		msg:  msg,
 	}
-	w.work <- tsk
+	wnd.work <- tsk
 	<-tsk.done
 }
 
-func (w *window) runWorker() {
-	w.LogInfo("Воркер запущен...")
+func (wnd *window) runWorker() {
+	wnd.LogInfo("Воркер запущен...")
 	for {
 		select {
-		case <-w.stopCh:
-			w.runned = false
+		case <-wnd.stopCh:
+			wnd.runned = false
 			keyboard.Close()
 			fmt.Print("\033[?25l")
-			fmt.Fprint(w.f, "\033[2J\033[H\033[?25h")
-			w.LogInfo("Воркер остановлен...")
+			fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
+			wnd.LogInfo("Воркер остановлен...")
 			return
-		case tsk := <-w.work:
+		case tsk := <-wnd.work:
 			if tsk.msg != "" {
-				w.LogInfo("Принята задача: '%s'", tsk.msg)
+				wnd.LogInfo("Принята задача: '%s'", tsk.msg)
 			} else {
-				w.LogInfo("Принята задача")
+				wnd.LogInfo("Принята задача")
 			}
 			tsk.f()
 			if tsk.done != nil {
 				close(tsk.done)
 			}
 			if tsk.msg != "" {
-				w.LogInfo("Завершена задача: '%s'", tsk.msg)
+				wnd.LogInfo("Завершена задача: '%s'", tsk.msg)
 			} else {
-				w.LogInfo("Завершена задача")
+				wnd.LogInfo("Завершена задача")
 			}
 		}
 	}
 }
 
 func (wnd *window) Width() int {
-	w, _, err := term.GetSize(wnd.f.Fd())
+	width, _, err := term.GetSize(int(wnd.f.Fd()))
 	if err != nil {
 		wnd.LogFatal("tui: get window size error")
 	}
-	return w
+	return width
 }
 
 func (wnd *window) Height() int {
-	_, h, err := term.GetSize(wnd.f.Fd())
+	_, height, err := term.GetSize(int(wnd.f.Fd()))
 	if err != nil {
 		wnd.LogFatal("tui: get window size error")
 	}
-	return h
+	return height
 }
 
 func (wnd *window) DisableFocusChange() {
-	wnd.focusChange = false
+	wnd.Do(func() {
+		wnd.focusChange = false
+	})
+}
+
+func (wnd *window) enableRawMode() {
+	old, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		wnd.LogFatal("Ошибка перехода в RAW режим:")
+	}
+	wnd.oldMode = old
+	fmt.Print("\033[?1000h\033[?1006h")
+}
+
+func (wnd *window) restoreTerminalMode() {
+	if wnd.oldMode != nil {
+		fmt.Print("\033[?1006l\033[?1000l")
+		term.Restore(int(os.Stdin.Fd()), wnd.oldMode)
+	}
+}
+
+type MouseEvent struct {
+	Button  int // 0=левый, 1=средний, 2=правый, 128=отпущена
+	X, Y    int // в символах
+	IsPress bool
+	IsDrag  bool
+}
+
+func parseMouseEvent(input string) (*MouseEvent, error) {
+	if !strings.HasPrefix(input, "\x1b[<") {
+		return nil, fmt.Errorf("не SGR последовательность")
+	}
+	rest := strings.TrimPrefix(input, "\x1b[<")
+	rest = strings.TrimSuffix(rest, "m")
+
+	parts := strings.Split(rest, ";")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("неверный формат: %v", parts)
+	}
+	btn, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return nil, err
+	}
+	x, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return nil, err
+	}
+	y, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return nil, err
+	}
+
+	isRelease := (btn & 0x80) != 0
+	isDrag := (btn & 0x40) != 0
+	button := btn & 0x03
+
+	return &MouseEvent{
+		Button:  button,
+		X:       x - 1,
+		Y:       y - 1,
+		IsPress: !isRelease && !isDrag,
+		IsDrag:  isDrag,
+	}, nil
+}
+
+func (wnd *window) startMouseCatcher() {
+	buf := make([]byte, 1024)
+	for {
+		select {
+		case <-wnd.stopCh:
+			return
+		default:
+			n, err := os.Stdin.Read(buf)
+			if err != nil {
+				return
+			}
+			input := string(buf[:n])
+
+			if n == 1 && buf[0] == 3 {
+				close(wnd.stopCh)
+				return
+			}
+
+			ev, err := parseMouseEvent(input)
+			if err != nil {
+				continue
+			}
+
+			wnd.handleMouseEvent(ev)
+		}
+	}
+}
+
+func (wnd *window) startStopSignalCatcher() {
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+	<-stop
+	select {
+	case <-wnd.stopCh:
+	default:
+		close(wnd.stopCh)
+	}
+}
+
+func (wnd *window) handleMouseEvent(ev *MouseEvent) {
+	for i, pos := range wnd.posWidgetsF {
+		if ev.Y == pos.Line && ev.X > pos.Col && ev.Y <= pos.Col+wnd.compF[i].MaxLength() {
+			// Пользователь нажал на виджет
+			if cl, ok := wnd.compF[i].(Clickable); ok {
+				wnd.Do(cl.OnClick)
+			}
+		}
+	}
+	for _, h := range wnd.mouseHandlers {
+		h(ev)
+	}
+}
+
+func (wnd *window) RegisterClickHandler(h func(ev *MouseEvent)) {
+	wnd.Do(func() {
+		wnd.mouseHandlers = append(wnd.mouseHandlers, h)
+	})
+}
+
+func (wnd *window) startKeyCatcher() {
+	keys, err := keyboard.GetKeys(2)
+	if err != nil {
+		wnd.LogFatal("tui: keyboard errror")
+	}
+	if wnd.focusChange && len(wnd.compF) != 0 {
+		wnd.RegisterKeyHandler(keyboard.KeyArrowLeft, func() {
+			if wnd.focusIndex <= 0 {
+				return
+			}
+			wnd.compF[wnd.focusIndex].OnBlur()
+			wnd.focusIndex--
+			wnd.compF[wnd.focusIndex].OnFocus()
+		})
+
+		wnd.RegisterKeyHandler(keyboard.KeyArrowRight, func() {
+			if wnd.focusIndex > len(wnd.compF)-2 {
+				return
+			}
+			if wnd.focusIndex == -1 {
+				wnd.compF[0].OnFocus()
+				wnd.focusIndex = 0
+				return
+			}
+			wnd.compF[wnd.focusIndex].OnBlur()
+			wnd.focusIndex++
+			wnd.compF[wnd.focusIndex].OnFocus()
+		})
+	}
+
+	wnd.RegisterKeyHandler(keyboard.KeyEnter, func() {
+		if wnd.focusIndex != -1 {
+			if cl, ok := wnd.compF[wnd.focusIndex].(Clickable); ok {
+				wnd.Do(cl.OnClick)
+			}
+		}
+	})
+	for {
+		select {
+		case ev := <-keys:
+			if ev.Key == keyboard.KeyCtrlC {
+				close(wnd.stopCh)
+			}
+			wnd.doWithMessageAndWait(func() {
+				if v, ok := wnd.keyHandlers[ev.Key]; ok {
+					wnd.Do(v)
+				} else if ev.Err != nil {
+					if ev.Err.Error() == "operation canceled" {
+						close(wnd.stopCh)
+						return
+					}
+					wnd.LogFatal("tui: keyboard error")
+				}
+			}, "key handler")
+		case <-wnd.stopCh:
+			keyboard.Close()
+		}
+	}
 }
 
 func CurrentWindow() Window {

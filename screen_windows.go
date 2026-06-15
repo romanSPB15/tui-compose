@@ -4,26 +4,24 @@ package tui
 
 import "time"
 
-func (w *window) startScreenResizeChecker() {
-	prevW, prevH := w.Width(), w.Height()
+func (wnd *window) startScreenResizeChecker() {
+	prevW, prevH := wnd.Width(), wnd.Height()
 	ticker := time.NewTicker(100 * time.Millisecond)
-	go func() {
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				newW, newH := w.Width(), w.Height()
-				if newW != prevW || newH != prevH {
-					prevW, prevH = newW, newH
-					w.doWithMessageAndWait(func() {
-						w.currentPos = pos{0, 0}
-						w.index()
-						w.Redraw()
-					}, "window resize (Windows)")
-				}
-			case <-w.stopCh:
-				return
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			newW, newH := wnd.Width(), wnd.Height()
+			if newW != prevW || newH != prevH {
+				prevW, prevH = newW, newH
+				wnd.doWithMessageAndWait(func() {
+					wnd.currentPos = pos{0, 0}
+					wnd.index()
+					wnd.Redraw()
+				}, "window resize (Windows)")
 			}
+		case <-wnd.stopCh:
+			return
 		}
-	}()
+	}
 }

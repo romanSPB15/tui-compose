@@ -8,16 +8,19 @@ import (
 	"syscall"
 )
 
-func (w *window) startScreenResizeChecker() {
+func (wnd *window) startScreenResizeChecker() {
 	sigwinch := make(chan os.Signal, 1)
 	signal.Notify(sigwinch, syscall.SIGWINCH)
-	go func() {
-		for range sigwinch {
-			w.doWithMessageAndWait(func() {
-				w.currentPos = pos{0, 0}
-				w.index()
-				w.Redraw()
+	for range sigwinch {
+		select {
+		case <-sigwinch:
+			wnd.doWithMessageAndWait(func() {
+				wnd.currentPos = pos{0, 0}
+				wnd.index()
+				wnd.Redraw()
 			}, "window resize (Unix)")
+		case <-wnd.stopCh:
+			return
 		}
-	}()
+	}
 }

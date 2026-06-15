@@ -27,12 +27,12 @@ import (
 )
 
 func main() {
-	w := tui.NewWindow()                             // Создаём приложение
-	w.AddWidgets(tui.NewStaticLabel("Привет, TUI!")) // Добавляем надпись
+	wnd := tui.NewWindow()                             // Создаём приложение
+	wnd.AddWidgets(tui.NewStaticLabel("Привет, TUI!")) // Добавляем надпись
 	btn := tui.NewButton("Нажми на меня!")           // Создаём кнопку
-	btn.OnClicked = w.Quit                           // Назначаем обработчик
-	w.AddWidgets(btn)                                // Добавляем кнопку
-	w.Run()                                          // Запускаем приложение
+	btn.OnClicked = wnd.Quit                           // Назначаем обработчик
+	wnd.AddWidgets(btn)                                // Добавляем кнопку
+	wnd.Run()                                          // Запускаем приложение
 }
 ```
 ## Обновление v2.0.0!
