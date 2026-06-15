@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Eiannone/keyboard"
 	"github.com/acarl005/stripansi"
-	"github.com/eiannone/keyboard"
 	"golang.org/x/term"
 )
 
@@ -79,7 +79,7 @@ type window struct {
 	f             *os.File
 	focusIndex    int
 	stopCh        chan struct{}
-	keyHandlers   map[keyboard.Key]func()
+	keyHandlers   map[Key]func()
 	currentPos    pos
 	posWidgets    []pos
 	posWidgetsF   []pos
@@ -227,8 +227,7 @@ func (wnd *window) Run() {
 
 	go wnd.startStopSignalCatcher()
 	go wnd.startScreenResizeChecker()
-	go wnd.startMouseCatcher()
-	go wnd.startKeyCatcher()
+	go wnd.startInputCatcher()
 
 	if len(wnd.compF) != 0 {
 		wnd.Do(func() {
@@ -431,34 +430,6 @@ func parseMouseEvent(input string) (*MouseEvent, error) {
 	}, nil
 }
 
-func (wnd *window) startMouseCatcher() {
-	buf := make([]byte, 1024)
-	for {
-		select {
-		case <-wnd.stopCh:
-			return
-		default:
-			n, err := os.Stdin.Read(buf)
-			if err != nil {
-				return
-			}
-			input := string(buf[:n])
-
-			if n == 1 && buf[0] == 3 {
-				close(wnd.stopCh)
-				return
-			}
-
-			ev, err := parseMouseEvent(input)
-			if err != nil {
-				continue
-			}
-
-			wnd.handleMouseEvent(ev)
-		}
-	}
-}
-
 func (wnd *window) startStopSignalCatcher() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
@@ -490,11 +461,7 @@ func (wnd *window) RegisterClickHandler(h func(ev *MouseEvent)) {
 	})
 }
 
-func (wnd *window) startKeyCatcher() {
-	keys, err := keyboard.GetKeys(2)
-	if err != nil {
-		wnd.LogFatal("tui: keyboard errror")
-	}
+func (wnd *window) startInputCatcher() {
 	if wnd.focusChange && len(wnd.compF) != 0 {
 		wnd.RegisterKeyHandler(keyboard.KeyArrowLeft, func() {
 			if wnd.focusIndex <= 0 {
@@ -527,27 +494,188 @@ func (wnd *window) startKeyCatcher() {
 			}
 		}
 	})
+
+	buf := make([]byte, 1024)
 	for {
 		select {
-		case ev := <-keys:
-			if ev.Key == keyboard.KeyCtrlC {
-				close(wnd.stopCh)
-			}
-			wnd.doWithMessageAndWait(func() {
-				if v, ok := wnd.keyHandlers[ev.Key]; ok {
-					wnd.Do(v)
-				} else if ev.Err != nil {
-					if ev.Err.Error() == "operation canceled" {
-						close(wnd.stopCh)
-						return
-					}
-					wnd.LogFatal("tui: keyboard error")
-				}
-			}, "key handler")
 		case <-wnd.stopCh:
-			keyboard.Close()
+			return
+		default:
+			n, err := os.Stdin.Read(buf)
+			if err != nil {
+				return
+			}
+			data := buf[:n]
+			if ev, err := parseMouseEvent(string(data)); err == nil {
+				wnd.handleMouseEvent(ev)
+				continue
+			}
+
+			wnd.handleKeyboardInput(data)
 		}
 	}
+}
+
+// parseEscapeSequence разбирает байты, начиная с ESC (0x1B)
+// Возвращает Key и количество съеденных байтов, либо KeyUnknown и 0
+func parseEscapeSequence(data []byte) (Key, int) {
+	if len(data) < 2 || data[0] != 0x1B {
+		return 0, 0
+	}
+
+	if data[1] == '[' {
+		if len(data) < 3 {
+			return 0, 0
+		}
+		switch data[2] {
+		case 'A':
+			return KeyArrowUp, 3
+		case 'B':
+			return KeyArrowDown, 3
+		case 'C':
+			return KeyArrowRight, 3
+		case 'D':
+			return KeyArrowLeft, 3
+		case 'H':
+			return KeyHome, 3
+		case 'F':
+			return KeyEnd, 3
+		case '5', '6': // PgUp/PgDn (CSI 5 ~, CSI 6 ~)
+			if len(data) >= 4 && data[3] == '~' {
+				if data[2] == '5' {
+					return KeyPgup, 4
+				}
+				if data[2] == '6' {
+					return KeyPgdn, 4
+				}
+			}
+			return 0, 0
+		case '1', '2', '3', '4': // Home, End, Insert, Delete (CSI 1 ~, CSI 2 ~, CSI 3 ~, CSI 4 ~)
+			if len(data) >= 4 && data[3] == '~' {
+				switch data[2] {
+				case '1':
+					return KeyHome, 4
+				case '2':
+					return KeyInsert, 4
+				case '3':
+					return KeyDelete, 4
+				case '4':
+					return KeyEnd, 4
+				}
+			}
+			return 0, 0
+		}
+	}
+
+	// F1-F4 с ESC O P/Q/R/S (старый стиль)
+	if data[1] == 'O' && len(data) >= 3 {
+		switch data[2] {
+		case 'P':
+			return KeyF1, 3
+		case 'Q':
+			return KeyF2, 3
+		case 'R':
+			return KeyF3, 3
+		case 'S':
+			return KeyF4, 3
+		}
+	}
+
+	// F5-F12: ESC [ 1 5 ~, ESC [ 1 7 ~ и т.д.
+	if data[1] == '[' && len(data) >= 5 && data[3] == '~' {
+		if data[2] == '1' {
+			switch data[4] {
+			case '5': // ESC [ 1 5 ~ -> F5
+				return KeyF5, 5
+			case '7': // ESC [ 1 7 ~ -> F6
+				return KeyF6, 5
+			case '9': // ESC [ 1 9 ~ -> F7
+				return KeyF7, 5
+			}
+		} else if data[2] == '2' {
+			switch data[4] {
+			case '0': // ESC [ 2 0 ~ -> F8
+				return KeyF8, 5
+			case '1': // ESC [ 2 1 ~ -> F9
+				return KeyF9, 5
+			case '3': // ESC [ 2 3 ~ -> F10
+				return KeyF10, 5
+			case '4': // ESC [ 2 4 ~ -> F11
+				return KeyF11, 5
+			case '5': // ESC [ 2 5 ~ -> F12
+				return KeyF12, 5
+			}
+		}
+	}
+
+	// ESC в одиночку
+	if len(data) == 1 {
+		return KeyEsc, 1
+	}
+
+	// Alt+символ: ESC затем символ (например, ESC a => Alt+A)
+	if len(data) >= 2 && data[1] >= 0x20 && data[1] <= 0x7E {
+		// Можно вернуть специальный ключ или преобразовать в символ с модификатором Alt
+		// Пока вернём KeyEsc + символ, но можно определить свою константу
+		return KeyEsc, 2 // упрощённо
+	}
+
+	return 0, 0
+}
+
+func (wnd *window) handleKeyboardInput(data []byte) {
+	if len(data) == 0 {
+		return
+	}
+
+	// Попробуем распознать escape-последовательность
+	if key, n := parseEscapeSequence(data); n > 0 {
+		wnd.doWithMessageAndWait(func() {
+			if handler, ok := wnd.keyHandlers[key]; ok {
+				handler()
+			} else if key == KeyEsc {
+				// Обработка Escape как отдельной клавиши (обычно для выхода)
+				// Можно игнорировать или добавить глобальную обработку
+			}
+		}, "key handler")
+		return
+	}
+
+	// Одиночный символ ASCII (обычные буквы, цифры, Enter, Tab, Backspace, Ctrl+символ и т.д.)
+	if len(data) == 1 {
+		b := data[0]
+		var key Key
+		switch b {
+		case 0x03:
+			close(wnd.stopCh)
+			return
+		case 0x0D:
+			key = KeyEnter
+		case 0x09:
+			key = KeyTab
+		case 0x7F, 0x08:
+			key = KeyBackspace
+		case 0x1B:
+			key = KeyEsc
+		default:
+			if b >= 0x20 && b <= 0x7E {
+				key = Key(b)
+			} else if b >= 0x01 && b <= 0x1A {
+				key = KeyCtrlA + Key(b) - 1
+			} else {
+				return
+			}
+		}
+
+		wnd.doWithMessageAndWait(func() {
+			if handler, ok := wnd.keyHandlers[key]; ok {
+				handler()
+			}
+		}, "key handler")
+		return
+	}
+
+	// Если последовательность не распознана, игнорируем
 }
 
 func CurrentWindow() Window {

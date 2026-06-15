@@ -1,7 +1,5 @@
 package tui
 
-import "github.com/eiannone/keyboard"
-
 // Widget — это интерфейс для любого TUI-виджета.
 type Widget interface {
 	InnerText() string // InnerText() возращает текст виджета
@@ -43,8 +41,8 @@ type Window interface {
 	Quit()                   // Quit() — это принудительный выход из приложения.
 	OnQuit() <-chan struct{} // Run() возвращает канал сигнализации о выходе.
 
-	RegisterKeyHandler(key keyboard.Key, h func()) // RegisterKeyHandler() регистрирует обработчик нажатия указанной клавиши
-	RegisterClickHandler(h func(ev *MouseEvent))   // RegisterClickHandler() регистрирует обрабочик событий мыши
+	RegisterKeyHandler(key Key, h func())        // RegisterKeyHandler() регистрирует обработчик нажатия указанной клавиши
+	RegisterClickHandler(h func(ev *MouseEvent)) // RegisterClickHandler() регистрирует обрабочик событий мыши
 
 	LogInfo(message string, args ...any)  // LogInfo() логирует указанное сообщение подобно fmt.Printf() в файл, если приложение создано как Debug.
 	LogFatal(message string, args ...any) // LogFatal() логирует указанное сообщение подобно fmt.Printf() в файл, если приложение создано как Debug. Потом в любом случае выходит
