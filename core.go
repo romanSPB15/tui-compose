@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Eiannone/keyboard"
 	"github.com/acarl005/stripansi"
 	"golang.org/x/term"
 )
@@ -265,7 +264,7 @@ const taskBufSize = 32
 
 // NewWindow() создаёт объект приложения.
 func NewWindow() Window {
-	wnd := &window{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[keyboard.Key]func()),
+	wnd := &window{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[Key]func()),
 		work: make(chan *task, taskBufSize), focusIndex: -1, focusChange: true,
 	}
 	if DEBUG {
@@ -282,7 +281,7 @@ func NewWindow() Window {
 }
 
 // RegisterKeyHandler() добавляет обработчик нажатия клавиши.
-func (wnd *window) RegisterKeyHandler(key keyboard.Key, h func()) {
+func (wnd *window) RegisterKeyHandler(key Key, h func()) {
 	wnd.keyHandlers[key] = h
 }
 
@@ -324,7 +323,6 @@ func (wnd *window) runWorker() {
 		select {
 		case <-wnd.stopCh:
 			wnd.runned = false
-			keyboard.Close()
 			fmt.Print("\033[?25l")
 			fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
 			wnd.LogInfo("Воркер остановлен...")
@@ -463,7 +461,7 @@ func (wnd *window) RegisterClickHandler(h func(ev *MouseEvent)) {
 
 func (wnd *window) startInputCatcher() {
 	if wnd.focusChange && len(wnd.compF) != 0 {
-		wnd.RegisterKeyHandler(keyboard.KeyArrowLeft, func() {
+		wnd.RegisterKeyHandler(KeyArrowLeft, func() {
 			if wnd.focusIndex <= 0 {
 				return
 			}
@@ -472,7 +470,7 @@ func (wnd *window) startInputCatcher() {
 			wnd.compF[wnd.focusIndex].OnFocus()
 		})
 
-		wnd.RegisterKeyHandler(keyboard.KeyArrowRight, func() {
+		wnd.RegisterKeyHandler(KeyArrowRight, func() {
 			if wnd.focusIndex > len(wnd.compF)-2 {
 				return
 			}
@@ -487,7 +485,7 @@ func (wnd *window) startInputCatcher() {
 		})
 	}
 
-	wnd.RegisterKeyHandler(keyboard.KeyEnter, func() {
+	wnd.RegisterKeyHandler(KeyEnter, func() {
 		if wnd.focusIndex != -1 {
 			if cl, ok := wnd.compF[wnd.focusIndex].(Clickable); ok {
 				wnd.Do(cl.OnClick)
