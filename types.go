@@ -4,7 +4,8 @@ package tui
 type Widget interface {
 	InnerText() string // InnerText() возращает текст виджета
 
-	MaxLength() int // MaxLength() возращает длину текста виджета без учёта ANSI Escape последовательностей
+	MaxWidth() int // MaxWidth() возращает длину текста виджета без учёта ANSI Escape последовательностей
+	MaxHeight() int
 }
 
 // Focusable это интерфейс виджетов, которые могут получить фокус.
@@ -62,4 +63,5 @@ type Container interface {
 	Widget
 	Child() []Widget
 	Pos(int) Pos
+	LineCount() int
 }

@@ -67,9 +67,13 @@ func (c *Canvas) InnerText() (res string) {
 	return
 }
 
-// MaxLength() реализует интерфейс Widget
-func (c *Canvas) MaxLength() int {
-	return (c.width*2 + 2) * c.height
+// MaxWidth() реализует интерфейс Widget
+func (c *Canvas) MaxWidth() int {
+	return (c.width * 2)
+}
+
+func (c *Canvas) MaxHeight() int {
+	return c.height
 }
 
 // DisplayMode() реализует интерфейс Widget
@@ -156,9 +160,13 @@ func (c *CanvasRGB) InnerText() (res string) {
 	return
 }
 
-// MaxLength() реализует интерфейс Widget
-func (c *CanvasRGB) MaxLength() int {
-	return (c.width*2 + 2) * c.height
+// MaxWidth() реализует интерфейс Widget
+func (c *CanvasRGB) MaxWidth() int {
+	return (c.width * 2)
+}
+
+func (c *CanvasRGB) MaxHeight() int {
+	return c.height
 }
 
 // DisplayMode() реализует интерфейс Widget
@@ -177,4 +185,9 @@ func (c *CanvasRGB) Width() int {
 
 func (c *CanvasRGB) Height() int {
 	return c.height
+}
+
+func init() {
+	var _ Widget = (*Canvas)(nil)
+	var _ Widget = (*CanvasRGB)(nil)
 }

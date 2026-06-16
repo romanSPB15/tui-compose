@@ -136,7 +136,7 @@ func (wnd *window) RedrawWidget(index int) {
 			pos := wnd.posWidgets[index]
 			fmt.Fprintf(wnd.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
 			wnd.LogInfo("%v %d", pos, index)
-			fmt.Fprint(wnd.f, wnd.comp[index].InnerText()+strings.Repeat(" ", wnd.comp[index].MaxLength()-len(stripansi.Strip(wnd.comp[index].InnerText()))))
+			fmt.Fprint(wnd.f, wnd.comp[index].InnerText()+strings.Repeat(" ", wnd.comp[index].MaxWidth()-len(stripansi.Strip(wnd.comp[index].InnerText()))))
 		*/
 	}, "redraw widget")
 }

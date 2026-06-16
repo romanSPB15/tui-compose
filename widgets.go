@@ -10,10 +10,10 @@ import (
 
 // Label — это виджет текстовой метки.
 type Label struct {
-	ANSI      string // Приставка ANSI escape последовательности
-	Text      string // Текст виджета.
-	maxLength int
-	Block     bool // Отображение в блочном режиме.
+	ANSI  string // Приставка ANSI escape последовательности
+	Text  string // Текст виджета.
+	len   int
+	Block bool // Отображение в блочном режиме.
 }
 
 func (l *Label) InnerText() string {
@@ -24,12 +24,12 @@ func (l *Label) InnerText() string {
 }
 
 // NewStaticLabel() создаёт виджет текста.
-func NewStaticLabel(txt string) *Label { return &Label{Text: txt, maxLength: len(txt)} }
+func NewStaticLabel(txt string) *Label { return &Label{Text: txt, len: len(txt)} }
 
 // NewDynamicLabel() создаёт виджет текста с возможностью изменения содержимого в будущем.
-// maxLength это место, зарезервированное под метку в символах.
-func NewDynamicLabel(txt string, maxLength int) *Label {
-	return &Label{Text: txt, maxLength: maxLength}
+// MaxWidth это место, зарезервированное под метку в символах.
+func NewDynamicLabel(txt string, len int) *Label {
+	return &Label{Text: txt, len: len}
 }
 
 // ColorizeForeground() окрашивает текст в один из стандартных цветов.
@@ -98,9 +98,13 @@ func (lbl *Label) Blink() *Label {
 	return lbl
 }
 
-// MaxLength() реализует интерфейс Widget
-func (lbl *Label) MaxLength() int {
-	return lbl.maxLength
+// MaxWidth() реализует интерфейс Widget
+func (lbl *Label) MaxWidth() int {
+	return lbl.len
+}
+
+func (l *Label) MaxHeight() int {
+	return 1
 }
 
 // Button это виджет кнопки.
@@ -148,6 +152,10 @@ func (btn *Button) OnClick() {
 	currentWindow.RedrawWidget(btn.idx)
 }
 
+func (l *Button) MaxHeight() int {
+	return 1
+}
+
 // ColorProgress — это виджет шкалы прогресса.
 // Добавлено в TUI v1.2.0
 type ColorProgress struct {
@@ -186,8 +194,12 @@ func (p *ColorProgress) SetValue(f float64) {
 	}
 }
 
-func (p *ColorProgress) MaxLength() int {
+func (p *ColorProgress) MaxWidth() int {
 	return p.size
+}
+
+func (l *ColorProgress) MaxHeight() int {
+	return 1
 }
 
 func (p *ColorProgress) InnerText() string {
@@ -232,8 +244,12 @@ func (p *TextProgress) SetValue(f float64) {
 	}
 }
 
-func (p *TextProgress) MaxLength() int {
+func (p *TextProgress) MaxWidth() int {
 	return p.size
+}
+
+func (l *TextProgress) MaxHeight() int {
+	return 1
 }
 
 func (p *TextProgress) InnerText() string {
@@ -300,8 +316,12 @@ func (c *Check) OnClick() {
 	}
 }
 
-func (c *Check) MaxLength() int {
+func (c *Check) MaxWidth() int {
 	return len("[x] " + c.text)
+}
+
+func (l *Check) MaxHeight() int {
+	return 1
 }
 
 // State() возвращает значение чекбокса.
@@ -316,4 +336,16 @@ func (c *Check) SetState(b bool) {
 	if currentWindow.IsRunned() {
 		currentWindow.Redraw()
 	}
+}
+
+func init() {
+	var _ Widget = (*Label)(nil)
+	var _ Widget = (*Button)(nil)
+	var _ Focusable = (*Button)(nil)
+	var _ Clickable = (*Button)(nil)
+	var _ Widget = (*ColorProgress)(nil)
+	var _ Widget = (*TextProgress)(nil)
+	var _ Widget = (*Check)(nil)
+	var _ Focusable = (*Check)(nil)
+	var _ Clickable = (*Check)(nil)
 }
