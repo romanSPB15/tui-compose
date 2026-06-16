@@ -113,6 +113,8 @@ func (wnd *window) indexClickable() {
 		return
 	}
 	wnd.indexRec(wnd.content, Pos{0, 0})
+
+	fmt.Println(wnd.cl)
 }
 
 func (wnd *window) indexRec(w Widget, offset Pos) {
@@ -388,7 +390,7 @@ func parseMouseEvent(input string) (*MouseEvent, error) {
 
 	return &MouseEvent{
 		Button:  button,
-		Pos:     Pos{x, y},
+		Pos:     Pos{y - 1, x - 1},
 		IsPress: !isRelease && !isDrag,
 		IsDrag:  isDrag,
 	}, nil
@@ -408,19 +410,20 @@ func (wnd *window) startStopSignalCatcher() {
 func (wnd *window) handleMouseEvent(ev *MouseEvent) {
 	if wnd.cl != nil {
 		for _, cl := range wnd.cl {
+			fmt.Println(ev.Pos, cl.p)
 			if ev.Pos.Line >= cl.p.Line && ev.Pos.Line < cl.p.Line+cl.MaxHeight() && ev.Pos.Col >= cl.p.Col && ev.Pos.Col < cl.p.Col+cl.MaxWidth() {
+
 				if ev.IsPress {
 					// Пользователь нажал на этот виджет
-					wnd.Do(cl.OnClick)
+					wnd.doWithMessage(cl.OnClick, "click handler")
 				}
-				break
 			}
 		}
 	}
 	for _, h := range wnd.mouseHandlers {
-		wnd.Do(func() {
+		wnd.doWithMessage(func() {
 			h(ev)
-		})
+		}, "mouse handler")
 	}
 }
 

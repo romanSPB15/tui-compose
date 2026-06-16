@@ -118,12 +118,12 @@ type Button struct {
 }
 
 // NewButton() создаёт кнопку.
-func NewButton(text string) *Button {
+func NewButton(text string, h func()) *Button {
 	btn := &Button{
 		clicked:   NewStaticLabel(text).ColorizeForeground(Blue),
 		selected:  NewStaticLabel(text).ColorizeBackground(White).ColorizeForeground(Black),
 		base:      NewStaticLabel(text),
-		OnClicked: func() {},
+		OnClicked: h,
 	}
 	btn.Widget = btn.base
 	return btn
