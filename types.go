@@ -54,5 +54,4 @@ type Window interface {
 	Height() int // Высота окна в символах
 
 	DisableFocusChange() // DisableFocusChange() выключает смену фокуса.
-	EnableAltBuffer()    // EnableAltBuffer() включает альтернативный буфер терминала.
 }

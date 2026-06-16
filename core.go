@@ -1,7 +1,9 @@
 package tui
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -99,10 +101,10 @@ func (wnd *window) Widgets() []Widget {
 }
 
 // Redraw() перерисовывает все компоненты. Он потокобезопасен.
-// Важно: такая перерисовка вызывает мерцание.
 func (wnd *window) Redraw() {
+	buf := &bytes.Buffer{}
 	wnd.doWithMessage(func() {
-		fmt.Fprint(wnd.f, "\033[2J\033[H")
+		fmt.Fprint(buf, "\033[2J\033[H")
 
 		for idx, c := range wnd.comp {
 			if c != nil {
@@ -110,11 +112,12 @@ func (wnd *window) Redraw() {
 					wnd.LogFatal("позиция для виджета %d не найдена", idx)
 				}
 				pos := wnd.posWidgets[idx]
-				fmt.Fprintf(wnd.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
-				fmt.Fprint(wnd.f, c.InnerText())
+				fmt.Fprintf(buf, "\033[%d;%dH", pos.Line+1, pos.Col+1)
+				fmt.Fprint(buf, c.InnerText())
 			}
 		}
 	}, "redraw all")
+	io.Copy(wnd.f, buf)
 }
 
 func (wnd *window) index() {
@@ -665,11 +668,6 @@ func (wnd *window) handleKeyboardInput(data []byte) {
 		}, "key handler")
 		return
 	}
-}
-
-func (w *window) EnableAltBuffer() {
-	w.altBuf = true
-	fmt.Fprint(w.f, "\033[?1049h")
 }
 
 func CurrentWindow() Window {
