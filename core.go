@@ -239,6 +239,9 @@ func (wnd *window) Run() {
 	wnd.runned = true
 	<-wnd.stopCh
 	wnd.restoreOut()
+	if wnd.altBuf {
+		fmt.Fprint(wnd.f, "\033[?1049l")
+	}
 }
 
 func (wnd *window) restoreOut() {
