@@ -102,8 +102,9 @@ func (wnd *window) Widgets() []Widget {
 
 // Redraw() перерисовывает все компоненты. Он потокобезопасен.
 func (wnd *window) Redraw() {
-	buf := &bytes.Buffer{}
+
 	wnd.doWithMessage(func() {
+		buf := &bytes.Buffer{}
 		fmt.Fprint(buf, "\033[2J\033[H")
 
 		for idx, c := range wnd.comp {
@@ -116,8 +117,8 @@ func (wnd *window) Redraw() {
 				fmt.Fprint(buf, c.InnerText())
 			}
 		}
+		io.Copy(wnd.f, buf)
 	}, "redraw all")
-	io.Copy(wnd.f, buf)
 }
 
 func (wnd *window) index() {
