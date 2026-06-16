@@ -82,6 +82,14 @@ func (c *Canvas) SetIndex(idx int) {
 	c.idx = idx
 }
 
+func (c *Canvas) Width() int {
+	return c.width
+}
+
+func (c *Canvas) Height() int {
+	return c.height
+}
+
 //fmt.Sprintf("\033[48;2;%d;%d;%dm", clr.R, clr.G, clr.B)
 
 // CanvasRGB — это вариант Canvas, но не со ставндартными цветами, а с RGB.
@@ -161,4 +169,12 @@ func (*CanvasRGB) DisplayMode() DisplayMode {
 // SetIndex() реализует интерфейс Widget
 func (c *CanvasRGB) SetIndex(idx int) {
 	c.idx = idx
+}
+
+func (c *CanvasRGB) Width() int {
+	return c.width
+}
+
+func (c *CanvasRGB) Height() int {
+	return c.height
 }
