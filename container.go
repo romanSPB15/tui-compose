@@ -37,6 +37,16 @@ func (v *VBox) layout() {
 
 func (v *VBox) InnerText() string { return "" }
 
+func (v *VBox) LineCount() int {
+	l := -1
+	for _, w := range v.children {
+		if lw := linesCount(w); lw > l {
+			l = lw
+		}
+	}
+	return l
+}
+
 func (v *VBox) MaxLength() int {
 	max := 0
 	for _, child := range v.children {
