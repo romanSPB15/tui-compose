@@ -176,7 +176,7 @@ func (wnd *window) RedrawWidget(index int) {
 		pos := wnd.posWidgets[index]
 		fmt.Fprintf(wnd.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
 		wnd.LogInfo("%v %d", pos, index)
-		fmt.Print(wnd.comp[index].InnerText() + strings.Repeat(" ", wnd.comp[index].MaxLength()-len(stripansi.Strip(wnd.comp[index].InnerText()))))
+		fmt.Fprint(wnd.f, wnd.comp[index].InnerText()+strings.Repeat(" ", wnd.comp[index].MaxLength()-len(stripansi.Strip(wnd.comp[index].InnerText()))))
 	}, "redraw widget")
 }
 
@@ -323,7 +323,7 @@ func (wnd *window) runWorker() {
 		select {
 		case <-wnd.stopCh:
 			wnd.runned = false
-			fmt.Print("\033[?25l")
+			fmt.Fprint(wnd.f, "\033[?25l")
 			fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
 			wnd.LogInfo("Воркер остановлен...")
 			return
@@ -374,12 +374,12 @@ func (wnd *window) enableRawMode() {
 		wnd.LogFatal("Ошибка перехода в RAW режим:")
 	}
 	wnd.oldMode = old
-	fmt.Print("\033[?1000h\033[?1006h")
+	fmt.Fprint(wnd.f, "\033[?1000h\033[?1006h")
 }
 
 func (wnd *window) restoreTerminalMode() {
 	if wnd.oldMode != nil {
-		fmt.Print("\033[?1006l\033[?1000l")
+		fmt.Fprint(wnd.f, "\033[?1006l\033[?1000l")
 		term.Restore(int(os.Stdin.Fd()), wnd.oldMode)
 	}
 }
