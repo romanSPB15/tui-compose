@@ -103,60 +103,7 @@ func (lbl *Label) MaxLength() int {
 	return lbl.maxLength
 }
 
-// DisplayMode() реализует интерфейс Widget
-func (lbl *Label) DisplayMode() DisplayMode {
-	if lbl.Block {
-		return DisplayBlock
-	}
-	return DisplayInline
-}
-
-// SetIndex() реализует интерфейс Widget
-func (l *Label) SetIndex(int) {}
-
-/////////////////////////////////////////////////////////////////////////////////
-
-type spaser struct{}
-
-func (l *spaser) InnerText() string {
-	return ""
-}
-
-func (l *spaser) DisplayMode() DisplayMode {
-	return DisplayBlock
-}
-
-func (l *spaser) MaxLength() int {
-	return 0
-}
-
-func (l *spaser) SetIndex(int) {}
-
-// Spaser() создаёт пустой компонент, занимающий всю строку для визуального разделения.
-func Spaser() Widget { return &spaser{} }
-
-/////////////////////////////////////////////////////////////////////////////////
-
-type newLine struct{}
-
-func (l *newLine) InnerText() string {
-	return ""
-}
-
-func (l *newLine) DisplayMode() DisplayMode {
-	return DisplayNewLine
-}
-
-func (l *newLine) MaxLength() int {
-	return 0
-}
-
-func (l *newLine) SetIndex(int) {}
-
-// NewLine() создаёт компонент, занимающий весь остаток его строки, что переносит следующие на новую строку.
-func NewLine() Widget { return &newLine{} }
-
-// Button это виджет кнопки Обработчик в OnClicked.
+// Button это виджет кнопки.
 type Button struct {
 	clicked   Widget
 	selected  Widget
@@ -201,19 +148,12 @@ func (btn *Button) OnClick() {
 	currentWindow.RedrawWidget(btn.idx)
 }
 
-func (btn *Button) SetIndex(idx int) {
-	btn.idx = idx
-	btn.base.SetIndex(idx)
-	btn.clicked.SetIndex(idx)
-}
-
 // ColorProgress — это виджет шкалы прогресса.
 // Добавлено в TUI v1.2.0
 type ColorProgress struct {
 	text          string
 	size          int
 	clrOn, clrOff Color
-	idx           int
 }
 
 // NewColorProgress() cоздаёт виджет шкалы прогресса в виде цветных пикселей.
@@ -242,16 +182,8 @@ func (p *ColorProgress) SetValue(f float64) {
 	on := int(float64(p.size) * f)
 	p.text = fmt.Sprintf("\033[%dm%s\033[%dm%s\033[0m", p.clrOn+10, strings.Repeat(" ", on), p.clrOff+10, strings.Repeat(" ", p.size-on))
 	if currentWindow.IsRunned() {
-		currentWindow.RedrawWidget(p.idx)
+		currentWindow.Redraw()
 	}
-}
-
-func (p *ColorProgress) SetIndex(idx int) {
-	p.idx = idx
-}
-
-func (p *ColorProgress) DisplayMode() DisplayMode {
-	return DisplayInline
 }
 
 func (p *ColorProgress) MaxLength() int {
@@ -268,7 +200,6 @@ type TextProgress struct {
 	text      string
 	size      int
 	sOn, sOff rune
-	idx       int
 }
 
 // NewTextProgress() cоздаёт виджет шкалы прогресса в виде текста.
@@ -297,16 +228,8 @@ func (p *TextProgress) SetValue(f float64) {
 	on := int(float64(p.size) * f)
 	p.text = fmt.Sprintf("%s%s", strings.Repeat(string(p.sOn), on), strings.Repeat(string(p.sOff), p.size-on))
 	if currentWindow.IsRunned() {
-		currentWindow.RedrawWidget(p.idx)
+		currentWindow.Redraw()
 	}
-}
-
-func (p *TextProgress) SetIndex(idx int) {
-	p.idx = idx
-}
-
-func (p *TextProgress) DisplayMode() DisplayMode {
-	return DisplayInline
 }
 
 func (p *TextProgress) MaxLength() int {
@@ -321,7 +244,6 @@ func (p *TextProgress) InnerText() string {
 // Вызов OnChanged происходит при изменении состояния (после переключения).
 type Check struct {
 	text                    string
-	idx                     int
 	checkedState            bool
 	focused                 bool
 	OnChanged               func()
@@ -361,32 +283,21 @@ func (c *Check) InnerText() string {
 
 func (c *Check) OnFocus() {
 	c.focused = true
-	currentWindow.RedrawWidget(c.idx)
+	currentWindow.Redraw()
 }
 
 func (c *Check) OnBlur() {
 	c.focused = false
-	currentWindow.RedrawWidget(c.idx)
+	currentWindow.Redraw()
 }
 
 func (c *Check) OnClick() {
 	c.checkedState = !c.checkedState
 	c.updateWidgets()
-	currentWindow.RedrawWidget(c.idx)
+	currentWindow.Redraw()
 	if c.OnChanged != nil {
 		c.OnChanged()
 	}
-}
-
-func (c *Check) SetIndex(idx int) {
-	c.idx = idx
-	c.base.SetIndex(idx)
-	c.checked.SetIndex(idx)
-	c.selected.SetIndex(idx)
-}
-
-func (c *Check) DisplayMode() DisplayMode {
-	return DisplayInline
 }
 
 func (c *Check) MaxLength() int {
@@ -403,6 +314,6 @@ func (c *Check) SetState(b bool) {
 	c.checkedState = b
 	c.updateWidgets()
 	if currentWindow.IsRunned() {
-		currentWindow.RedrawWidget(c.idx)
+		currentWindow.Redraw()
 	}
 }

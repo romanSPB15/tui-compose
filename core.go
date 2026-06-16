@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/acarl005/stripansi"
 	"golang.org/x/term"
 )
 
@@ -61,7 +60,7 @@ const (
 
 type MouseEventHandler func(*MouseEvent)
 
-type pos struct {
+type Pos struct {
 	Line int
 	Col  int
 }
@@ -81,9 +80,6 @@ type window struct {
 	focusIndex    int
 	stopCh        chan struct{}
 	keyHandlers   map[Key]func()
-	currentPos    pos
-	posWidgets    []pos
-	posWidgetsF   []pos
 	log           *os.File
 	runned        bool
 	work          chan *task
@@ -92,6 +88,7 @@ type window struct {
 	stderr        *os.File
 	oldMode       *term.State
 	mouseHandlers []MouseEventHandler
+	content       Widget
 }
 
 // Widgets() возвращает список компонентов, добавленных в приложение.
@@ -99,88 +96,48 @@ func (wnd *window) Widgets() []Widget {
 	return wnd.comp
 }
 
+func (wnd *window) drawContainer(buf io.Writer, p Pos, c Container) {
+	for i, w := range c.Child() {
+		pos := c.Pos(i)
+		if c, ok := w.(Container); ok {
+			wnd.drawContainer(buf, pos, c)
+		} else {
+			fmt.Fprintf(buf, "\033[%d;%dH", pos.Line+1+p.Line, pos.Col+1+p.Col)
+			fmt.Fprint(buf, w.InnerText())
+		}
+	}
+}
+
 // Redraw() перерисовывает все компоненты. Он потокобезопасен.
 func (wnd *window) Redraw() {
-
+	if wnd.content == nil {
+		return
+	}
 	wnd.doWithMessage(func() {
 		buf := &bytes.Buffer{}
 		fmt.Fprint(buf, "\033[2J\033[H")
 
-		for idx, c := range wnd.comp {
-			if c != nil {
-				if idx >= len(wnd.posWidgets) {
-					wnd.LogFatal("позиция для виджета %d не найдена", idx)
-				}
-				pos := wnd.posWidgets[idx]
-				fmt.Fprintf(buf, "\033[%d;%dH", pos.Line+1, pos.Col+1)
-				fmt.Fprint(buf, c.InnerText())
-			}
+		if c, ok := wnd.content.(Container); ok {
+			wnd.drawContainer(buf, Pos{0, 0}, c)
+		} else {
+			fmt.Fprint(buf, wnd.content.InnerText())
 		}
 		io.Copy(wnd.f, buf)
 	}, "redraw all")
-}
-
-func (wnd *window) index() {
-	wnd.compF = []Focusable{}
-	wnd.posWidgets = []pos{}
-	wnd.posWidgetsF = []pos{}
-	wnd.currentPos = pos{0, 0}
-	for idx, c := range wnd.comp {
-		if c != nil {
-			if len(stripansi.Strip(c.InnerText())) > c.MaxLength() {
-				wnd.LogFatal("Ошибка индексации: MaxLength() не верен.")
-			}
-			focusable := false
-			if f, ok := c.(Focusable); ok {
-				wnd.compF = append(wnd.compF, f)
-				focusable = true
-			}
-			c.SetIndex(idx)
-			switch c.DisplayMode() {
-			case DisplayInline:
-				if wnd.currentPos.Col+c.MaxLength() >= wnd.Width() {
-					wnd.currentPos.Col = 0
-					wnd.currentPos.Line++
-				}
-				wnd.posWidgets = append(wnd.posWidgets, wnd.currentPos)
-				if focusable {
-					wnd.posWidgetsF = append(wnd.posWidgetsF, wnd.currentPos)
-				}
-
-				wnd.currentPos.Col += c.MaxLength()
-			case DisplayBlock:
-				wnd.currentPos.Col = 0
-				wnd.currentPos.Line++
-
-				wnd.posWidgets = append(wnd.posWidgets, wnd.currentPos)
-				if focusable {
-					wnd.posWidgetsF = append(wnd.posWidgetsF, wnd.currentPos)
-				}
-
-				wnd.currentPos.Col = 0
-				wnd.currentPos.Line++
-			case DisplayNewLine:
-				wnd.posWidgets = append(wnd.posWidgets, wnd.currentPos)
-				if focusable {
-					wnd.posWidgetsF = append(wnd.posWidgetsF, wnd.currentPos)
-				}
-
-				wnd.currentPos.Col = 0
-				wnd.currentPos.Line++
-			}
-		}
-	}
 }
 
 // RedrawWidget() перерисовывает конкретный компонент. Потокобезопасен.
 // index - это номер компонента, который нужно перерисовать.
 func (wnd *window) RedrawWidget(index int) {
 	wnd.doWithMessage(func() {
-		wnd.LogInfo("RedrawWidget %v", wnd.posWidgets)
-		pos := wnd.posWidgets[index]
-		fmt.Fprintf(wnd.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
-		wnd.LogInfo("%v %d", pos, index)
-		fmt.Fprint(wnd.f, wnd.comp[index].InnerText()+strings.Repeat(" ", wnd.comp[index].MaxLength()-len(stripansi.Strip(wnd.comp[index].InnerText()))))
+		// TODO: сделать RedrawWidget()
+		/*
+			wnd.LogInfo("RedrawWidget %v", wnd.posWidgets)
+			pos := wnd.posWidgets[index]
+			fmt.Fprintf(wnd.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
+			wnd.LogInfo("%v %d", pos, index)
+			fmt.Fprint(wnd.f, wnd.comp[index].InnerText()+strings.Repeat(" ", wnd.comp[index].MaxLength()-len(stripansi.Strip(wnd.comp[index].InnerText()))))
+		*/
 	}, "redraw widget")
 }
 
@@ -196,7 +153,6 @@ func (wnd *window) Clear() {
 	wnd.doWithMessageAndWait(func() {
 		wnd.comp = []Widget{}
 		wnd.compF = []Focusable{}
-		wnd.posWidgets = []pos{}
 	}, "clear")
 }
 
@@ -221,8 +177,6 @@ func (wnd *window) Run() {
 
 	wnd.enableRawMode()
 	defer wnd.restoreTerminalMode()
-
-	wnd.index()
 
 	fmt.Fprint(wnd.f, "\033[?25l")
 
@@ -443,24 +397,14 @@ func (wnd *window) startStopSignalCatcher() {
 	}
 }
 
-func linesCount(widget Widget) int {
-	text := widget.InnerText()
-	text = strings.ReplaceAll(text, "\r\n", "\n")
-	return len(strings.Split(text, "\n"))
-}
+// func linesCount(widget Widget) int {
+// 	text := widget.InnerText()
+// 	text = strings.ReplaceAll(text, "\r\n", "\n")
+// 	return len(strings.Split(text, "\n"))
+// }
 
 func (wnd *window) handleMouseEvent(ev *MouseEvent) {
-	for i, pos := range wnd.posWidgetsF {
-		if ev.Y >= pos.Line && ev.Y <= pos.Line+linesCount(wnd.compF[i]) && ev.X >= pos.Col && ev.X <= pos.Col+wnd.compF[i].MaxLength() {
-			// Пользователь нажал на виджет
-			if cl, ok := wnd.compF[i].(Clickable); ok {
-				wnd.Do(cl.OnClick)
-			}
-		}
-	}
-	for _, h := range wnd.mouseHandlers {
-		h(ev)
-	}
+	// TODO: сделать обработку мыши
 }
 
 func (wnd *window) RegisterClickHandler(h func(ev *MouseEvent)) {
@@ -671,6 +615,10 @@ func (wnd *window) handleKeyboardInput(data []byte) {
 		}, "key handler")
 		return
 	}
+}
+
+func (wnd *window) SetContent(w Widget) {
+	wnd.content = w
 }
 
 func CurrentWindow() Window {

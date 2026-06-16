@@ -15,8 +15,6 @@ func (wnd *window) startScreenResizeChecker() {
 			if newW != prevW || newH != prevH {
 				prevW, prevH = newW, newH
 				wnd.doWithMessageAndWait(func() {
-					wnd.currentPos = pos{0, 0}
-					wnd.index()
 					wnd.Redraw()
 				}, "window resize (Windows)")
 			}

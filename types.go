@@ -1,12 +1,10 @@
 package tui
 
-// Widget — это интерфейс для любого TUI-виджета.
+// Widget — это интерфейс для любого TUI-виджета или контейнера. Но в контейнере эти методы не используются.
 type Widget interface {
 	InnerText() string // InnerText() возращает текст виджета
-	SetIndex(int)      // SetIndex() устанавливает индекс компонента для перерисовки только его.
 
 	MaxLength() int // MaxLength() возращает длину текста виджета без учёта ANSI Escape последовательностей
-	DisplayMode() DisplayMode
 }
 
 // Focusable это интерфейс виджетов, которые могут получить фокус.
@@ -54,4 +52,14 @@ type Window interface {
 	Height() int // Высота окна в символах
 
 	DisableFocusChange() // DisableFocusChange() выключает смену фокуса.
+
+	SetContent(Widget)
+}
+
+// Container это интерфейс контейнеров.
+// Добавлено в TUI 3.0.0.
+type Container interface {
+	Widget
+	Child() []Widget
+	Pos(int) Pos
 }
