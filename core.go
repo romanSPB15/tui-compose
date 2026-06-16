@@ -92,7 +92,6 @@ type window struct {
 	stderr        *os.File
 	oldMode       *term.State
 	mouseHandlers []MouseEventHandler
-	altBuf        bool
 }
 
 // Widgets() возвращает список компонентов, добавленных в приложение.
@@ -447,9 +446,15 @@ func (wnd *window) startStopSignalCatcher() {
 	}
 }
 
+func linesCount(widget Widget) int {
+	text := widget.InnerText()
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	return len(strings.Split(text, "\n"))
+}
+
 func (wnd *window) handleMouseEvent(ev *MouseEvent) {
 	for i, pos := range wnd.posWidgetsF {
-		if ev.Y == pos.Line && ev.X > pos.Col && ev.Y <= pos.Col+wnd.compF[i].MaxLength() {
+		if ev.Y >= pos.Line && ev.Y <= pos.Line+linesCount(wnd.compF[i]) && ev.X >= pos.Col && ev.X <= pos.Col+wnd.compF[i].MaxLength() {
 			// Пользователь нажал на виджет
 			if cl, ok := wnd.compF[i].(Clickable); ok {
 				wnd.Do(cl.OnClick)
