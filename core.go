@@ -90,6 +90,7 @@ type window struct {
 	stderr        *os.File
 	oldMode       *term.State
 	mouseHandlers []MouseEventHandler
+	altBuf        bool
 }
 
 // Widgets() возвращает список компонентов, добавленных в приложение.
@@ -514,8 +515,6 @@ func (wnd *window) startInputCatcher() {
 	}
 }
 
-// parseEscapeSequence разбирает байты, начиная с ESC (0x1B)
-// Возвращает Key и количество съеденных байтов, либо KeyUnknown и 0
 func parseEscapeSequence(data []byte) (Key, int) {
 	if len(data) < 2 || data[0] != 0x1B {
 		return 0, 0
@@ -606,16 +605,12 @@ func parseEscapeSequence(data []byte) (Key, int) {
 		}
 	}
 
-	// ESC в одиночку
 	if len(data) == 1 {
 		return KeyEsc, 1
 	}
 
-	// Alt+символ: ESC затем символ (например, ESC a => Alt+A)
 	if len(data) >= 2 && data[1] >= 0x20 && data[1] <= 0x7E {
-		// Можно вернуть специальный ключ или преобразовать в символ с модификатором Alt
-		// Пока вернём KeyEsc + символ, но можно определить свою константу
-		return KeyEsc, 2 // упрощённо
+		return KeyEsc, 2
 	}
 
 	return 0, 0
@@ -626,20 +621,15 @@ func (wnd *window) handleKeyboardInput(data []byte) {
 		return
 	}
 
-	// Попробуем распознать escape-последовательность
 	if key, n := parseEscapeSequence(data); n > 0 {
 		wnd.doWithMessageAndWait(func() {
 			if handler, ok := wnd.keyHandlers[key]; ok {
 				handler()
-			} else if key == KeyEsc {
-				// Обработка Escape как отдельной клавиши (обычно для выхода)
-				// Можно игнорировать или добавить глобальную обработку
 			}
 		}, "key handler")
 		return
 	}
 
-	// Одиночный символ ASCII (обычные буквы, цифры, Enter, Tab, Backspace, Ctrl+символ и т.д.)
 	if len(data) == 1 {
 		b := data[0]
 		var key Key
@@ -672,8 +662,11 @@ func (wnd *window) handleKeyboardInput(data []byte) {
 		}, "key handler")
 		return
 	}
+}
 
-	// Если последовательность не распознана, игнорируем
+func (w *window) EnableAltBuffer() {
+	w.altBuf = true
+	fmt.Fprint(w.f, "\033[?1049h")
 }
 
 func CurrentWindow() Window {
