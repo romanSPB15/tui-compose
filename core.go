@@ -397,12 +397,6 @@ func (wnd *window) startStopSignalCatcher() {
 	}
 }
 
-// func linesCount(widget Widget) int {
-// 	text := widget.InnerText()
-// 	text = strings.ReplaceAll(text, "\r\n", "\n")
-// 	return len(strings.Split(text, "\n"))
-// }
-
 func (wnd *window) handleMouseEvent(ev *MouseEvent) {
 	// TODO: сделать обработку мыши
 }

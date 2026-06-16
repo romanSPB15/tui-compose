@@ -1,14 +1,21 @@
 package tui
 
+import "strings"
+
+func linesCount(widget Widget) int {
+	text := widget.InnerText()
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	return len(strings.Split(text, "\n"))
+}
+
 type VBox struct {
 	children  []Widget
 	positions []Pos
 	idx       int
-	gap       int
 }
 
 func NewVBox(children ...Widget) *VBox {
-	v := &VBox{gap: 1}
+	v := &VBox{}
 	v.children = append(v.children, children...)
 	v.layout()
 	return v
@@ -24,7 +31,7 @@ func (v *VBox) layout() {
 	line := 0
 	for i := range v.children {
 		v.positions[i] = Pos{Line: line, Col: 0}
-		line += 1 + v.gap
+		line += linesCount(v.children[i])
 	}
 }
 
@@ -39,13 +46,6 @@ func (v *VBox) MaxLength() int {
 	}
 	return max
 }
-
-// func (v *VBox) SetIndex(idx int) {
-// 	v.idx = idx
-// 	for _, child := range v.children {
-// 		child.SetIndex(idx)
-// 	}
-// }
 
 func (v *VBox) Child() []Widget {
 	return v.children
