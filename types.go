@@ -25,11 +25,9 @@ type Clickable interface {
 	OnClick()
 }
 
-// Window — это объект окна приложения.
+// Window — это объект приложения.
 type Window interface {
-	Widgets() []Widget    // Widgets() возвращает список компонентов, добавленных в приложение.
-	AddWidgets(...Widget) // AddWidgets() добавляет компонент в приложение.
-	Clear()               // Clear() очищает список компонентов приложения без перерисовки.
+	SetContent(Widget) // SetContent() устанавливает содержимое окна.
 
 	Redraw()          // Redraw() перерисовывает все компоненты. Важно: такая перерисовка вызывает мерцание.
 	RedrawWidget(int) // RedrawWidget() перерисовывает конкретный компонент. index — это номер компонента, который нужно перерисовать.
@@ -53,8 +51,6 @@ type Window interface {
 	Height() int // Высота окна в символах
 
 	DisableFocusChange() // DisableFocusChange() выключает смену фокуса.
-
-	SetContent(Widget)
 }
 
 // Container это интерфейс контейнеров.

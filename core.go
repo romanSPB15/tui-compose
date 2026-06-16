@@ -71,11 +71,15 @@ type task struct {
 	msg  string
 }
 
+type clickableWidgetWithPos struct {
+	Clickable
+	p Pos
+}
+
 var currentWindow *window
 
 type window struct {
-	comp          []Widget
-	compF         []Focusable
+	cl            []clickableWidgetWithPos
 	f             *os.File
 	focusIndex    int
 	stopCh        chan struct{}
@@ -91,11 +95,6 @@ type window struct {
 	content       Widget
 }
 
-// Widgets() возвращает список компонентов, добавленных в приложение.
-func (wnd *window) Widgets() []Widget {
-	return wnd.comp
-}
-
 func (wnd *window) drawContainer(buf io.Writer, p Pos, c Container) {
 	for i, w := range c.Child() {
 		pos := c.Pos(i)
@@ -104,6 +103,36 @@ func (wnd *window) drawContainer(buf io.Writer, p Pos, c Container) {
 		} else {
 			fmt.Fprintf(buf, "\033[%d;%dH", pos.Line+1+p.Line, pos.Col+1+p.Col)
 			fmt.Fprint(buf, w.InnerText())
+		}
+	}
+}
+
+func (wnd *window) indexClickable() {
+	wnd.cl = nil
+	if wnd.content == nil {
+		return
+	}
+	wnd.indexRec(wnd.content, Pos{0, 0})
+}
+
+func (wnd *window) indexRec(w Widget, offset Pos) {
+	if w == nil {
+		return
+	}
+
+	if cl, ok := w.(Clickable); ok {
+		wnd.cl = append(wnd.cl, clickableWidgetWithPos{
+			Clickable: cl,
+			p:         offset,
+		})
+	} else if c, ok := w.(Container); ok {
+		for i, child := range c.Child() {
+			childPos := c.Pos(i)
+			newOffset := Pos{
+				Line: offset.Line + childPos.Line,
+				Col:  offset.Col + childPos.Col,
+			}
+			wnd.indexRec(child, newOffset)
 		}
 	}
 }
@@ -141,21 +170,6 @@ func (wnd *window) RedrawWidget(index int) {
 	}, "redraw widget")
 }
 
-// AddWidgets() добавляет компонент в приложение. Потокобезопасен.
-func (wnd *window) AddWidgets(c ...Widget) {
-	wnd.doWithMessageAndWait(func() {
-		wnd.comp = append(wnd.comp, c...)
-	}, "add widget")
-}
-
-// Clear() очищает список компонентов приложения без перерисовки. Потокобезопасен.
-func (wnd *window) Clear() {
-	wnd.doWithMessageAndWait(func() {
-		wnd.comp = []Widget{}
-		wnd.compF = []Focusable{}
-	}, "clear")
-}
-
 // Run() - это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
 func (wnd *window) Run() {
 	defer func() {
@@ -175,6 +189,8 @@ func (wnd *window) Run() {
 	wnd.stderr = os.Stderr
 	os.Stdout, os.Stderr = wnd.log, wnd.log
 
+	wnd.indexClickable()
+
 	wnd.enableRawMode()
 	defer wnd.restoreTerminalMode()
 
@@ -185,13 +201,6 @@ func (wnd *window) Run() {
 	go wnd.startStopSignalCatcher()
 	go wnd.startScreenResizeChecker()
 	go wnd.startInputCatcher()
-
-	if len(wnd.compF) != 0 {
-		wnd.Do(func() {
-			wnd.compF[0].OnFocus()
-			wnd.focusIndex = 0
-		})
-	}
 
 	wnd.runned = true
 	<-wnd.stopCh
@@ -344,7 +353,7 @@ func (wnd *window) restoreTerminalMode() {
 
 type MouseEvent struct {
 	Button  int // 0=левый, 1=средний, 2=правый, 128=отпущена
-	X, Y    int // в символах
+	Pos     Pos
 	IsPress bool
 	IsDrag  bool
 }
@@ -379,8 +388,7 @@ func parseMouseEvent(input string) (*MouseEvent, error) {
 
 	return &MouseEvent{
 		Button:  button,
-		X:       x - 1,
-		Y:       y - 1,
+		Pos:     Pos{x, y},
 		IsPress: !isRelease && !isDrag,
 		IsDrag:  isDrag,
 	}, nil
@@ -398,7 +406,22 @@ func (wnd *window) startStopSignalCatcher() {
 }
 
 func (wnd *window) handleMouseEvent(ev *MouseEvent) {
-	// TODO: сделать обработку мыши
+	if wnd.cl != nil {
+		for _, cl := range wnd.cl {
+			if ev.Pos.Line >= cl.p.Line && ev.Pos.Line < cl.p.Line+cl.MaxHeight() && ev.Pos.Col >= cl.p.Col && ev.Pos.Col < cl.p.Col+cl.MaxWidth() {
+				if ev.IsPress {
+					// Пользователь нажал на этот виджет
+					wnd.Do(cl.OnClick)
+				}
+				break
+			}
+		}
+	}
+	for _, h := range wnd.mouseHandlers {
+		wnd.Do(func() {
+			h(ev)
+		})
+	}
 }
 
 func (wnd *window) RegisterClickHandler(h func(ev *MouseEvent)) {
@@ -408,38 +431,38 @@ func (wnd *window) RegisterClickHandler(h func(ev *MouseEvent)) {
 }
 
 func (wnd *window) startInputCatcher() {
-	if wnd.focusChange && len(wnd.compF) != 0 {
-		wnd.RegisterKeyHandler(KeyArrowLeft, func() {
-			if wnd.focusIndex <= 0 {
-				return
-			}
-			wnd.compF[wnd.focusIndex].OnBlur()
-			wnd.focusIndex--
-			wnd.compF[wnd.focusIndex].OnFocus()
-		})
+	// 	if wnd.focusChange && len(wnd.compF) != 0 {
+	// 		wnd.RegisterKeyHandler(KeyArrowLeft, func() {
+	// 			if wnd.focusIndex <= 0 {
+	// 				return
+	// 			}
+	// 			wnd.compF[wnd.focusIndex].OnBlur()
+	// 			wnd.focusIndex--
+	// 			wnd.compF[wnd.focusIndex].OnFocus()
+	// 		})
 
-		wnd.RegisterKeyHandler(KeyArrowRight, func() {
-			if wnd.focusIndex > len(wnd.compF)-2 {
-				return
-			}
-			if wnd.focusIndex == -1 {
-				wnd.compF[0].OnFocus()
-				wnd.focusIndex = 0
-				return
-			}
-			wnd.compF[wnd.focusIndex].OnBlur()
-			wnd.focusIndex++
-			wnd.compF[wnd.focusIndex].OnFocus()
-		})
-	}
+	// 		wnd.RegisterKeyHandler(KeyArrowRight, func() {
+	// 			if wnd.focusIndex > len(wnd.compF)-2 {
+	// 				return
+	// 			}
+	// 			if wnd.focusIndex == -1 {
+	// 				wnd.compF[0].OnFocus()
+	// 				wnd.focusIndex = 0
+	// 				return
+	// 			}
+	// 			wnd.compF[wnd.focusIndex].OnBlur()
+	// 			wnd.focusIndex++
+	// 			wnd.compF[wnd.focusIndex].OnFocus()
+	// 		})
+	// 	}
 
-	wnd.RegisterKeyHandler(KeyEnter, func() {
-		if wnd.focusIndex != -1 {
-			if cl, ok := wnd.compF[wnd.focusIndex].(Clickable); ok {
-				wnd.Do(cl.OnClick)
-			}
-		}
-	})
+	// 	wnd.RegisterKeyHandler(KeyEnter, func() {
+	// 		if wnd.focusIndex != -1 {
+	// 			if cl, ok := wnd.compF[wnd.focusIndex].(Clickable); ok {
+	// 				wnd.Do(cl.OnClick)
+	// 			}
+	// 		}
+	// 	})
 
 	buf := make([]byte, 1024)
 	for {
@@ -527,7 +550,8 @@ func parseEscapeSequence(data []byte) (Key, int) {
 
 	// F5-F12: ESC [ 1 5 ~, ESC [ 1 7 ~ и т.д.
 	if data[1] == '[' && len(data) >= 5 && data[3] == '~' {
-		if data[2] == '1' {
+		switch data[2] {
+		case '1':
 			switch data[4] {
 			case '5': // ESC [ 1 5 ~ -> F5
 				return KeyF5, 5
@@ -536,7 +560,7 @@ func parseEscapeSequence(data []byte) (Key, int) {
 			case '9': // ESC [ 1 9 ~ -> F7
 				return KeyF7, 5
 			}
-		} else if data[2] == '2' {
+		case '2':
 			switch data[4] {
 			case '0': // ESC [ 2 0 ~ -> F8
 				return KeyF8, 5
