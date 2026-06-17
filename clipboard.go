@@ -2,4 +2,4 @@
 
 package tui
 
-func CopyToClipboard(text string) {}
+func copyToClipboard(text string) {}
