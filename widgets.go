@@ -262,14 +262,13 @@ type Check struct {
 	text                    string
 	checkedState            bool
 	focused                 bool
-	OnChanged               func()
+	OnChanged               func(bool)
 	base, checked, selected *Label
 }
 
 func NewCheck(text string) *Check {
 	c := &Check{
-		text:      text,
-		OnChanged: func() {},
+		text: text,
 	}
 	c.updateWidgets()
 	return c
@@ -312,7 +311,7 @@ func (c *Check) OnClick() {
 	c.updateWidgets()
 	currentWindow.Redraw()
 	if c.OnChanged != nil {
-		c.OnChanged()
+		c.OnChanged(c.checkedState)
 	}
 }
 
