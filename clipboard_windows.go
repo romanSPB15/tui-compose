@@ -1,4 +1,5 @@
-// go:build windows
+//go:build windows
+
 package tui
 
 /*
@@ -26,7 +27,7 @@ import (
 	"unsafe"
 )
 
-func CopyToClipboard(text string) {
+func copyToClipboard(text string) {
 	// Конвертируем строку в UTF-16 (с нулевым терминатором)
 	utf16 := utf16.Encode([]rune(text))
 	utf16 = append(utf16, 0) // нулевой символ
