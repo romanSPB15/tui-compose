@@ -225,6 +225,7 @@ func (wnd *window) Run() {
 	wnd.runned = true
 	<-wnd.stopCh
 	wnd.restoreOut()
+	fmt.Fprint(wnd.f, "\033[2J\033[H")
 }
 
 func (wnd *window) restoreOut() {
