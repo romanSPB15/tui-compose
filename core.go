@@ -173,7 +173,7 @@ func (wnd *window) Redraw() {
 			fmt.Fprint(buf, wnd.content.InnerText())
 		}
 		new := strings.Split(buf.String(), "\r\n")
-		// ...
+
 		changed := []int{}
 		for i := range new {
 			if i >= len(wnd.buf) || wnd.buf[i] != new[i] {
@@ -183,13 +183,14 @@ func (wnd *window) Redraw() {
 		switch len(changed) {
 		case len(new):
 			io.Copy(wnd.f, buf)
+			wnd.buf = new
 		case 0:
 			return
 		default:
 			for _, idx := range changed {
 				fmt.Fprintf(wnd.f, "\033[%d;1H%s", idx, new[idx])
 			}
-			// ...
+			wnd.buf = new
 		}
 	}, "redraw all")
 }
