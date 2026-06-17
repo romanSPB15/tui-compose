@@ -164,7 +164,7 @@ func (wnd *window) Redraw() {
 	}
 	wnd.doWithMessage(func() {
 		buf := &bytes.Buffer{}
-		fmt.Fprint(buf, "\033[2J\033[H")
+		fmt.Fprint(buf, "\033[H")
 
 		if c, ok := wnd.content.(Container); ok {
 			wnd.drawContainer(buf, Pos{0, 0}, c)
@@ -215,6 +215,8 @@ func (wnd *window) Run() {
 	wnd.enableRawMode()
 	defer wnd.restoreTerminalMode()
 
+	fmt.Fprint(wnd.f, "\033[2J")
+
 	fmt.Fprint(wnd.f, "\033[?25l")
 
 	wnd.Redraw()
@@ -226,7 +228,7 @@ func (wnd *window) Run() {
 	wnd.runned = true
 	<-wnd.stopCh
 	wnd.restoreOut()
-	fmt.Fprint(wnd.f, "\033[2J\033[H")
+	fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
 }
 
 func (wnd *window) restoreOut() {
