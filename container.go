@@ -79,11 +79,11 @@ func (v *VBox) Pos(i int) Pos {
 type HBox struct {
 	children  []Widget
 	positions []Pos
-	Gap       int
+	gap       int
 }
 
 func NewHBox(children ...Widget) *HBox {
-	v := &HBox{Gap: 1}
+	v := &HBox{gap: 1}
 	v.children = append(v.children, children...)
 	v.layout()
 	return v
@@ -99,8 +99,13 @@ func (v *HBox) layout() {
 	col := 0
 	for i, child := range v.children {
 		v.positions[i] = Pos{Line: 0, Col: col}
-		col += child.MaxWidth() + v.Gap
+		col += child.MaxWidth() + v.gap
 	}
+}
+
+func (v *HBox) SetGap(gap int) {
+	v.gap = gap
+	v.layout()
 }
 
 func (v *HBox) InnerText() string { return "" }
@@ -113,7 +118,7 @@ func (v *HBox) MaxWidth() int {
 	for i, child := range v.children {
 		total += child.MaxWidth()
 		if i < len(v.children)-1 {
-			total += v.Gap
+			total += v.gap
 		}
 	}
 	return total
