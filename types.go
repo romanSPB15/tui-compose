@@ -58,6 +58,8 @@ type Window interface {
 	Height() int // Высота окна в символах
 
 	DisableFocusChange() // DisableFocusChange() выключает смену фокуса.
+
+	SetTitle(title string)
 }
 
 // Container это интерфейс контейнеров.
