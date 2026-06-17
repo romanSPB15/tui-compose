@@ -17,7 +17,10 @@ func (wnd *window) startScreenResizeChecker() {
 			newW, newH := wnd.Width(), wnd.Height()
 			if newW != prevW || newH != prevH {
 				prevW, prevH = newW, newH
-				fmt.Fprint(wnd.f, "\033[2J")
+				if newH < prevH {
+					fmt.Fprint(wnd.f, "\033[2J")
+				}
+
 				wnd.doWithMessageAndWait(wnd.Redraw, "window resize (Windows)")
 			}
 		case <-wnd.stopCh:
