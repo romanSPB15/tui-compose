@@ -8,6 +8,7 @@ func linesCount(widget Widget) int {
 	return len(strings.Split(text, "\n"))
 }
 
+// Добавлено в TUI 3.0.0.
 type VBox struct {
 	children  []Widget
 	positions []Pos
@@ -74,6 +75,7 @@ func (v *VBox) Pos(i int) Pos {
 	return v.positions[i]
 }
 
+// Добавлено в TUI 3.0.0.
 type HBox struct {
 	children  []Widget
 	positions []Pos

@@ -76,10 +76,16 @@ type clickableWidgetWithPos struct {
 	p Pos
 }
 
+type clickableAtWidgetWithPos struct {
+	ClickableAt
+	p Pos
+}
+
 var currentWindow *window
 
 type window struct {
 	cl            []clickableWidgetWithPos
+	clAt          []clickableAtWidgetWithPos
 	f             *os.File
 	focusIndex    int
 	stopCh        chan struct{}
@@ -122,12 +128,24 @@ func (wnd *window) indexRec(w Widget, offset Pos) {
 		return
 	}
 
+	// Проверяем Clickable
 	if cl, ok := w.(Clickable); ok {
 		wnd.cl = append(wnd.cl, clickableWidgetWithPos{
 			Clickable: cl,
 			p:         offset,
 		})
-	} else if c, ok := w.(Container); ok {
+	}
+
+	// Проверяем ClickableAt (независимо от Clickable)
+	if clAt, ok := w.(ClickableAt); ok {
+		wnd.clAt = append(wnd.clAt, clickableAtWidgetWithPos{
+			ClickableAt: clAt,
+			p:           offset,
+		})
+	}
+
+	// Если это контейнер, обходим детей
+	if c, ok := w.(Container); ok {
 		for i, child := range c.Child() {
 			childPos := c.Pos(i)
 			newOffset := Pos{
@@ -410,13 +428,25 @@ func (wnd *window) startStopSignalCatcher() {
 func (wnd *window) handleMouseEvent(ev *MouseEvent) {
 	if wnd.cl != nil {
 		for _, cl := range wnd.cl {
-			fmt.Println(ev.Pos, cl.p)
 			if ev.Pos.Line >= cl.p.Line && ev.Pos.Line < cl.p.Line+cl.MaxHeight() && ev.Pos.Col >= cl.p.Col && ev.Pos.Col < cl.p.Col+cl.MaxWidth() {
 
 				if ev.IsPress {
 					// Пользователь нажал на этот виджет
 					wnd.doWithMessage(cl.OnClick, "click handler")
 				}
+			}
+		}
+	}
+	if wnd.clAt != nil {
+		for _, clAt := range wnd.clAt {
+			if ev.Pos.Line >= clAt.p.Line && ev.Pos.Line < clAt.p.Line+clAt.MaxHeight() &&
+				ev.Pos.Col >= clAt.p.Col && ev.Pos.Col < clAt.p.Col+clAt.MaxWidth() {
+				relX := ev.Pos.Col - clAt.p.Col
+				relY := ev.Pos.Line - clAt.p.Line
+				wnd.doWithMessage(func() {
+					clAt.OnClickAt(relX, relY)
+				}, "clickAt handler")
+				return
 			}
 		}
 	}

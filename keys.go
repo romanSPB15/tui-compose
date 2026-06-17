@@ -1,5 +1,6 @@
 package tui
 
+// Добавлено в TUI 3.0.0.
 type Key uint16
 
 const (

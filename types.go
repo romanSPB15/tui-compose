@@ -18,11 +18,18 @@ type Focusable interface {
 	OnBlur()
 }
 
-// Clickable это интерфейс виджетов, которые могут получить фокус и быть нажатыми.
+// Clickable это интерфейс виджетов, которые могут получить фокус и быть нажатыми(ENTER или мышью).
 // Добавлено в TUI 2.0.0.
 type Clickable interface {
 	Focusable
 	OnClick()
+}
+
+// ClickableAt это интерфейс виджетов, которые могут быть нажаты мышью.
+// Добавлено в TUI 3.0.0.
+type ClickableAt interface {
+	Widget
+	OnClickAt(x, y int)
 }
 
 // Window — это объект приложения.
