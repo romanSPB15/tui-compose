@@ -60,6 +60,7 @@ type Window interface {
 	DisableFocusChange() // DisableFocusChange() выключает смену фокуса.
 
 	SetTitle(title string)
+	CopyToClipboard(text string)
 }
 
 // Container это интерфейс контейнеров.

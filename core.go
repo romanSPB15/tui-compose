@@ -2,6 +2,7 @@ package tui
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -462,6 +463,11 @@ func (wnd *window) RegisterClickHandler(h func(ev *MouseEvent)) {
 	wnd.Do(func() {
 		wnd.mouseHandlers = append(wnd.mouseHandlers, h)
 	})
+}
+
+func (wnd *window) CopyToClipboard(text string) {
+	encoded := base64.StdEncoding.EncodeToString([]byte(text))
+	fmt.Fprintf(wnd.f, "\033]52;c;%s\007", encoded)
 }
 
 func (wnd *window) startInputCatcher() {
