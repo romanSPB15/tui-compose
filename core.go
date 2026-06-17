@@ -187,6 +187,7 @@ func (wnd *window) RedrawWidget(index int) {
 			wnd.LogInfo("%v %d", pos, index)
 			fmt.Fprint(wnd.f, wnd.comp[index].InnerText()+strings.Repeat(" ", wnd.comp[index].MaxWidth()-len(stripansi.Strip(wnd.comp[index].InnerText()))))
 		*/
+		wnd.Redraw()
 	}, "redraw widget")
 }
 
