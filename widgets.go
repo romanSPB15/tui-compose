@@ -20,7 +20,7 @@ func (l *Label) InnerText() string {
 	if l.ANSI == "" {
 		return l.Text
 	}
-	return fmt.Sprintf("%s%s\033[0m", l.ANSI, l.Text)
+	return fmt.Sprintf("%s%s\033[0m", l.ANSI, l.Text+strings.Repeat(" ", l.len-len(l.Text)))
 }
 
 // NewStaticLabel() создаёт виджет текста.
