@@ -672,6 +672,10 @@ func (wnd *window) SetContent(w Widget) {
 	wnd.content = w
 }
 
+func (wnd *window) SetTitle(title string) {
+	fmt.Printf("\033]0;%s\033\\", title)
+}
+
 func CurrentWindow() Window {
 	return currentWindow
 }
