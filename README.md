@@ -3,6 +3,8 @@
 [![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/releases)
 [![Go Reference](https://pkg.go.dev/badge/github.com/romanSPB15/tui-compose/v2.svg)](https://pkg.go.dev/github.com/romanSPB15/tui-compose/v2)
 
+![Скриншот](demo.gif)
+
 ## Обзор
 Фреймворк для разработки TUI-интерфейсов на Go.
 Преимущества:
@@ -11,8 +13,6 @@
 * Поддержка кастомной графики через Canvas
 * Поддержка конкурентности на уровне фреймворка
 * Поддержка Windows & Linux
-
-![Скриншот](examples/simple/1.PNG)
 
 ## Установка
 ```
