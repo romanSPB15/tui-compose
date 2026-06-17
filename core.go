@@ -180,15 +180,25 @@ func (wnd *window) Redraw() {
 				changed = append(changed, i)
 			}
 		}
-		switch len(changed) {
-		case len(new):
-			io.Copy(wnd.f, buf)
+		h := wnd.Height()
+		switch {
+		case len(changed) == len(new):
+			if len(new) > h {
+				for i := range h {
+					fmt.Fprint(wnd.f, new[i])
+				}
+			} else {
+				io.Copy(wnd.f, buf)
+			}
 			wnd.buf = new
-		case 0:
+		case len(changed) == 0:
 			return
 		default:
 			for _, idx := range changed {
-				fmt.Fprintf(wnd.f, "\033[%d;1H%s", idx, new[idx])
+				if idx > h {
+					return
+				}
+				fmt.Fprintf(wnd.f, "\033[%d;1H%s\033[K", idx+1, new[idx])
 			}
 			wnd.buf = new
 		}

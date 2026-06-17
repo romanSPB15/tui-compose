@@ -3,6 +3,7 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +15,7 @@ func (wnd *window) startScreenResizeChecker() {
 	for range sigwinch {
 		select {
 		case <-sigwinch:
+			fmt.Fprint(wnd.f, "\033[2J")
 			wnd.doWithMessageAndWait(wnd.Redraw, "window resize (Unix)")
 		case <-wnd.stopCh:
 			return

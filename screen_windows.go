@@ -2,7 +2,10 @@
 
 package tui
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 func (wnd *window) startScreenResizeChecker() {
 	prevW, prevH := wnd.Width(), wnd.Height()
@@ -14,6 +17,7 @@ func (wnd *window) startScreenResizeChecker() {
 			newW, newH := wnd.Width(), wnd.Height()
 			if newW != prevW || newH != prevH {
 				prevW, prevH = newW, newH
+				fmt.Fprint(wnd.f, "\033[2J")
 				wnd.doWithMessageAndWait(wnd.Redraw, "window resize (Windows)")
 			}
 		case <-wnd.stopCh:
