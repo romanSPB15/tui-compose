@@ -99,6 +99,7 @@ type window struct {
 	oldMode       *term.State
 	mouseHandlers []MouseEventHandler
 	content       Widget
+	buf           []string
 }
 
 func (wnd *window) drawContainer(buf io.Writer, p Pos, c Container) {
@@ -171,7 +172,25 @@ func (wnd *window) Redraw() {
 		} else {
 			fmt.Fprint(buf, wnd.content.InnerText())
 		}
-		io.Copy(wnd.f, buf)
+		new := strings.Split(buf.String(), "\r\n")
+		// ...
+		changed := []int{}
+		for i := range new {
+			if i >= len(wnd.buf) || wnd.buf[i] != new[i] {
+				changed = append(changed, i)
+			}
+		}
+		switch len(changed) {
+		case len(new):
+			io.Copy(wnd.f, buf)
+		case 0:
+			return
+		default:
+			for _, idx := range changed {
+				fmt.Fprintf(wnd.f, "\033[%d;1H%s", idx, new[idx])
+			}
+			// ...
+		}
 	}, "redraw all")
 }
 
