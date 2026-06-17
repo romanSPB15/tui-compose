@@ -14,11 +14,7 @@ func (wnd *window) startScreenResizeChecker() {
 	for range sigwinch {
 		select {
 		case <-sigwinch:
-			wnd.doWithMessageAndWait(func() {
-				wnd.currentPos = pos{0, 0}
-				wnd.index()
-				wnd.Redraw()
-			}, "window resize (Unix)")
+			wnd.doWithMessageAndWait(wnd.Redraw, "window resize (Unix)")
 		case <-wnd.stopCh:
 			return
 		}
