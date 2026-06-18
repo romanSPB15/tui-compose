@@ -99,7 +99,7 @@ func (lbl *Label) Reset() *Label {
 // Blink() делает текст мигающим(работает не во всем терминалах).
 // Добавлено в TUI v1.1.0
 func (lbl *Label) Blink() *Label {
-	lbl.ANSI += "\033[7m"
+	lbl.ANSI += "\033[5m"
 	return lbl
 }
 
