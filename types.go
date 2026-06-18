@@ -36,8 +36,7 @@ type ClickableAt interface {
 type Window interface {
 	SetContent(Widget) // SetContent() устанавливает содержимое окна.
 
-	Redraw()          // Redraw() перерисовывает все компоненты. Важно: такая перерисовка вызывает мерцание.
-	RedrawWidget(int) // RedrawWidget() перерисовывает конкретный компонент. index — это номер компонента, который нужно перерисовать.
+	Redraw() // Redraw() перерисовывает все компоненты.
 
 	Run()           // Run() — это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
 	IsRunned() bool // IsRunned() возращает true, если приложение запущено. Иначе возвращает false.
@@ -45,7 +44,7 @@ type Window interface {
 	Quit()                   // Quit() — это принудительный выход из приложения.
 	OnQuit() <-chan struct{} // Run() возвращает канал сигнализации о выходе.
 
-	RegisterKeyHandler(key Key, h func())        // RegisterKeyHandler() регистрирует обработчик нажатия указанной клавиши
+	RegisterKeyHandler(KeyboardEventHandler)     // RegisterKeyHandler() регистрирует обработчик нажатия указанной клавиши
 	RegisterClickHandler(h func(ev *MouseEvent)) // RegisterClickHandler() регистрирует обрабочик событий мыши
 
 	LogInfo(message string, args ...any)  // LogInfo() логирует указанное сообщение подобно fmt.Printf() в файл, если приложение создано как Debug.

@@ -41,7 +41,7 @@ func (c *Canvas) DrawAndRender(x, y int, clr Color) {
 	}
 	c.pole[x][y] = clr
 	if currentWindow != nil && c.idx != -1 {
-		currentWindow.RedrawWidget(c.idx)
+		currentWindow.Redraw()
 	}
 }
 
@@ -133,7 +133,7 @@ func (c *CanvasRGB) DrawAndRender(x, y int, clr ColorRGB) {
 	}
 	c.pole[x][y] = clr
 	if currentWindow != nil && c.idx != -1 {
-		currentWindow.RedrawWidget(c.idx)
+		currentWindow.Redraw()
 	}
 }
 

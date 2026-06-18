@@ -131,17 +131,17 @@ func NewButton(text string, h func()) *Button {
 
 func (btn *Button) OnFocus() {
 	btn.Widget = btn.selected
-	currentWindow.RedrawWidget(btn.idx)
+	currentWindow.Redraw()
 }
 
 func (btn *Button) OnBlur() {
 	btn.Widget = btn.base
-	currentWindow.RedrawWidget(btn.idx)
+	currentWindow.Redraw()
 }
 
 func (btn *Button) OnClick() {
 	btn.Widget = btn.clicked
-	currentWindow.RedrawWidget(btn.idx)
+	currentWindow.Redraw()
 	currentWindow.LogInfo("%d %s", btn.idx, btn.InnerText())
 	if btn.OnClicked != nil {
 		btn.OnClicked()
@@ -149,7 +149,7 @@ func (btn *Button) OnClick() {
 	time.Sleep(time.Millisecond * 50)
 	btn.Widget = btn.base
 	currentWindow.LogInfo("%d %s", btn.idx, btn.InnerText())
-	currentWindow.RedrawWidget(btn.idx)
+	currentWindow.Redraw()
 }
 
 func (l *Button) MaxHeight() int {

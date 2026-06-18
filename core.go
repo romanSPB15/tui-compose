@@ -58,7 +58,10 @@ const (
 	DisplayNewLine                    // Перенос строки.
 )
 
-type MouseEventHandler func(*MouseEvent)
+type (
+	MouseEventHandler    func(*MouseEvent)
+	KeyboardEventHandler func(*KeyboardEvent)
+)
 
 type Pos struct {
 	Line int
@@ -89,7 +92,7 @@ type window struct {
 	f             *os.File
 	focusIndex    int
 	stopCh        chan struct{}
-	keyHandlers   map[Key]func()
+	keyHandlers   []KeyboardEventHandler
 	log           *os.File
 	runned        bool
 	work          chan *task
@@ -129,7 +132,6 @@ func (wnd *window) indexRec(w Widget, offset Pos) {
 		return
 	}
 
-	// Проверяем Clickable
 	if cl, ok := w.(Clickable); ok {
 		wnd.cl = append(wnd.cl, clickableWidgetWithPos{
 			Clickable: cl,
@@ -137,7 +139,6 @@ func (wnd *window) indexRec(w Widget, offset Pos) {
 		})
 	}
 
-	// Проверяем ClickableAt (независимо от Clickable)
 	if clAt, ok := w.(ClickableAt); ok {
 		wnd.clAt = append(wnd.clAt, clickableAtWidgetWithPos{
 			ClickableAt: clAt,
@@ -145,7 +146,6 @@ func (wnd *window) indexRec(w Widget, offset Pos) {
 		})
 	}
 
-	// Если это контейнер, обходим детей
 	if c, ok := w.(Container); ok {
 		for i, child := range c.Child() {
 			childPos := c.Pos(i)
@@ -158,7 +158,6 @@ func (wnd *window) indexRec(w Widget, offset Pos) {
 	}
 }
 
-// Redraw() перерисовывает все компоненты. Он потокобезопасен.
 func (wnd *window) Redraw() {
 	if wnd.content == nil {
 		return
@@ -205,23 +204,6 @@ func (wnd *window) Redraw() {
 	}, "redraw all")
 }
 
-// RedrawWidget() перерисовывает конкретный компонент. Потокобезопасен.
-// index - это номер компонента, который нужно перерисовать.
-func (wnd *window) RedrawWidget(index int) {
-	wnd.doWithMessage(func() {
-		// TODO: сделать RedrawWidget()
-		/*
-			wnd.LogInfo("RedrawWidget %v", wnd.posWidgets)
-			pos := wnd.posWidgets[index]
-			fmt.Fprintf(wnd.f, "\033[%d;%dH", pos.Line+1, pos.Col+1)
-			wnd.LogInfo("%v %d", pos, index)
-			fmt.Fprint(wnd.f, wnd.comp[index].InnerText()+strings.Repeat(" ", wnd.comp[index].MaxWidth()-len(stripansi.Strip(wnd.comp[index].InnerText()))))
-		*/
-		wnd.Redraw()
-	}, "redraw widget")
-}
-
-// Run() - это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
 func (wnd *window) Run() {
 	defer func() {
 		if DEBUG {
@@ -266,26 +248,22 @@ func (wnd *window) restoreOut() {
 	os.Stderr = wnd.stderr
 }
 
-// Quit() — это принудительный выход из приложения.
 func (wnd *window) Quit() {
 	close(wnd.stopCh)
 }
 
-// Run() возвращает канал сигнализации о выходе.
 func (wnd *window) OnQuit() <-chan struct{} {
 	return wnd.stopCh
 }
 
-// IsRunned() возращает true, если приложение уже запущено. Иначе возвращает false.
 func (wnd *window) IsRunned() bool {
 	return wnd.runned
 }
 
 const taskBufSize = 32
 
-// NewWindow() создаёт объект приложения.
 func NewWindow() Window {
-	wnd := &window{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: make(map[Key]func()),
+	wnd := &window{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: []KeyboardEventHandler{},
 		work: make(chan *task, taskBufSize), focusIndex: -1, focusChange: true,
 	}
 	if DEBUG {
@@ -301,17 +279,14 @@ func NewWindow() Window {
 	return wnd
 }
 
-// RegisterKeyHandler() добавляет обработчик нажатия клавиши.
-func (wnd *window) RegisterKeyHandler(key Key, h func()) {
-	wnd.keyHandlers[key] = h
+func (wnd *window) RegisterKeyHandler(keh KeyboardEventHandler) {
+	wnd.keyHandlers = append(wnd.keyHandlers, keh)
 }
 
-// Do() запускает функцию f в потоке GUI, что спасает от data racing при изменении виджетов.
 func (wnd *window) Do(f func()) {
 	wnd.work <- &task{f: f}
 }
 
-// Do() запускает функцию f в потоке GUI и ждёт завершения.
 func (wnd *window) DoAndWait(f func()) {
 	tsk := &task{
 		f:    f,
@@ -556,158 +531,10 @@ func (wnd *window) startInputCatcher() {
 	}
 }
 
-func parseEscapeSequence(data []byte) (Key, int) {
-	if len(data) < 2 || data[0] != 0x1B {
-		return 0, 0
-	}
-
-	if data[1] == '[' {
-		if len(data) < 3 {
-			return 0, 0
-		}
-		switch data[2] {
-		case 'A':
-			return KeyArrowUp, 3
-		case 'B':
-			return KeyArrowDown, 3
-		case 'C':
-			return KeyArrowRight, 3
-		case 'D':
-			return KeyArrowLeft, 3
-		case 'H':
-			return KeyHome, 3
-		case 'F':
-			return KeyEnd, 3
-		case '5', '6': // PgUp/PgDn (CSI 5 ~, CSI 6 ~)
-			if len(data) >= 4 && data[3] == '~' {
-				if data[2] == '5' {
-					return KeyPgup, 4
-				}
-				if data[2] == '6' {
-					return KeyPgdn, 4
-				}
-			}
-			return 0, 0
-		case '1', '2', '3', '4': // Home, End, Insert, Delete (CSI 1 ~, CSI 2 ~, CSI 3 ~, CSI 4 ~)
-			if len(data) >= 4 && data[3] == '~' {
-				switch data[2] {
-				case '1':
-					return KeyHome, 4
-				case '2':
-					return KeyInsert, 4
-				case '3':
-					return KeyDelete, 4
-				case '4':
-					return KeyEnd, 4
-				}
-			}
-			return 0, 0
-		}
-	}
-
-	// F1-F4 с ESC O P/Q/R/S (старый стиль)
-	if data[1] == 'O' && len(data) >= 3 {
-		switch data[2] {
-		case 'P':
-			return KeyF1, 3
-		case 'Q':
-			return KeyF2, 3
-		case 'R':
-			return KeyF3, 3
-		case 'S':
-			return KeyF4, 3
-		}
-	}
-
-	// F5-F12: ESC [ 1 5 ~, ESC [ 1 7 ~ и т.д.
-	if data[1] == '[' && len(data) >= 5 && data[3] == '~' {
-		switch data[2] {
-		case '1':
-			switch data[4] {
-			case '5': // ESC [ 1 5 ~ -> F5
-				return KeyF5, 5
-			case '7': // ESC [ 1 7 ~ -> F6
-				return KeyF6, 5
-			case '9': // ESC [ 1 9 ~ -> F7
-				return KeyF7, 5
-			}
-		case '2':
-			switch data[4] {
-			case '0': // ESC [ 2 0 ~ -> F8
-				return KeyF8, 5
-			case '1': // ESC [ 2 1 ~ -> F9
-				return KeyF9, 5
-			case '3': // ESC [ 2 3 ~ -> F10
-				return KeyF10, 5
-			case '4': // ESC [ 2 4 ~ -> F11
-				return KeyF11, 5
-			case '5': // ESC [ 2 5 ~ -> F12
-				return KeyF12, 5
-			}
-		}
-	}
-
-	if len(data) == 1 {
-		return KeyEsc, 1
-	}
-
-	if len(data) >= 2 && data[1] >= 0x20 && data[1] <= 0x7E {
-		return KeyEsc, 2
-	}
-
-	return 0, 0
-}
-
-func (wnd *window) handleKeyboardInput(data []byte) {
-	if len(data) == 0 {
-		return
-	}
-
-	if key, n := parseEscapeSequence(data); n > 0 {
-		wnd.doWithMessageAndWait(func() {
-			if handler, ok := wnd.keyHandlers[key]; ok {
-				handler()
-			}
-		}, "key handler")
-		return
-	}
-
-	if len(data) == 1 {
-		b := data[0]
-		var key Key
-		switch b {
-		case 0x03:
-			close(wnd.stopCh)
-			return
-		case 0x0D:
-			key = KeyEnter
-		case 0x09:
-			key = KeyTab
-		case 0x7F, 0x08:
-			key = KeyBackspace
-		case 0x1B:
-			key = KeyEsc
-		default:
-			if b >= 0x20 && b <= 0x7E {
-				key = Key(b)
-			} else if b >= 0x01 && b <= 0x1A {
-				key = KeyCtrlA + Key(b) - 1
-			} else {
-				return
-			}
-		}
-
-		wnd.doWithMessageAndWait(func() {
-			if handler, ok := wnd.keyHandlers[key]; ok {
-				handler()
-			}
-		}, "key handler")
-		return
-	}
-}
-
 func (wnd *window) SetContent(w Widget) {
 	wnd.content = w
+	wnd.indexClickable() // перестраиваем список кликабельных
+	wnd.focusIndex = -1
 }
 
 func (wnd *window) SetTitle(title string) {
