@@ -20,6 +20,11 @@ func (l *Label) InnerText() string {
 	if l.ANSI == "" {
 		return l.Text
 	}
+	r := []rune(l.Text)
+	if len(r) > l.len {
+		r = r[:l.len]
+	}
+	l.Text = string(r)
 	return fmt.Sprintf("%s%s\033[0m", l.ANSI, l.Text+strings.Repeat(" ", l.len-len([]rune(l.Text))))
 }
 
