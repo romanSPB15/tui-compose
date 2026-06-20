@@ -49,15 +49,6 @@ type ColorRGB struct {
 	R, G, B uint8
 }
 
-// DisplayMode — это режим отображения виджета.
-type DisplayMode int
-
-const (
-	DisplayInline  DisplayMode = iota // В одну строку.
-	DisplayBlock                      // На отдельной строке.
-	DisplayNewLine                    // Перенос строки.
-)
-
 type (
 	MouseEventHandler    func(*MouseEvent)
 	KeyboardEventHandler func(*KeyboardEvent)
@@ -221,8 +212,6 @@ func (wnd *window) Run() {
 	wnd.stdout = os.Stdout
 	wnd.stderr = os.Stderr
 	os.Stdout, os.Stderr = wnd.log, wnd.log
-
-	wnd.indexClickable()
 
 	wnd.enableRawMode()
 	defer wnd.restoreTerminalMode()

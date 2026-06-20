@@ -76,11 +76,6 @@ func (c *Canvas) MaxHeight() int {
 	return c.height
 }
 
-// DisplayMode() реализует интерфейс Widget
-func (*Canvas) DisplayMode() DisplayMode {
-	return DisplayBlock
-}
-
 // SetIndex() реализует интерфейс Widget
 func (c *Canvas) SetIndex(idx int) {
 	c.idx = idx
@@ -167,11 +162,6 @@ func (c *CanvasRGB) MaxWidth() int {
 
 func (c *CanvasRGB) MaxHeight() int {
 	return c.height
-}
-
-// DisplayMode() реализует интерфейс Widget
-func (*CanvasRGB) DisplayMode() DisplayMode {
-	return DisplayBlock
 }
 
 // SetIndex() реализует интерфейс Widget
