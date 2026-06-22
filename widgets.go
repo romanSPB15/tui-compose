@@ -342,6 +342,108 @@ func (c *Check) SetState(b bool) {
 	}
 }
 
+type InputField struct {
+	Text      string
+	CursorPos int
+	w         int
+	focused   bool
+}
+
+func NewInputField(width int) *InputField {
+	return &InputField{
+		Text:      "",
+		CursorPos: 0,
+		w:         width,
+		focused:   false,
+	}
+}
+
+func (ifw *InputField) InnerText() string {
+	if !ifw.focused {
+		return ifw.Text
+	}
+	runes := []rune(ifw.Text)
+	cursor := ifw.CursorPos
+
+	cursor = max(cursor, 0)
+	cursor = min(cursor, len(runes))
+
+	if len(runes) == 0 {
+		return "\033[47m\033[30m \033[0m"
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString(string(runes[:cursor]))
+	builder.WriteString("\033[47m\033[30m")
+	builder.WriteRune(runes[cursor])
+	builder.WriteString("\033[0m")
+	builder.WriteString(string(runes[cursor+1:]))
+
+	return builder.String()
+}
+
+func (ifw *InputField) MaxWidth() int {
+	return ifw.w
+}
+
+func (ifw *InputField) MaxHeight() int {
+	return 1
+}
+
+func (ifw *InputField) OnFocus() {
+	ifw.focused = true
+	currentWindow.Redraw()
+}
+
+func (ifw *InputField) OnBlur() {
+	ifw.focused = false
+	currentWindow.Redraw()
+}
+
+func (ifw *InputField) OnKeyPress(ev KeyboardEvent) {
+	runes := []rune(ifw.Text)
+	switch ev.Key {
+	case KeyDelete:
+		if ifw.CursorPos < len(runes) {
+			runes = append(runes[:ifw.CursorPos], runes[ifw.CursorPos+1:]...)
+			ifw.Text = string(runes)
+
+			currentWindow.Redraw()
+		}
+	case KeyBackspace, KeyBackspace2:
+		if ifw.CursorPos <= 0 {
+			return
+		}
+		runes = append(runes[:ifw.CursorPos-1], runes[ifw.CursorPos:]...)
+		ifw.Text = string(runes)
+		ifw.CursorPos--
+
+		currentWindow.Redraw()
+	case KeyArrowRight:
+		if ifw.CursorPos >= len(runes) {
+			return
+		}
+		ifw.CursorPos++
+
+		currentWindow.Redraw()
+	case KeyArrowLeft:
+		if ifw.CursorPos < 1 {
+			return
+		}
+		ifw.CursorPos--
+
+		currentWindow.Redraw()
+	default:
+		if ev.Rune != 0 {
+			runes = append(runes[:ifw.CursorPos], append([]rune{ev.Rune}, runes[ifw.CursorPos:]...)...)
+			ifw.Text = string(runes)
+			ifw.CursorPos++
+			currentWindow.Redraw()
+		}
+	}
+}
+
 func init() {
 	var _ Widget = (*Label)(nil)
 	var _ Widget = (*Button)(nil)
@@ -352,4 +454,5 @@ func init() {
 	var _ Widget = (*Check)(nil)
 	var _ Focusable = (*Check)(nil)
 	var _ Clickable = (*Check)(nil)
+	var _ TextInput = (*InputField)(nil)
 }

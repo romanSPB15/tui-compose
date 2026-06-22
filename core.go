@@ -150,10 +150,10 @@ func (wnd *window) indexRec(w Widget, offset Pos) {
 }
 
 func (wnd *window) Redraw() {
-	if wnd.content == nil {
-		return
-	}
 	wnd.doWithMessage(func() {
+		if wnd.content == nil || wnd.runned == false {
+			return
+		}
 		buf := &bytes.Buffer{}
 		fmt.Fprint(buf, "\033[H")
 

@@ -9,7 +9,7 @@ type Widget interface {
 }
 
 // Focusable это интерфейс виджетов, которые могут получить фокус.
-// Переключение проиходит с помощью ← и →.
+// Переключение проиходит с помощью TAB и →.
 // Отключить переключение можно через Window.DisableFocusChange().
 // Добавлено в TUI 2.0.0.
 type Focusable interface {
@@ -30,6 +30,12 @@ type Clickable interface {
 type ClickableAt interface {
 	Widget
 	OnClickAt(x, y int)
+}
+
+// Добавлено в TUI 3.0.0.
+type TextInput interface {
+	Focusable
+	OnKeyPress(ev KeyboardEvent)
 }
 
 // Window — это объект приложения.
