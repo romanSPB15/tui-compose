@@ -235,4 +235,11 @@ func (wnd *window) handleKeyboardInput(data []byte) {
 			}, "keyboard handler")
 		}
 	}
+
+	if data[0] == 3 { // Ctrl+C
+		wnd.Quit()
+		return
+	}
+
+	wnd.LogInfo("Нераспознано: %v", data)
 }
