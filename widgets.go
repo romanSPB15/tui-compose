@@ -401,7 +401,7 @@ func (ifw *InputField) OnBlur() {
 	currentWindow.Redraw()
 }
 
-func (ifw *InputField) OnKeyPress(ev KeyboardEvent) {
+func (ifw *InputField) OnKeyPress(ev *KeyboardEvent) {
 	runes := []rune(ifw.Text)
 	switch ev.Key {
 	case KeyDelete:
@@ -411,7 +411,7 @@ func (ifw *InputField) OnKeyPress(ev KeyboardEvent) {
 
 			currentWindow.Redraw()
 		}
-	case KeyBackspace, KeyBackspace2:
+	case KeyBackspase:
 		if ifw.CursorPos <= 0 {
 			return
 		}

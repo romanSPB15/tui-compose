@@ -35,7 +35,7 @@ type ClickableAt interface {
 // Добавлено в TUI 3.0.0.
 type TextInput interface {
 	Focusable
-	OnKeyPress(ev KeyboardEvent)
+	OnKeyPress(ev *KeyboardEvent)
 }
 
 // Window — это объект приложения.
