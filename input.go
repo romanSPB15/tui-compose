@@ -53,7 +53,7 @@ const (
 	KeyCtrlZ
 
 	KeyEnter
-	KeySpaсe
+	KeySpace
 	KeyPgUp
 	KeyPgDown
 	KeySlash
@@ -71,6 +71,8 @@ const (
 	KeyArrowRight
 	KeyArrowDown
 	KeyArrowLeft
+
+	KeyEsc
 )
 
 func parseAnsiKeyboardInput(data []byte) (rune, Key) {
@@ -82,6 +84,8 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 				return 0, KeyEnter
 			}
 			return 0, KeyCtrlA + Key(v-1)
+		case v == 27:
+			return 0, KeyEsc
 		case v > 64 && v < 91:
 			return 'A' + rune(v-65), KeyUnknown
 		case v > 96 && v < 123:
@@ -89,7 +93,7 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 		case v > 47 && v < 58:
 			return '0' + rune(v-48), KeyUnknown
 		case v == 32:
-			return ' ', KeySpaсe
+			return ' ', KeySpace
 		case v == 47:
 			return 0, KeySlash
 		case v == 92:
