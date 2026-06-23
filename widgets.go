@@ -411,7 +411,7 @@ func (ifw *InputField) OnKeyPress(ev *KeyboardEvent) {
 
 			currentWindow.Redraw()
 		}
-	case KeyBackspase:
+	case KeyBackspace:
 		if ifw.CursorPos <= 0 {
 			return
 		}

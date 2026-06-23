@@ -61,7 +61,7 @@ const (
 	KeyTab
 	KeyShiftTab
 
-	KeyBackspase
+	KeyBackspace
 	KeyDelete
 	KeyInsert
 	KeyHome
@@ -97,7 +97,7 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 		case v == 9:
 			return 0, KeyTab
 		case v == 35:
-			return 0, KeyBackspase
+			return 0, KeyBackspace
 		default:
 			return 0, KeyUnknown
 		}
