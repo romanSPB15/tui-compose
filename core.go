@@ -78,22 +78,23 @@ type clickableAtWidgetWithPos struct {
 var currentWindow *window
 
 type window struct {
-	cl            []clickableWidgetWithPos
-	clAt          []clickableAtWidgetWithPos
-	f             *os.File
-	focusIndex    int
-	stopCh        chan struct{}
-	keyHandlers   []KeyboardEventHandler
-	log           *os.File
-	runned        bool
-	work          chan *task
-	focusChange   bool
-	stdout        *os.File
-	stderr        *os.File
-	oldMode       *term.State
-	mouseHandlers []MouseEventHandler
-	content       Widget
-	buf           []string
+	cl               []clickableWidgetWithPos
+	clAt             []clickableAtWidgetWithPos
+	f                *os.File
+	focusIndex       int
+	stopCh           chan struct{}
+	keyHandlers      []KeyboardEventHandler
+	log              *os.File
+	runned           bool
+	work             chan *task
+	focusChange      bool
+	stdout           *os.File
+	stderr           *os.File
+	oldMode          *term.State
+	mouseHandlers    []MouseEventHandler
+	content          Widget
+	buf              []string
+	focusableWidgets []Focusable
 }
 
 func (wnd *window) drawContainer(buf io.Writer, p Pos, c Container) {
@@ -108,7 +109,7 @@ func (wnd *window) drawContainer(buf io.Writer, p Pos, c Container) {
 	}
 }
 
-func (wnd *window) indexClickable() {
+func (wnd *window) index() {
 	wnd.cl = nil
 	if wnd.content == nil {
 		return
@@ -175,7 +176,7 @@ func (wnd *window) Redraw() {
 		case len(changed) == len(new):
 			if len(new) > h {
 				for i := range h {
-					fmt.Fprint(wnd.f, new[i])
+					fmt.Fprint(wnd.f, new[i], "\033[K")
 				}
 			} else {
 				io.Copy(wnd.f, buf)
@@ -466,38 +467,37 @@ func (wnd *window) CopyToClipboard(text string) {
 }
 
 func (wnd *window) startInputCatcher() {
-	// 	if wnd.focusChange && len(wnd.compF) != 0 {
-	// 		wnd.RegisterKeyHandler(KeyArrowLeft, func() {
-	// 			if wnd.focusIndex <= 0 {
-	// 				return
-	// 			}
-	// 			wnd.compF[wnd.focusIndex].OnBlur()
-	// 			wnd.focusIndex--
-	// 			wnd.compF[wnd.focusIndex].OnFocus()
-	// 		})
-
-	// 		wnd.RegisterKeyHandler(KeyArrowRight, func() {
-	// 			if wnd.focusIndex > len(wnd.compF)-2 {
-	// 				return
-	// 			}
-	// 			if wnd.focusIndex == -1 {
-	// 				wnd.compF[0].OnFocus()
-	// 				wnd.focusIndex = 0
-	// 				return
-	// 			}
-	// 			wnd.compF[wnd.focusIndex].OnBlur()
-	// 			wnd.focusIndex++
-	// 			wnd.compF[wnd.focusIndex].OnFocus()
-	// 		})
-	// 	}
-
-	// 	wnd.RegisterKeyHandler(KeyEnter, func() {
-	// 		if wnd.focusIndex != -1 {
-	// 			if cl, ok := wnd.compF[wnd.focusIndex].(Clickable); ok {
-	// 				wnd.Do(cl.OnClick)
-	// 			}
-	// 		}
-	// 	})
+	if wnd.focusChange && len(wnd.focusableWidgets) != 0 {
+		wnd.RegisterKeyHandler(func(ke *KeyboardEvent) {
+			switch ke.Key {
+			case KeyTab:
+				if wnd.focusIndex > len(wnd.focusableWidgets)-2 {
+					return
+				}
+				if wnd.focusIndex == -1 {
+					wnd.focusableWidgets[0].OnFocus()
+					wnd.focusIndex = 0
+					return
+				}
+				wnd.focusableWidgets[wnd.focusIndex].OnBlur()
+				wnd.focusIndex++
+				wnd.focusableWidgets[wnd.focusIndex].OnFocus()
+			case KeyShiftTab:
+				if wnd.focusIndex <= 0 {
+					return
+				}
+				wnd.focusableWidgets[wnd.focusIndex].OnBlur()
+				wnd.focusIndex--
+				wnd.focusableWidgets[wnd.focusIndex].OnFocus()
+			case KeyEnter:
+				if wnd.focusIndex != -1 {
+					if cl, ok := wnd.focusableWidgets[wnd.focusIndex].(Clickable); ok {
+						wnd.Do(cl.OnClick)
+					}
+				}
+			}
+		})
+	}
 
 	buf := make([]byte, 1024)
 	for {
@@ -522,7 +522,7 @@ func (wnd *window) startInputCatcher() {
 
 func (wnd *window) SetContent(w Widget) {
 	wnd.content = w
-	wnd.indexClickable() // перестраиваем список кликабельных
+	wnd.index() // перестраиваем список кликабельных
 	wnd.focusIndex = -1
 }
 
