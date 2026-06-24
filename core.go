@@ -208,6 +208,7 @@ func (wnd *window) Redraw() {
 			}
 		}
 		h := wnd.Height()
+
 		switch {
 		case len(changed) == len(new):
 			if len(new) > h {
@@ -346,7 +347,6 @@ func (wnd *window) runWorker() {
 		case <-wnd.stopCh:
 			wnd.runned = false
 			fmt.Fprint(wnd.f, "\033[?25l")
-			fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
 			wnd.LogInfo("Воркер остановлен...")
 			return
 		case tsk := <-wnd.work:
@@ -531,6 +531,13 @@ func (wnd *window) startInputCatcher() {
 					if cl, ok := wnd.focusableWidgets[wnd.focusIndex].(Clickable); ok {
 						wnd.Do(cl.OnClick)
 					}
+				}
+			}
+		})
+		wnd.RegisterKeyHandler(func(ke *KeyboardEvent) {
+			if wnd.focusIndex != -1 {
+				if te, ok := wnd.focusableWidgets[wnd.focusIndex].(TextInput); ok {
+					te.OnKeyPress(ke)
 				}
 			}
 		})
