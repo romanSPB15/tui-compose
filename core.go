@@ -109,14 +109,50 @@ func (wnd *window) drawContainer(buf io.Writer, p Pos, c Container) {
 	}
 }
 
+func (wnd *window) indexClickableAndFocusable(wgt Widget, offset Pos) {
+	if c, ok := wgt.(Container); ok {
+		for i, child := range c.Child() {
+			childOffset := Pos{
+				Line: offset.Line + c.Pos(i).Line,
+				Col:  offset.Col + c.Pos(i).Col,
+			}
+			wnd.indexClickableAndFocusable(child, childOffset)
+		}
+		return
+	}
+
+	if cl, ok := wgt.(Clickable); ok {
+		if _, ok := wgt.(ClickableAt); !ok {
+			wnd.cl = append(wnd.cl, clickableWidgetWithPos{
+				Clickable: cl,
+				p:         offset,
+			})
+		}
+	}
+
+	if clAt, ok := wgt.(ClickableAt); ok {
+		wnd.clAt = append(wnd.clAt, clickableAtWidgetWithPos{
+			ClickableAt: clAt,
+			p:           offset,
+		})
+	}
+
+	if foc, ok := wgt.(Focusable); ok {
+		wnd.focusableWidgets = append(wnd.focusableWidgets, foc)
+	}
+}
+
 func (wnd *window) index() {
-	wnd.cl = nil
 	if wnd.content == nil {
 		return
 	}
+	wnd.cl = nil
+	wnd.clAt = nil
+
+	wnd.indexClickableAndFocusable(wnd.content, Pos{0, 0})
+
 	wnd.indexRec(wnd.content, Pos{0, 0})
 
-	fmt.Println(wnd.cl)
 }
 
 func (wnd *window) indexRec(w Widget, offset Pos) {
@@ -419,6 +455,7 @@ func (wnd *window) startStopSignalCatcher() {
 	<-stop
 	select {
 	case <-wnd.stopCh:
+		return
 	default:
 		close(wnd.stopCh)
 	}
