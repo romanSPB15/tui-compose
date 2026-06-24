@@ -241,9 +241,7 @@ func (wnd *window) Redraw() {
 		oldLen := len(wnd.buf)
 		newLen := len(new)
 		if newLen < oldLen && newLen < h {
-			for i := newLen; i < h && i < oldLen; i++ {
-				fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
-			}
+			fmt.Fprintf(wnd.f, "\033[%d;1H\033[0J", newLen+2)
 		}
 
 		wnd.buf = new
