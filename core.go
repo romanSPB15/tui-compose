@@ -105,7 +105,12 @@ func (wnd *window) drawContainer(buf io.Writer, p Pos, c Container) {
 		} else {
 			fmt.Fprintf(buf, "\033[%d;%dH\033[0m", pos.Line+1+p.Line, pos.Col+1+p.Col)
 			it := w.InnerText()
-			fmt.Fprint(buf, it+strings.Repeat(" ", w.MaxWidth()-len(it)))
+			r := []rune(it)
+			if len(r) > w.MaxWidth() {
+				r = r[:w.MaxWidth()]
+				it = string(r)
+			}
+			fmt.Fprint(buf, it+strings.Repeat(" ", w.MaxWidth()-len(r)))
 		}
 	}
 }
