@@ -79,6 +79,8 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 	if len(data) == 1 {
 		v := data[0]
 		switch {
+		case v == 9:
+			return 0, KeyTab
 		case v < 27:
 			if v == 13 {
 				return 0, KeyEnter
@@ -98,8 +100,7 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 			return 0, KeySlash
 		case v == 92:
 			return 0, KeyReverseSlash
-		case v == 9:
-			return 0, KeyTab
+
 		case v == 35:
 			return 0, KeyBackspace
 		default:
@@ -152,11 +153,11 @@ func (wnd *window) handleKeyboardInput(data []byte) {
 	var r rune
 	var k Key
 
-	if len(data) > 2 && data[0] == 27 {
+	r, k = parseAnsiKeyboardInput(data)
+
+	if r == 0 && k == KeyUnknown && len(data) > 2 && data[0] == 27 {
 		alt = true
 		r, k = parseAnsiKeyboardInput(data[1:])
-	} else {
-		r, k = parseAnsiKeyboardInput(data)
 	}
 
 	if r == 0 && k == KeyUnknown {
