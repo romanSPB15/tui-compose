@@ -108,8 +108,17 @@ func (lbl *Label) MaxWidth() int {
 	return lbl.len
 }
 
+// MaxHeight() реализует интерфейс Widget
+// Добавлено в TUI v3.0.0
 func (l *Label) MaxHeight() int {
 	return 1
+}
+
+// SetText() устанавливает текст метки и перерисовывает окно.
+// Добавлено в TUI v3.0.0
+func (l *Label) SetText(new string) {
+	l.Text = new
+	currentWindow.Redraw()
 }
 
 // Button это виджет кнопки.
