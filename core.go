@@ -103,7 +103,7 @@ func (wnd *window) drawContainer(buf io.Writer, p Pos, c Container) {
 		if c, ok := w.(Container); ok {
 			wnd.drawContainer(buf, pos, c)
 		} else {
-			fmt.Fprintf(buf, "\033[%d;%dH", pos.Line+1+p.Line, pos.Col+1+p.Col)
+			fmt.Fprintf(buf, "\033[%d;%dH\033[0m", pos.Line+1+p.Line, pos.Col+1+p.Col)
 			fmt.Fprint(buf, w.InnerText())
 		}
 	}
