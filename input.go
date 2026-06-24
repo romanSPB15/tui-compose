@@ -97,11 +97,11 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 		case v == 32:
 			return ' ', KeySpace
 		case v == 47:
-			return 0, KeySlash
+			return '/', KeySlash
 		case v == 92:
-			return 0, KeyReverseSlash
+			return '\\', KeyReverseSlash
 
-		case v == 35:
+		case v == 127:
 			return 0, KeyBackspace
 		default:
 			return 0, KeyUnknown
