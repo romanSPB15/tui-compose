@@ -157,40 +157,6 @@ func (wnd *window) index() {
 	wnd.clAt = nil
 
 	wnd.indexClickableAndFocusable(wnd.content, Pos{0, 0})
-
-	wnd.indexRec(wnd.content, Pos{0, 0})
-
-}
-
-func (wnd *window) indexRec(w Widget, offset Pos) {
-	if w == nil {
-		return
-	}
-
-	if cl, ok := w.(Clickable); ok {
-		wnd.cl = append(wnd.cl, clickableWidgetWithPos{
-			Clickable: cl,
-			p:         offset,
-		})
-	}
-
-	if clAt, ok := w.(ClickableAt); ok {
-		wnd.clAt = append(wnd.clAt, clickableAtWidgetWithPos{
-			ClickableAt: clAt,
-			p:           offset,
-		})
-	}
-
-	if c, ok := w.(Container); ok {
-		for i, child := range c.Child() {
-			childPos := c.Pos(i)
-			newOffset := Pos{
-				Line: offset.Line + childPos.Line,
-				Col:  offset.Col + childPos.Col,
-			}
-			wnd.indexRec(child, newOffset)
-		}
-	}
 }
 
 func (wnd *window) Redraw() {
