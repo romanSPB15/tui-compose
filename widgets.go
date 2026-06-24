@@ -364,21 +364,21 @@ func (ifw *InputField) InnerText() string {
 	}
 	runes := []rune(ifw.Text)
 	cursor := ifw.CursorPos
-
 	cursor = max(cursor, 0)
 	cursor = min(cursor, len(runes))
-
-	if len(runes) == 0 {
-		return "\033[47m\033[30m \033[0m"
-	}
 
 	var builder strings.Builder
 
 	builder.WriteString(string(runes[:cursor]))
-	builder.WriteString("\033[47m\033[30m")
-	builder.WriteRune(runes[cursor])
-	builder.WriteString("\033[0m")
-	builder.WriteString(string(runes[cursor+1:]))
+
+	if cursor < len(runes) {
+		builder.WriteString("\033[47m\033[30m")
+		builder.WriteRune(runes[cursor])
+		builder.WriteString("\033[0m")
+		builder.WriteString(string(runes[cursor+1:]))
+	} else {
+		builder.WriteString("\033[47m\033[30m \033[0m")
+	}
 
 	return builder.String()
 }
