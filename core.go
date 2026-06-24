@@ -225,6 +225,15 @@ func (wnd *window) Redraw() {
 			} else {
 				io.Copy(wnd.f, buf)
 			}
+
+			oldLen := len(wnd.buf)
+			newLen := len(new)
+			if newLen < oldLen && newLen < h {
+				for i := newLen; i < h && i < oldLen; i++ {
+					fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
+				}
+			}
+
 			wnd.buf = new
 		case len(changed) == 0:
 			return
@@ -235,6 +244,15 @@ func (wnd *window) Redraw() {
 				}
 				fmt.Fprintf(wnd.f, "\033[%d;1H%s\033[K", idx+1, new[idx])
 			}
+
+			oldLen := len(wnd.buf)
+			newLen := len(new)
+			if newLen < oldLen && newLen < h {
+				for i := newLen; i < h && i < oldLen; i++ {
+					fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
+				}
+			}
+
 			wnd.buf = new
 		}
 	}, "redraw all")
