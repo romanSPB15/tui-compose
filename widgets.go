@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // Label — это виджет текстовой метки.
@@ -18,7 +19,7 @@ type Label struct {
 
 func (l *Label) InnerText() string {
 	if l.ANSI == "" {
-		return l.Text
+		return l.Text + strings.Repeat(" ", l.len-len([]rune(l.Text)))
 	}
 	r := []rune(l.Text)
 	if len(r) > l.len {
@@ -29,7 +30,7 @@ func (l *Label) InnerText() string {
 }
 
 // NewStaticLabel() создаёт виджет текста.
-func NewStaticLabel(txt string) *Label { return &Label{Text: txt, len: len(txt)} }
+func NewStaticLabel(txt string) *Label { return &Label{Text: txt, len: utf8.RuneCountInString(txt)} }
 
 // NewDynamicLabel() создаёт виджет текста с возможностью изменения содержимого в будущем.
 // MaxWidth это место, зарезервированное под метку в символах.
