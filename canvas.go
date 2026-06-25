@@ -22,7 +22,7 @@ type Canvas struct {
 	PixelSize     PixelSize
 }
 
-// NewCanvas() создаёт виждет Canvas.ы
+// NewCanvas() создаёт виждет Canvas.
 func NewCanvas(width, height int) *Canvas {
 	p := make([][]Color, height)
 	for i := range height {

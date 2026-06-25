@@ -1,9 +1,7 @@
 package tui
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -97,25 +95,6 @@ type window struct {
 	focusableWidgets []Focusable
 }
 
-func (wnd *window) drawContainer(buf io.Writer, p Pos, c Container) {
-	for i, w := range c.Child() {
-		pos := c.Pos(i)
-		if c, ok := w.(Container); ok {
-			wnd.drawContainer(buf, pos, c)
-		} else {
-			fmt.Fprintf(buf, "\033[%d;%dH\033[0m", pos.Line+1+p.Line, pos.Col+1+p.Col)
-			it := w.InnerText()
-			r := []rune(it)
-			if len(r) > w.MaxWidth() {
-				fmt.Fprint(buf, string(r[:w.MaxWidth()]))
-			} else {
-				fmt.Fprint(buf, it+strings.Repeat(" ", w.MaxWidth()-len(r)))
-			}
-
-		}
-	}
-}
-
 func (wnd *window) indexClickableAndFocusable(wgt Widget, offset Pos) {
 	if c, ok := wgt.(Container); ok {
 		for i, child := range c.Child() {
@@ -159,58 +138,88 @@ func (wnd *window) index() {
 	wnd.indexClickableAndFocusable(wnd.content, Pos{0, 0})
 }
 
+func (wnd *window) draw(wgt Widget, pos Pos, lines []string) {
+	if c, ok := wgt.(Container); ok {
+		for i, ch := range c.Child() {
+			wnd.draw(ch, Pos{Line: pos.Line + c.Pos(i).Line, Col: pos.Col + c.Pos(i).Col}, lines)
+		}
+
+	} else {
+		text := wgt.InnerText()
+		w := wnd.Width() - pos.Col
+		r := []rune(text)
+
+		if len(r) > w {
+			if w < 0 {
+				return
+			}
+			r = r[:w]
+		}
+
+		line := []rune(lines[pos.Line])
+		copy(line[pos.Col:], r)
+		lines[pos.Line] = string(line)
+	}
+}
+
+func (wnd *window) renderContent() []string {
+	h := wnd.Height()
+	w := wnd.Width()
+	lines := make([]string, h)
+	line := strings.Repeat(" ", w)
+	for i := range lines {
+		lines[i] = line
+	}
+	if wnd.content == nil {
+		return lines
+	}
+	wnd.draw(wnd.content, Pos{0, 0}, lines)
+	return lines
+}
+
 func (wnd *window) Redraw() {
 	wnd.doWithMessage(func() {
-		if wnd.content == nil || wnd.runned == false {
+		if wnd.content == nil || !wnd.runned {
 			return
 		}
-		buf := &bytes.Buffer{}
-		fmt.Fprint(buf, "\033[H")
+		h := wnd.Height()
+		newLines := wnd.renderContent()
+		oldLines := wnd.buf
 
-		if c, ok := wnd.content.(Container); ok {
-			wnd.drawContainer(buf, Pos{0, 0}, c)
-		} else {
-			fmt.Fprint(buf, wnd.content.InnerText())
+		for len(oldLines) < h {
+			oldLines = append(oldLines, "")
 		}
-		new := strings.Split(buf.String(), "\r\n")
 
 		changed := []int{}
-		for i := range new {
-			if i >= len(wnd.buf) || wnd.buf[i] != new[i] {
+		for i := 0; i < h && i < len(newLines); i++ {
+			if i >= len(oldLines) || oldLines[i] != newLines[i] {
 				changed = append(changed, i)
 			}
 		}
-		h := wnd.Height()
 
-		switch {
-		case len(changed) == len(new):
-			if len(new) > h {
-				for i := range h {
-					fmt.Fprintf(wnd.f, "\033[%d;1H%s\033[K", i+1, new[i])
-				}
+		for i := 0; i < h; i++ {
+			if i >= len(newLines) && i < len(oldLines) && oldLines[i] != "" {
+				fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
+			} else if i < len(newLines) && newLines[i] == "" && oldLines[i] != "" {
+				fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
+			}
+		}
+
+		for _, idx := range changed {
+			if idx >= h {
+				break
+			}
+			if idx < len(newLines) {
+				fmt.Fprintf(wnd.f, "\033[%d;1H%s", idx+1, newLines[idx])
 			} else {
-				io.Copy(wnd.f, buf)
+				fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", idx+1)
 			}
-
-		case len(changed) == 0:
-			return
-		default:
-			for _, idx := range changed {
-				if idx > h {
-					return
-				}
-				fmt.Fprintf(wnd.f, "\033[%d;1H%s\033[K", idx+1, new[idx])
-			}
-
 		}
 
-		oldLen := len(wnd.buf)
-		newLen := len(new)
-		if newLen < oldLen && newLen < h {
-			fmt.Fprintf(wnd.f, "\033[%d;1H\033[0J", newLen+2)
+		wnd.buf = newLines
+		if len(wnd.buf) > h {
+			wnd.buf = wnd.buf[:h]
 		}
-
-		wnd.buf = new
 	}, "redraw all")
 }
 
@@ -248,7 +257,7 @@ func (wnd *window) Run() {
 	wnd.runned = true
 	<-wnd.stopCh
 	wnd.restoreOut()
-	fmt.Fprint(wnd.f, "\033[0m\033[2J\033[H\033[?25h")
+	fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
 }
 
 func (wnd *window) restoreOut() {
