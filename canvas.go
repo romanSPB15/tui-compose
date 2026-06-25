@@ -117,12 +117,18 @@ func (c *Canvas) InnerText() (res string) {
 
 // MaxWidth() реализует интерфейс Widget
 func (c *Canvas) MaxWidth() int {
-	return (c.width * 2)
+	if c.PixelSize == PixelTwoSymbol {
+		return (c.width * 2)
+	}
+	return c.width
 }
 
 // MaxHeight() реализует интерфейс Widget
 func (c *Canvas) MaxHeight() int {
-	return c.height
+	if c.PixelSize == PixelTwoSymbol {
+		return c.height
+	}
+	return c.height / 2
 }
 
 func (c *Canvas) Width() int {
