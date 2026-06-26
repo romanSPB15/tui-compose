@@ -319,13 +319,14 @@ func (wnd *window) Run() {
 
 	fmt.Fprint(wnd.f, "\033[?25l")
 
-	wnd.Redraw()
-
 	go wnd.startStopSignalCatcher()
 	go wnd.startScreenResizeChecker()
 	go wnd.startInputCatcher()
 
 	wnd.runned = true
+
+	wnd.Redraw()
+
 	<-wnd.stopCh
 	wnd.restoreOut()
 	fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
