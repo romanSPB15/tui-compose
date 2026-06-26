@@ -145,20 +145,38 @@ func (wnd *window) draw(wgt Widget, pos Pos, lines []string) {
 		}
 
 	} else {
-		text := wgt.InnerText()
-		w := wnd.Width() - pos.Col
-		r := []rune(text)
+		txt := wgt.InnerText()
 
-		if len(r) > w {
-			if w < 0 {
-				return
-			}
-			r = r[:w]
+		if txt == "" {
+			return
 		}
 
-		line := []rune(lines[pos.Line])
-		copy(line[pos.Col:], r)
-		lines[pos.Line] = string(line)
+		txt = strings.ReplaceAll(txt, "\r\n", "\n")
+		widgetLines := strings.Split(txt, "\n")
+
+		for i, line := range widgetLines {
+			if i >= wgt.MaxHeight() {
+				return
+			}
+			if pos.Line+i >= wnd.Height() {
+				return
+			}
+			w := wnd.Width() - pos.Col
+
+			if w < 0 {
+				continue
+			}
+
+			r := []rune(line)
+
+			if len(r) > w {
+				r = r[:w]
+			}
+
+			line := []rune(lines[pos.Line+i])
+			copy(line[pos.Col:], r)
+			lines[pos.Line+i] = string(line)
+		}
 	}
 }
 
