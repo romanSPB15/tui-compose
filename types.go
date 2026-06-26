@@ -78,5 +78,4 @@ type Container interface {
 	Widget
 	Child() []Widget
 	Pos(int) Pos
-	LineCount() int
 }

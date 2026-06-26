@@ -37,16 +37,6 @@ func (v *VBox) layout() {
 
 func (v *VBox) InnerText() string { return "" }
 
-func (v *VBox) LineCount() int {
-	l := -1
-	for _, w := range v.children {
-		if lw := linesCount(w); lw > l {
-			l = lw
-		}
-	}
-	return l
-}
-
 func (v *VBox) MaxWidth() int {
 	max := 0
 	for _, child := range v.children {
@@ -129,16 +119,6 @@ func (v *HBox) MaxHeight() int {
 	for _, child := range v.children {
 		if h := child.MaxHeight(); h > max {
 			max = h
-		}
-	}
-	return max
-}
-
-func (v *HBox) LineCount() int {
-	max := 0
-	for _, child := range v.children {
-		if lc := linesCount(child); lc > max {
-			max = lc
 		}
 	}
 	return max
