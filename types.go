@@ -66,6 +66,10 @@ type Window interface {
 
 	SetTitle(title string)
 	CopyToClipboard(text string)
+
+	SetOverlay(wgt Widget)
+	ShowOverlay()
+	HideOverlay()
 }
 
 // Container это интерфейс контейнеров.
