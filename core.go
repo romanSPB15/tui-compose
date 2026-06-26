@@ -93,16 +93,18 @@ type window struct {
 	content          Widget
 	buf              []string
 	focusableWidgets []Focusable
+	overlay          Widget
+	displayOverlay   bool
 }
 
-func (wnd *window) indexClickableAndFocusable(wgt Widget, offset Pos) {
+func (wnd *window) indexClickable(wgt Widget, offset Pos) {
 	if c, ok := wgt.(Container); ok {
 		for i, child := range c.Child() {
 			childOffset := Pos{
 				Line: offset.Line + c.Pos(i).Line,
 				Col:  offset.Col + c.Pos(i).Col,
 			}
-			wnd.indexClickableAndFocusable(child, childOffset)
+			wnd.indexClickable(child, childOffset)
 		}
 		return
 	}
@@ -123,6 +125,20 @@ func (wnd *window) indexClickableAndFocusable(wgt Widget, offset Pos) {
 		})
 	}
 
+}
+
+func (wnd *window) indexFocusable(wgt Widget, offset Pos) {
+	if c, ok := wgt.(Container); ok {
+		for i, child := range c.Child() {
+			childOffset := Pos{
+				Line: offset.Line + c.Pos(i).Line,
+				Col:  offset.Col + c.Pos(i).Col,
+			}
+			wnd.indexFocusable(child, childOffset)
+		}
+		return
+	}
+
 	if foc, ok := wgt.(Focusable); ok {
 		wnd.focusableWidgets = append(wnd.focusableWidgets, foc)
 	}
@@ -135,10 +151,17 @@ func (wnd *window) index() {
 	wnd.cl = nil
 	wnd.clAt = nil
 
-	wnd.indexClickableAndFocusable(wnd.content, Pos{0, 0})
+	wnd.indexClickable(wnd.content, Pos{0, 0})
+	wnd.indexFocusable(wnd.content, Pos{0, 0})
+
+	wnd.indexClickable(wnd.overlay, Pos{0, 0})
+	wnd.indexFocusable(wnd.overlay, Pos{0, 0})
 }
 
 func (wnd *window) draw(wgt Widget, pos Pos, lines []string) {
+	if wgt == nil {
+		return
+	}
 	if c, ok := wgt.(Container); ok {
 		for i, ch := range c.Child() {
 			wnd.draw(ch, Pos{Line: pos.Line + c.Pos(i).Line, Col: pos.Col + c.Pos(i).Col}, lines)
@@ -180,7 +203,7 @@ func (wnd *window) draw(wgt Widget, pos Pos, lines []string) {
 	}
 }
 
-func (wnd *window) renderContent() []string {
+func (wnd *window) render() []string {
 	h := wnd.Height()
 	w := wnd.Width()
 	lines := make([]string, h)
@@ -192,6 +215,9 @@ func (wnd *window) renderContent() []string {
 		return lines
 	}
 	wnd.draw(wnd.content, Pos{0, 0}, lines)
+	if wnd.displayOverlay {
+		wnd.draw(wnd.overlay, Pos{0, 0}, lines)
+	}
 	return lines
 }
 
@@ -201,7 +227,7 @@ func (wnd *window) Redraw() {
 			return
 		}
 		h := wnd.Height()
-		newLines := wnd.renderContent()
+		newLines := wnd.render()
 		oldLines := wnd.buf
 
 		for len(oldLines) < h {
@@ -239,6 +265,33 @@ func (wnd *window) Redraw() {
 			wnd.buf = wnd.buf[:h]
 		}
 	}, "redraw all")
+}
+
+func (wnd *window) SetOverlay(wgt Widget) {
+	wnd.Do(func() {
+		wnd.overlay = wgt
+		if wnd.displayOverlay {
+			wnd.Redraw()
+		}
+	})
+}
+
+func (wnd *window) ShowOverlay() {
+	wnd.Do(func() {
+		if !wnd.displayOverlay {
+			wnd.displayOverlay = true
+			wnd.Redraw()
+		}
+	})
+}
+
+func (wnd *window) HideOverlay() {
+	wnd.Do(func() {
+		if wnd.displayOverlay {
+			wnd.displayOverlay = false
+			wnd.Redraw()
+		}
+	})
 }
 
 func (wnd *window) Run() {
