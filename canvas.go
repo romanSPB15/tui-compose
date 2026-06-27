@@ -49,7 +49,7 @@ func (c *Canvas) DrawAndRender(x, y int, clr Color) {
 	if x < 0 || x >= c.width || y < 0 || y >= c.height {
 		return
 	}
-	c.pole[x][y] = clr
+	c.pole[y][x] = clr
 	if currentWindow != nil && c.idx != -1 {
 		currentWindow.Redraw()
 	}
