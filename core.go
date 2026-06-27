@@ -151,11 +151,11 @@ func (wnd *window) index() {
 	wnd.cl = nil
 	wnd.clAt = nil
 
-	wnd.indexClickable(wnd.content, Pos{0, 0})
-	wnd.indexFocusable(wnd.content, Pos{0, 0})
-
 	wnd.indexClickable(wnd.overlay, Pos{0, 0})
 	wnd.indexFocusable(wnd.overlay, Pos{0, 0})
+
+	wnd.indexClickable(wnd.content, Pos{0, 0})
+	wnd.indexFocusable(wnd.content, Pos{0, 0})
 }
 
 func (wnd *window) draw(wgt Widget, pos Pos, lines []string) {
@@ -273,6 +273,7 @@ func (wnd *window) SetOverlay(wgt Widget) {
 		if wnd.displayOverlay {
 			wnd.Redraw()
 		}
+		wnd.index()
 	})
 }
 
@@ -544,7 +545,6 @@ func (wnd *window) handleMouseEvent(ev *MouseEvent) {
 				wnd.doWithMessage(func() {
 					clAt.OnClickAt(relX, relY)
 				}, "clickAt handler")
-				return
 			}
 		}
 	}

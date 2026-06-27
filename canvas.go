@@ -61,9 +61,9 @@ func (c *Canvas) InnerText() (res string) {
 		lastClr := Color(-1)
 		for y := 0; y < c.height; y++ {
 			for x := 0; x < c.width; x++ {
-				clr := c.pole[x][y]
+				clr := c.pole[y][x]
 				if lastClr != clr {
-					if clr == 0 {
+					if clr == NoColor {
 						res += "\033[0m"
 					} else {
 						res += fmt.Sprintf("\033[%dm", clr+10)
@@ -85,10 +85,10 @@ func (c *Canvas) InnerText() (res string) {
 				if y*2+1 == c.height {
 					bg = z
 				} else {
-					bg = c.pole[x][y*2+1]
+					bg = c.pole[y*2+1][x]
 				}
 
-				fr := c.pole[x][y*2]
+				fr := c.pole[y*2][x]
 				if lastBg != bg {
 					if bg == z {
 						res += "\033[40m"
@@ -101,7 +101,7 @@ func (c *Canvas) InnerText() (res string) {
 					if fr == z {
 						res += "\033[30m"
 					} else {
-						res += fmt.Sprintf("\033[%dm", fr+10) //foreground
+						res += fmt.Sprintf("\033[%dm", fr) //foreground
 					}
 					lastFr = fr
 				}
@@ -167,7 +167,7 @@ func (c *CanvasRGB) Draw(x, y int, clr ColorRGB) {
 	if x < 0 || x >= c.width || y < 0 || y >= c.height {
 		return
 	}
-	c.pole[x][y] = clr
+	c.pole[y][x] = clr
 }
 
 // Draw() устанавливает указанный цвет в указанном месте Canvas, и перерисовывает.
@@ -175,7 +175,7 @@ func (c *CanvasRGB) DrawAndRender(x, y int, clr ColorRGB) {
 	if x < 0 || x >= c.width || y < 0 || y >= c.height {
 		return
 	}
-	c.pole[x][y] = clr
+	c.pole[y][x] = clr
 	if currentWindow != nil && c.idx != -1 {
 		currentWindow.Redraw()
 	}
@@ -188,7 +188,7 @@ func (c *CanvasRGB) InnerText() (res string) {
 		z := ColorRGB{}
 		for y := 0; y < c.height; y++ {
 			for x := 0; x < c.width; x++ {
-				clr := c.pole[x][y]
+				clr := c.pole[y][x]
 				if lastClr != clr {
 					if clr == z {
 						res += "\033[0m"
@@ -213,10 +213,10 @@ func (c *CanvasRGB) InnerText() (res string) {
 				if y*2+1 == c.height {
 					bg = ColorRGB{}
 				} else {
-					bg = c.pole[x][y*2+1]
+					bg = c.pole[y*2+1][x]
 				}
 
-				fr := c.pole[x][y*2]
+				fr := c.pole[y*2][x]
 				if lastBg != bg {
 					if bg == z {
 						res += "\033[40m"
