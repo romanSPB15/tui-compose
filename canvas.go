@@ -41,7 +41,7 @@ func (c *Canvas) Draw(x, y int, clr Color) {
 	if x < 0 || x >= c.width || y < 0 || y >= c.height {
 		return
 	}
-	c.pole[x][y] = clr
+	c.pole[y][x] = clr
 }
 
 // Draw() устанавливает указанный цвет в указанном месте Canvas, и перерисовывает.
