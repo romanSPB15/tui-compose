@@ -470,10 +470,8 @@ func (wnd *window) restoreTerminalMode() {
 }
 
 type MouseEvent struct {
-	Button  int // 0=левый, 1=средний, 2=правый, 128=отпущена
-	Pos     Pos
-	IsPress bool
-	IsDrag  bool
+	Button int // 0=левый, 1=средний, 2=правый, 128=отпущена
+	Pos    Pos
 }
 
 func parseMouseEvent(input string) (*MouseEvent, error) {
@@ -500,15 +498,11 @@ func parseMouseEvent(input string) (*MouseEvent, error) {
 		return nil, err
 	}
 
-	isRelease := (btn & 0x80) != 0
-	isDrag := (btn & 0x40) != 0
 	button := btn & 0x03
 
 	return &MouseEvent{
-		Button:  button,
-		Pos:     Pos{y - 1, x - 1},
-		IsPress: !isRelease && !isDrag,
-		IsDrag:  isDrag,
+		Button: button,
+		Pos:    Pos{y - 1, x - 1},
 	}, nil
 }
 
@@ -528,11 +522,9 @@ func (wnd *window) handleMouseEvent(ev *MouseEvent) {
 	if wnd.cl != nil {
 		for _, cl := range wnd.cl {
 			if ev.Pos.Line >= cl.p.Line && ev.Pos.Line < cl.p.Line+cl.MaxHeight() && ev.Pos.Col >= cl.p.Col && ev.Pos.Col < cl.p.Col+cl.MaxWidth() {
+				// Пользователь нажал на этот виджет
+				wnd.doWithMessage(cl.OnClick, "click handler")
 
-				if ev.IsPress {
-					// Пользователь нажал на этот виджет
-					wnd.doWithMessage(cl.OnClick, "click handler")
-				}
 			}
 		}
 	}
