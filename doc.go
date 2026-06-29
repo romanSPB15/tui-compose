@@ -1,23 +1,27 @@
 // Package tui provides framework for creating Text User Interfaces (TUI) in Go.
 //
-// Библиотека go-tui позволяет легко создавать интерактивные TUI-приложения.
-// Она включает в себя набор готовых компонентов: кнопки, надписи,
-// прогресс-бар и другие.
+// Библиотека tui-compose позволяет легко создавать интерактивные TUI-приложения.
+// Она включает в себя набор готовых компонентов: кнопки, надписи, текстовые поля и другие.
 //
 // Быстрый старт:
 //
-//	package main
-// import (
-// 	"github.com/eiannone/keyboard"
-// 	"github.com/romanSPB15/go-tui"
-// )
+// package main
 
-//	func main() {
-//		wnd := tui.NewWindow()
-//		wnd.AddWidgets(tui.NewStaticLabel("Привет, Go!"))
-//		btn := tui.NewButton("Нажми ↑", keyboard.KeyArrowUp)
-//		btn.OnClick = wnd.Quit
-//		wnd.AddWidgets(btn)
-//		wnd.Run()
+// import "github.com/romanSPB15/tui-compose/v3"
+
+// func main() {
+//     wnd := tui.NewWindow()
+//     wnd.SetTitle("Моё приложение")
+
+//     label := tui.NewStaticLabel("Привет, TUI!").ColorizeForeground(tui.Cyan)
+
+//     btn := tui.NewButton("Выход", func() {
+//         wnd.Quit()
+//     })
+
+//     box := tui.NewVBox(label, btn)
+//     wnd.SetContent(box)
+
+//	    wnd.Run()
 //	}
 package tui
