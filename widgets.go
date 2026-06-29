@@ -5,7 +5,6 @@ package tui
 import (
 	"fmt"
 	"strings"
-	"time"
 	"unicode/utf8"
 )
 
@@ -155,16 +154,9 @@ func (btn *Button) OnBlur() {
 }
 
 func (btn *Button) OnClick() {
-	btn.Widget = btn.clicked
-	currentWindow.Redraw()
-	currentWindow.LogInfo("%d %s", btn.idx, btn.InnerText())
 	if btn.OnClicked != nil {
 		btn.OnClicked()
 	}
-	time.Sleep(time.Millisecond * 50)
-	btn.Widget = btn.base
-	currentWindow.LogInfo("%d %s", btn.idx, btn.InnerText())
-	currentWindow.Redraw()
 }
 
 func (l *Button) MaxHeight() int {
