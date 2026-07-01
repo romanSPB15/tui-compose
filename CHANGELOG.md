@@ -31,7 +31,7 @@
 - Исправлены ошибки Canvas\[RGB\].
 
 ### Dependencies
-- Единственная внешняя зависимость – `golang.org/x/term`.
+- Единственные внешние зависимости – `golang.org/x/term` и `golang.org/x/sys`.
 
 ## [3.0.1] – 2026-07-01
 
