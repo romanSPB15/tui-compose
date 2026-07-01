@@ -301,7 +301,7 @@ func (wnd *window) Run() {
 			wnd.log.Close()
 		}
 		if err := recover(); err != nil {
-			wnd.LogFatal("Произошла panic: %v", err)
+			wnd.LogFatal("Произошла паника: %v", err)
 		}
 	}()
 	if !term.IsTerminal(int(wnd.f.Fd())) {
@@ -329,6 +329,8 @@ func (wnd *window) Run() {
 	wnd.Redraw()
 
 	<-wnd.stopCh
+	wnd.runned = false
+
 	wnd.restoreOut()
 	fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
 }
@@ -374,7 +376,12 @@ func (wnd *window) RegisterKeyHandler(keh KeyboardEventHandler) {
 }
 
 func (wnd *window) Do(f func()) {
-	wnd.work <- &task{f: f}
+	select {
+	case <-wnd.stopCh:
+		return
+	case wnd.work <- &task{f: f}:
+	}
+
 }
 
 func (wnd *window) DoAndWait(f func()) {
@@ -382,14 +389,22 @@ func (wnd *window) DoAndWait(f func()) {
 		f:    f,
 		done: make(chan struct{}),
 	}
-	wnd.work <- tsk
-	<-tsk.done
+	select {
+	case <-wnd.stopCh:
+		return
+	case wnd.work <- tsk:
+		<-tsk.done
+	}
 }
 
 func (wnd *window) doWithMessage(f func(), msg string) {
-	wnd.work <- &task{
+	select {
+	case <-wnd.stopCh:
+		return
+	case wnd.work <- &task{
 		f:   f,
 		msg: msg,
+	}:
 	}
 }
 
@@ -399,8 +414,12 @@ func (wnd *window) doWithMessageAndWait(f func(), msg string) {
 		done: make(chan struct{}),
 		msg:  msg,
 	}
-	wnd.work <- tsk
-	<-tsk.done
+	select {
+	case <-wnd.stopCh:
+		return
+	case wnd.work <- tsk:
+		<-tsk.done
+	}
 }
 
 func (wnd *window) runWorker() {
@@ -408,9 +427,8 @@ func (wnd *window) runWorker() {
 	for {
 		select {
 		case <-wnd.stopCh:
-			wnd.runned = false
-			fmt.Fprint(wnd.f, "\033[?25l")
-			wnd.LogInfo("Воркер остановлен...")
+			close(wnd.work)
+			wnd.LogInfo("Воркер остановлен")
 			return
 		case tsk := <-wnd.work:
 			if tsk.msg != "" {
@@ -418,7 +436,18 @@ func (wnd *window) runWorker() {
 			} else {
 				wnd.LogInfo("Принята задача")
 			}
-			tsk.f()
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						if tsk.msg != "" {
+							wnd.LogInfo("Задача '%s' вызвала панику: %v", tsk.msg, r)
+						} else {
+							wnd.LogInfo("Задача вызвала панику: %v", r)
+						}
+					}
+				}()
+				tsk.f()
+			}()
 			if tsk.done != nil {
 				close(tsk.done)
 			}
