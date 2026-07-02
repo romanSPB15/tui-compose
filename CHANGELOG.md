@@ -25,6 +25,7 @@
 
 ### Removed
 - Зависимость от `github.com/eiannone/keyboard`, `github.com/charmbracelet/x/term` и `github.com/acarl005/stripansi`.
+- `RedrawWidget(index)` из-за новой архитектуры.
 
 
 ### Fixed
