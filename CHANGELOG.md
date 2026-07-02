@@ -45,4 +45,4 @@
 ## [3.0.2] – 2026-07-02
 
 ### Added
-* Добавлена обработчики OnChanged и OnEnter в TextField
+* Добавлены обработчики OnChanged и OnEnter в TextField
