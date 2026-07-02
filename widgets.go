@@ -349,6 +349,8 @@ type InputField struct {
 	CursorPos int
 	w         int
 	focused   bool
+	OnChanged func(string)
+	OnEnter   func(string)
 }
 
 func NewInputField(width int) *InputField {
@@ -436,11 +438,18 @@ func (ifw *InputField) OnKeyPress(ev *KeyboardEvent) {
 		ifw.CursorPos--
 
 		currentWindow.Redraw()
+	case KeyEnter:
+		if ifw.OnEnter != nil {
+			ifw.OnEnter(ifw.Text)
+		}
 	default:
 		if ev.Rune != 0 {
 			runes = append(runes[:ifw.CursorPos], append([]rune{ev.Rune}, runes[ifw.CursorPos:]...)...)
 			ifw.Text = string(runes)
 			ifw.CursorPos++
+			if ifw.OnChanged != nil {
+				ifw.OnChanged(ifw.Text)
+			}
 			currentWindow.Redraw()
 		}
 	}
