@@ -17,7 +17,7 @@ func (wnd *window) startScreenResizeChecker() {
 			newW, newH := wnd.Width(), wnd.Height()
 			if newW != prevW || newH != prevH {
 				if newH < prevH {
-					fmt.Fprint(wnd.f, "\033[2J")
+					fmt.Fprintf(wnd.f, "\033[%d;1H\033[J", newH+1)
 				}
 				prevW, prevH = newW, newH
 

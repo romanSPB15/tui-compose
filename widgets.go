@@ -415,6 +415,10 @@ func (ifw *InputField) OnKeyPress(ev *KeyboardEvent) {
 
 			currentWindow.Redraw()
 		}
+
+		if ifw.OnChanged != nil {
+			ifw.OnChanged(ifw.Text)
+		}
 	case KeyBackspace:
 		if ifw.CursorPos <= 0 {
 			return
@@ -424,6 +428,10 @@ func (ifw *InputField) OnKeyPress(ev *KeyboardEvent) {
 		ifw.CursorPos--
 
 		currentWindow.Redraw()
+
+		if ifw.OnChanged != nil {
+			ifw.OnChanged(ifw.Text)
+		}
 	case KeyArrowRight:
 		if ifw.CursorPos >= len(runes) {
 			return

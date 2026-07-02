@@ -15,13 +15,13 @@ func (wnd *window) startScreenResizeChecker() {
 
 	prevW, prevH := wnd.Width(), wnd.Height()
 
-	for range sigwinch {
+	for {
 		select {
 		case <-sigwinch:
 			newW, newH := wnd.Width(), wnd.Height()
 			if newW != prevW || newH != prevH {
 				if newH < prevH {
-					fmt.Fprint(wnd.f, "\033[2J")
+					fmt.Fprintf(wnd.f, "\033[%d;1H\033[J", newH+1)
 				}
 				prevW, prevH = newW, newH
 				wnd.doWithMessageAndWait(wnd.Redraw, "window resize (Unix)")
