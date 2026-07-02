@@ -222,49 +222,47 @@ func (wnd *window) render() []string {
 }
 
 func (wnd *window) Redraw() {
-	wnd.doWithMessage(func() {
-		if wnd.content == nil || !wnd.runned {
-			return
-		}
-		h := wnd.Height()
-		newLines := wnd.render()
-		oldLines := wnd.buf
+	if wnd.content == nil || !wnd.runned {
+		return
+	}
+	h := wnd.Height()
+	newLines := wnd.render()
+	oldLines := wnd.buf
 
-		for len(oldLines) < h {
-			oldLines = append(oldLines, "")
-		}
+	for len(oldLines) < h {
+		oldLines = append(oldLines, "")
+	}
 
-		changed := []int{}
-		for i := 0; i < h && i < len(newLines); i++ {
-			if i >= len(oldLines) || oldLines[i] != newLines[i] {
-				changed = append(changed, i)
-			}
+	changed := []int{}
+	for i := 0; i < h && i < len(newLines); i++ {
+		if i >= len(oldLines) || oldLines[i] != newLines[i] {
+			changed = append(changed, i)
 		}
+	}
 
-		for i := 0; i < h; i++ {
-			if i >= len(newLines) && i < len(oldLines) && oldLines[i] != "" {
-				fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
-			} else if i < len(newLines) && newLines[i] == "" && oldLines[i] != "" {
-				fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
-			}
+	for i := 0; i < h; i++ {
+		if i >= len(newLines) && i < len(oldLines) && oldLines[i] != "" {
+			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
+		} else if i < len(newLines) && newLines[i] == "" && oldLines[i] != "" {
+			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
 		}
+	}
 
-		for _, idx := range changed {
-			if idx >= h {
-				break
-			}
-			if idx < len(newLines) {
-				fmt.Fprintf(wnd.f, "\033[%d;1H%s", idx+1, newLines[idx])
-			} else {
-				fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", idx+1)
-			}
+	for _, idx := range changed {
+		if idx >= h {
+			break
 		}
+		if idx < len(newLines) {
+			fmt.Fprintf(wnd.f, "\033[%d;1H%s", idx+1, newLines[idx])
+		} else {
+			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", idx+1)
+		}
+	}
 
-		wnd.buf = newLines
-		if len(wnd.buf) > h {
-			wnd.buf = wnd.buf[:h]
-		}
-	}, "redraw all")
+	wnd.buf = newLines
+	if len(wnd.buf) > h {
+		wnd.buf = wnd.buf[:h]
+	}
 }
 
 func (wnd *window) SetOverlay(wgt Widget) {

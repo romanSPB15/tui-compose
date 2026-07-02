@@ -24,7 +24,10 @@ func (wnd *window) startScreenResizeChecker() {
 					fmt.Fprintf(wnd.f, "\033[%d;1H\033[J", newH+1)
 				}
 				prevW, prevH = newW, newH
-				wnd.doWithMessageAndWait(wnd.Redraw, "window resize (Unix)")
+				wnd.doWithMessageAndWait(func() {
+					wnd.buf = nil
+					wnd.Redraw()
+				}, "buf reset")
 			}
 		case <-wnd.stopCh:
 			return

@@ -42,7 +42,7 @@ type TextInput interface {
 type Window interface {
 	SetContent(Widget) // SetContent() устанавливает содержимое окна.
 
-	Redraw() // Redraw() перерисовывает все компоненты.
+	Redraw() // Redraw() перерисовывает все виджеты.
 
 	Run()           // Run() — это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
 	IsRunned() bool // IsRunned() возращает true, если приложение запущено. Иначе возвращает false.

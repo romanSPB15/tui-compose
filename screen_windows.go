@@ -17,11 +17,13 @@ func (wnd *window) startScreenResizeChecker() {
 			newW, newH := wnd.Width(), wnd.Height()
 			if newW != prevW || newH != prevH {
 				if newH < prevH {
-					fmt.Fprintf(wnd.f, "\033[%d;1H\033[J", newH+1)
+					fmt.Fprintf(wnd.f, "\033[%d;1H\033[J\033[H", newH+1)
 				}
 				prevW, prevH = newW, newH
-
-				wnd.Redraw()
+				wnd.doWithMessage(func() {
+					wnd.buf = nil
+					wnd.Redraw()
+				}, "buf reset")
 			}
 		case <-wnd.stopCh:
 			return
