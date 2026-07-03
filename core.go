@@ -158,13 +158,13 @@ func (wnd *window) index() {
 	wnd.indexFocusable(wnd.content, Pos{0, 0})
 }
 
-func (wnd *window) draw(wgt Widget, pos Pos, lines []string) {
+func (wnd *window) draw(wgt Widget, pos Pos, lines []string, ansi [][]string) {
 	if wgt == nil {
 		return
 	}
 	if c, ok := wgt.(Container); ok {
 		for i, ch := range c.Child() {
-			wnd.draw(ch, Pos{Line: pos.Line + c.Pos(i).Line, Col: pos.Col + c.Pos(i).Col}, lines)
+			wnd.draw(ch, Pos{Line: pos.Line + c.Pos(i).Line, Col: pos.Col + c.Pos(i).Col}, lines, ansi)
 		}
 
 	} else {
@@ -190,7 +190,15 @@ func (wnd *window) draw(wgt Widget, pos Pos, lines []string) {
 				continue
 			}
 
-			r := []rune(line)
+			a, c := findAnsiSequences(line)
+
+			for _, v := range a {
+				if pos.Col+v.Index < wnd.Width() {
+					ansi[pos.Line+i][pos.Col+v.Index] = v.Seq
+				}
+			}
+
+			r := []rune(c)
 
 			if len(r) > w {
 				r = r[:w]
@@ -203,22 +211,31 @@ func (wnd *window) draw(wgt Widget, pos Pos, lines []string) {
 	}
 }
 
-func (wnd *window) render() []string {
+func (wnd *window) render() ([]string, [][]string) {
 	h := wnd.Height()
 	w := wnd.Width()
 	lines := make([]string, h)
+
 	line := strings.Repeat(" ", w)
+
 	for i := range lines {
 		lines[i] = line
 	}
+
 	if wnd.content == nil {
-		return lines
+		return lines, nil
 	}
-	wnd.draw(wnd.content, Pos{0, 0}, lines)
+
+	ansi := make([][]string, h)
+	for i := range lines {
+		ansi[i] = make([]string, w)
+	}
+
+	wnd.draw(wnd.content, Pos{0, 0}, lines, ansi)
 	if wnd.displayOverlay {
-		wnd.draw(wnd.overlay, Pos{0, 0}, lines)
+		wnd.draw(wnd.overlay, Pos{0, 0}, lines, ansi)
 	}
-	return lines
+	return lines, ansi
 }
 
 func (wnd *window) Redraw() {
@@ -226,13 +243,14 @@ func (wnd *window) Redraw() {
 		return
 	}
 	h := wnd.Height()
-	newLines := wnd.render()
+	newLines, ansi := wnd.render()
 	oldLines := wnd.buf
 
 	for len(oldLines) < h {
 		oldLines = append(oldLines, "")
 	}
 
+	// Находим изменившиеся строки
 	changed := []int{}
 	for i := 0; i < h && i < len(newLines); i++ {
 		if i >= len(oldLines) || oldLines[i] != newLines[i] {
@@ -240,6 +258,7 @@ func (wnd *window) Redraw() {
 		}
 	}
 
+	// Очищаем строки, которые стали пустыми или исчезли
 	for i := 0; i < h; i++ {
 		if i >= len(newLines) && i < len(oldLines) && oldLines[i] != "" {
 			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
@@ -248,14 +267,31 @@ func (wnd *window) Redraw() {
 		}
 	}
 
+	// Выводим изменённые строки с учётом ANSI-кодов
 	for _, idx := range changed {
 		if idx >= h {
 			break
 		}
-		if idx < len(newLines) {
-			fmt.Fprintf(wnd.f, "\033[%d;1H%s", idx+1, newLines[idx])
+		if idx < len(newLines) && idx < len(ansi) {
+			row := newLines[idx]
+			chars := []rune(row)
+			if len(chars) == 0 {
+				fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", idx+1)
+				continue
+			}
+
+			var builder strings.Builder
+			for j, ch := range chars {
+				if j < len(ansi[idx]) && ansi[idx][j] != "" {
+					builder.WriteString(ansi[idx][j])
+				}
+				builder.WriteRune(ch)
+			}
+			builder.WriteString("\033[0m")
+
+			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K%s", idx+1, builder.String())
 		} else {
-			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", idx+1)
+			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K%s", idx+1, newLines[idx])
 		}
 	}
 
