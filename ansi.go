@@ -5,7 +5,7 @@ import (
 	"unicode/utf8"
 )
 
-var ansi = regexp.MustCompile(`[\x1B\x9B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\x07)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))`)
+var ansi = regexp.MustCompile("[\x1B\x9B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))")
 
 func cleanAnsi(str string) string {
 	return ansi.ReplaceAllString(str, "")
