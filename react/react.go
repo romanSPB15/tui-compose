@@ -1,6 +1,9 @@
 package react
 
-import "github.com/romanSPB15/tui-compose/v3"
+import (
+	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v3/input"
+)
 
 // App — реактивная обёртка над Window.
 // T — тип модели, хранящей всё состояние приложения.
@@ -49,7 +52,7 @@ func (a *App[T]) OnQuit() <-chan struct{} {
 }
 
 // RegisterKeyHandler регистрирует обработчик клавиатуры.
-func (a *App[T]) RegisterKeyHandler(h func(*tui.KeyboardEvent)) {
+func (a *App[T]) RegisterKeyHandler(h func(*input.KeyboardEvent)) {
 	a.wnd.RegisterKeyHandler(h)
 }
 

@@ -1,5 +1,7 @@
 package tui
 
+import "github.com/romanSPB15/tui-compose/v3/input"
+
 // Widget — это интерфейс для любого TUI-виджета или контейнера. Но в контейнере эти методы не используются.
 type Widget interface {
 	InnerText() string // InnerText() возращает текст виджета
@@ -35,7 +37,7 @@ type ClickableAt interface {
 // Добавлено в TUI 3.0.0.
 type TextInput interface {
 	Focusable
-	OnKeyPress(ev *KeyboardEvent)
+	OnKeyPress(ev *input.KeyboardEvent)
 }
 
 // Window — это объект приложения.
@@ -50,8 +52,8 @@ type Window interface {
 	Quit()                   // Quit() — это принудительный выход из приложения.
 	OnQuit() <-chan struct{} // Run() возвращает канал сигнализации о выходе.
 
-	RegisterKeyHandler(KeyboardEventHandler)     // RegisterKeyHandler() регистрирует обработчик нажатия указанной клавиши
-	RegisterClickHandler(h func(ev *MouseEvent)) // RegisterClickHandler() регистрирует обрабочик событий мыши
+	RegisterKeyHandler(KeyboardEventHandler)           // RegisterKeyHandler() регистрирует обработчик нажатия указанной клавиши
+	RegisterClickHandler(h func(ev *input.MouseEvent)) // RegisterClickHandler() регистрирует обрабочик событий мыши
 
 	LogInfo(message string, args ...any)  // LogInfo() логирует указанное сообщение подобно fmt.Printf() в файл, если приложение создано как Debug.
 	LogFatal(message string, args ...any) // LogFatal() логирует указанное сообщение подобно fmt.Printf() в файл, если приложение создано как Debug. Потом в любом случае выходит

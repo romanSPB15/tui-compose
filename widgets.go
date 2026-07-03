@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/romanSPB15/tui-compose/v3/input"
 )
 
 // Label — это виджет текстовой метки.
@@ -620,10 +622,10 @@ func (f *InputField) OnBlur() {
 
 // OnKeyPress реализует интерфейс TextInput.
 // Добавлено в TUI v3.0.0
-func (f *InputField) OnKeyPress(ev *KeyboardEvent) {
+func (f *InputField) OnKeyPress(ev *input.KeyboardEvent) {
 	runes := []rune(f.Text)
 	switch ev.Key {
-	case KeyDelete:
+	case input.KeyDelete:
 		if f.CursorPos < len(runes) {
 			runes = append(runes[:f.CursorPos], runes[f.CursorPos+1:]...)
 			f.Text = string(runes)
@@ -632,7 +634,7 @@ func (f *InputField) OnKeyPress(ev *KeyboardEvent) {
 		if f.OnChanged != nil {
 			f.OnChanged(f.Text)
 		}
-	case KeyBackspace:
+	case input.KeyBackspace:
 		if f.CursorPos <= 0 {
 			return
 		}
@@ -643,17 +645,17 @@ func (f *InputField) OnKeyPress(ev *KeyboardEvent) {
 		if f.OnChanged != nil {
 			f.OnChanged(f.Text)
 		}
-	case KeyArrowRight:
+	case input.KeyArrowRight:
 		if f.CursorPos < len(runes) {
 			f.CursorPos++
 			currentWindow.Redraw()
 		}
-	case KeyArrowLeft:
+	case input.KeyArrowLeft:
 		if f.CursorPos > 0 {
 			f.CursorPos--
 			currentWindow.Redraw()
 		}
-	case KeyEnter:
+	case input.KeyEnter:
 		if f.OnEnter != nil {
 			f.OnEnter(f.Text)
 		}

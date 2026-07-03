@@ -1,3 +1,4 @@
+// Добавлено в TUI 3.1.0.
 package input
 
 import (
@@ -15,12 +16,12 @@ type MouseEvent struct {
 	Pos    Point
 }
 
-func parseMouseEvent(input []byte) (*MouseEvent, error) {
+func ParseMouseEvent(input []byte) (*MouseEvent, error) {
 	s := string(input)
 	if !strings.HasPrefix(s, "\x1b[<") {
 		return nil, fmt.Errorf("не SGR последовательность")
 	}
-	rest := strings.TrimPrefix(s)
+	rest := strings.TrimPrefix(s, "\x1b[<")
 	rest = strings.TrimSuffix(rest, "m")
 
 	parts := strings.Split(rest, ";")

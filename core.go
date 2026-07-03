@@ -48,8 +48,8 @@ type ColorRGB struct {
 }
 
 type (
-	MouseEventHandler    func(*MouseEvent)
-	KeyboardEventHandler func(*KeyboardEvent)
+	MouseEventHandler    func(*input.MouseEvent)
+	KeyboardEventHandler func(*input.KeyboardEvent)
 )
 
 type Pos struct {
@@ -544,10 +544,10 @@ func (wnd *window) startStopSignalCatcher() {
 	}
 }
 
-func (wnd *window) handleMouseEvent(ev *MouseEvent) {
+func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
 	if wnd.cl != nil {
 		for _, cl := range wnd.cl {
-			if ev.Pos.Line >= cl.p.Line && ev.Pos.Line < cl.p.Line+cl.MaxHeight() && ev.Pos.Col >= cl.p.Col && ev.Pos.Col < cl.p.Col+cl.MaxWidth() {
+			if ev.Pos.Y >= cl.p.Line && ev.Pos.Y < cl.p.Line+cl.MaxHeight() && ev.Pos.X >= cl.p.Col && ev.Pos.X < cl.p.Col+cl.MaxWidth() {
 				// Пользователь нажал на этот виджет
 				wnd.doWithMessage(cl.OnClick, "click handler")
 
@@ -556,10 +556,10 @@ func (wnd *window) handleMouseEvent(ev *MouseEvent) {
 	}
 	if wnd.clAt != nil {
 		for _, clAt := range wnd.clAt {
-			if ev.Pos.Line >= clAt.p.Line && ev.Pos.Line < clAt.p.Line+clAt.MaxHeight() &&
-				ev.Pos.Col >= clAt.p.Col && ev.Pos.Col < clAt.p.Col+clAt.MaxWidth() {
-				relX := ev.Pos.Col - clAt.p.Col
-				relY := ev.Pos.Line - clAt.p.Line
+			if ev.Pos.Y >= clAt.p.Line && ev.Pos.Y < clAt.p.Line+clAt.MaxHeight() &&
+				ev.Pos.X >= clAt.p.Col && ev.Pos.X < clAt.p.Col+clAt.MaxWidth() {
+				relX := ev.Pos.X - clAt.p.Col
+				relY := ev.Pos.Y - clAt.p.Line
 				wnd.doWithMessage(func() {
 					clAt.OnClickAt(relX, relY)
 				}, "clickAt handler")
@@ -573,7 +573,7 @@ func (wnd *window) handleMouseEvent(ev *MouseEvent) {
 	}
 }
 
-func (wnd *window) RegisterClickHandler(h func(ev *MouseEvent)) {
+func (wnd *window) RegisterClickHandler(h func(ev *input.MouseEvent)) {
 	wnd.Do(func() {
 		wnd.mouseHandlers = append(wnd.mouseHandlers, h)
 	})
@@ -585,7 +585,7 @@ func (wnd *window) CopyToClipboard(text string) {
 
 func (wnd *window) startInputCatcher() {
 	if wnd.focusChange && len(wnd.focusableWidgets) != 0 {
-		wnd.RegisterKeyHandler(func(ke *KeyboardEvent) {
+		wnd.RegisterKeyHandler(func(ke *input.KeyboardEvent) {
 			switch ke.Key {
 			case input.KeyTab:
 				if wnd.focusIndex > len(wnd.focusableWidgets)-2 {
@@ -599,14 +599,14 @@ func (wnd *window) startInputCatcher() {
 				wnd.focusableWidgets[wnd.focusIndex].OnBlur()
 				wnd.focusIndex++
 				wnd.focusableWidgets[wnd.focusIndex].OnFocus()
-			case KeyShiftTab:
+			case input.KeyShiftTab:
 				if wnd.focusIndex <= 0 {
 					return
 				}
 				wnd.focusableWidgets[wnd.focusIndex].OnBlur()
 				wnd.focusIndex--
 				wnd.focusableWidgets[wnd.focusIndex].OnFocus()
-			case KeyEnter:
+			case input.KeyEnter:
 				if wnd.focusIndex != -1 {
 					if cl, ok := wnd.focusableWidgets[wnd.focusIndex].(Clickable); ok {
 						wnd.Do(cl.OnClick)
@@ -614,7 +614,7 @@ func (wnd *window) startInputCatcher() {
 				}
 			}
 		})
-		wnd.RegisterKeyHandler(func(ke *KeyboardEvent) {
+		wnd.RegisterKeyHandler(func(ke *input.KeyboardEvent) {
 			if wnd.focusIndex != -1 {
 				if te, ok := wnd.focusableWidgets[wnd.focusIndex].(TextInput); ok {
 					te.OnKeyPress(ke)
@@ -634,7 +634,7 @@ func (wnd *window) startInputCatcher() {
 				return
 			}
 			data := buf[:n]
-			if ev, err := input(data); err == nil {
+			if ev, err := input.ParseMouseEvent(data); err == nil {
 				wnd.handleMouseEvent(ev)
 				continue
 			}
@@ -645,7 +645,7 @@ func (wnd *window) startInputCatcher() {
 }
 
 func (wnd *window) handleKeyboardInput(data []byte) {
-	ev := f()
+	ev := input.ParseKeyboardInput(data)
 	if ev == nil {
 		return
 	}
