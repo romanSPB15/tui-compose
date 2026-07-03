@@ -5,11 +5,11 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/romanSPB15/tui-compose/v3/input"
 	"golang.org/x/term"
 )
 
@@ -532,43 +532,6 @@ func (wnd *window) restoreTerminalMode() {
 	}
 }
 
-type MouseEvent struct {
-	Button int // 0=левый, 1=средний, 2=правый, 128=отпущена
-	Pos    Pos
-}
-
-func parseMouseEvent(input string) (*MouseEvent, error) {
-	if !strings.HasPrefix(input, "\x1b[<") {
-		return nil, fmt.Errorf("не SGR последовательность")
-	}
-	rest := strings.TrimPrefix(input, "\x1b[<")
-	rest = strings.TrimSuffix(rest, "m")
-
-	parts := strings.Split(rest, ";")
-	if len(parts) != 3 {
-		return nil, fmt.Errorf("неверный формат: %v", parts)
-	}
-	btn, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return nil, err
-	}
-	x, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return nil, err
-	}
-	y, err := strconv.Atoi(parts[2])
-	if err != nil {
-		return nil, err
-	}
-
-	button := btn & 0x03
-
-	return &MouseEvent{
-		Button: button,
-		Pos:    Pos{y - 1, x - 1},
-	}, nil
-}
-
 func (wnd *window) startStopSignalCatcher() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
@@ -624,7 +587,7 @@ func (wnd *window) startInputCatcher() {
 	if wnd.focusChange && len(wnd.focusableWidgets) != 0 {
 		wnd.RegisterKeyHandler(func(ke *KeyboardEvent) {
 			switch ke.Key {
-			case KeyTab:
+			case input.KeyTab:
 				if wnd.focusIndex > len(wnd.focusableWidgets)-2 {
 					return
 				}
@@ -671,7 +634,7 @@ func (wnd *window) startInputCatcher() {
 				return
 			}
 			data := buf[:n]
-			if ev, err := parseMouseEvent(string(data)); err == nil {
+			if ev, err := input(data); err == nil {
 				wnd.handleMouseEvent(ev)
 				continue
 			}
@@ -679,6 +642,21 @@ func (wnd *window) startInputCatcher() {
 			wnd.handleKeyboardInput(data)
 		}
 	}
+}
+
+func (wnd *window) handleKeyboardInput(data []byte) {
+	ev := f()
+	if ev == nil {
+		return
+	}
+
+	wnd.doWithMessageAndWait(func() {
+		for _, h := range wnd.keyHandlers {
+			wnd.doWithMessage(func() {
+				h(ev)
+			}, "keyboard handler")
+		}
+	}, "key handler")
 }
 
 func (wnd *window) SetContent(w Widget) {

@@ -1,4 +1,4 @@
-// Добавлено в TUI 3.0.0.
+// Добавлено в TUI 3.1.0.
 package input
 
 type KeyboardEvent struct {
