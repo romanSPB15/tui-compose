@@ -205,7 +205,7 @@ func (wnd *window) draw(wgt Widget, pos Pos, lines []string, ansi [][]string) {
 			}
 
 			line := []rune(lines[pos.Line+i])
-			copy(line[pos.Col:], append(r, []rune("\033[0m")...))
+			copy(line[pos.Col:], r)
 			lines[pos.Line+i] = string(line)
 		}
 	}
