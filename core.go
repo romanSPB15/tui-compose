@@ -603,40 +603,24 @@ func (wnd *window) startInputCatcher() {
 		})
 	}
 
-	buf := make([]byte, 1024)
+	mouse, keyboard := input.Start(1)
 	for {
 		select {
 		case <-wnd.stopCh:
+			input.Stop()
 			return
-		default:
-			n, err := os.Stdin.Read(buf)
-			if err != nil {
-				return
-			}
-			data := buf[:n]
-			if ev := input.ParseMouseEvent(data); ev != nil {
-				wnd.handleMouseEvent(ev)
-				continue
-			}
-
-			wnd.handleKeyboardInput(data)
-		}
-	}
-}
-
-func (wnd *window) handleKeyboardInput(data []byte) {
-	ev := input.ParseKeyboardInput(data)
-	if ev == nil {
-		return
-	}
-
-	wnd.doWithMessageAndWait(func() {
-		for _, h := range wnd.keyHandlers {
+		case ev := <-keyboard:
 			wnd.doWithMessage(func() {
-				h(ev)
-			}, "keyboard handler")
+				for _, h := range wnd.keyHandlers {
+					wnd.doWithMessage(func() {
+						h(ev)
+					}, "keyboard handler")
+				}
+			}, "key handler")
+		case ev := <-mouse:
+			wnd.handleMouseEvent(ev)
 		}
-	}, "key handler")
+	}
 }
 
 func (wnd *window) SetContent(w Widget) {
