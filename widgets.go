@@ -357,6 +357,9 @@ func NewCheck(text string) *Check {
 
 // InnerText реализует интерфейс Widget.
 func (c *Check) InnerText() string {
+	if c.checkedState && c.focused {
+		return c.styleF.String() + "[x] " + c.text + Reset.String()
+	}
 	if c.focused {
 		return c.styleF.String() + "[ ] " + c.text + Reset.String()
 	}
