@@ -44,6 +44,6 @@ func ParseMouseEvent(input []byte) *MouseEvent {
 
 	return &MouseEvent{
 		Button: button,
-		Pos:    Point{y - 1, x - 1},
+		Pos:    Point{x - 1, y - 1},
 	}
 }

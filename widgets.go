@@ -347,7 +347,6 @@ type Check struct {
 }
 
 // NewCheck создаёт чекбокс с указанным текстом.
-// Добавлено в TUI v1.0.0
 func NewCheck(text string) *Check {
 	return &Check{
 		text:   text,
@@ -357,7 +356,6 @@ func NewCheck(text string) *Check {
 }
 
 // InnerText реализует интерфейс Widget.
-// Добавлено в TUI v1.0.0
 func (c *Check) InnerText() string {
 	if c.focused {
 		return c.styleF.String() + "[ ] " + c.text + Reset.String()
@@ -372,21 +370,21 @@ func (c *Check) InnerText() string {
 }
 
 // OnFocus реализует интерфейс Focusable.
-// Добавлено в TUI v1.0.0
+// Добавлено в TUI v2.0.0
 func (c *Check) OnFocus() {
 	c.focused = true
 	currentWindow.Redraw()
 }
 
 // OnBlur реализует интерфейс Focusable.
-// Добавлено в TUI v1.0.0
+// Добавлено в TUI v2.0.0
 func (c *Check) OnBlur() {
 	c.focused = false
 	currentWindow.Redraw()
 }
 
 // OnClick реализует интерфейс Clickable.
-// Добавлено в TUI v1.0.0
+// Добавлено в TUI v3.0.0
 func (c *Check) OnClick() {
 	c.checkedState = !c.checkedState
 	currentWindow.Redraw()
