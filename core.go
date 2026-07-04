@@ -242,22 +242,23 @@ func (wnd *window) Redraw() {
 	}
 
 	for row := 0; row < h && row < len(newBuf); row++ {
-		if row >= len(oldBuf) || !cellsEqual(newBuf[row], oldBuf[row]) {
-
-			var builder strings.Builder
-
-			for _, c := range newBuf[row] {
-				if len(c.ANSI) > 0 {
-					builder.WriteString("\x1b[")
-					builder.WriteString(strings.Join(c.ANSI, ";"))
-					builder.WriteString("m")
+		var builder strings.Builder
+		currentStyle := ""
+		for _, cell := range newBuf[row] {
+			cellStyle := strings.Join(cell.ANSI, ";")
+			if cellStyle != currentStyle {
+				if cellStyle == "" {
+					builder.WriteString("\x1b[0m")
+				} else {
+					builder.WriteString("\x1b[" + cellStyle + "m")
 				}
-				builder.WriteRune(c.Char)
+				currentStyle = cellStyle
 			}
-
-			builder.WriteString("\033[0m") // сброс в конце строки
-			fmt.Fprintf(wnd.f, "\033[%d;1H%s", row+1, builder.String())
+			builder.WriteRune(cell.Char)
 		}
+		// сброс в конце строки
+		builder.WriteString("\x1b[0m")
+		fmt.Fprintf(wnd.f, "\033[%d;1H%s", row+1, builder.String())
 	}
 
 	if len(newBuf) < len(oldBuf) {
