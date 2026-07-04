@@ -5,10 +5,12 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/romanSPB15/tui-compose/v3/cell"
 	"github.com/romanSPB15/tui-compose/v3/input"
 	"golang.org/x/term"
 )
@@ -91,7 +93,7 @@ type window struct {
 	oldMode          *term.State
 	mouseHandlers    []MouseEventHandler
 	content          Widget
-	buf              []string
+	buf              [][]cell.Cell
 	focusableWidgets []Focusable
 	overlay          Widget
 	displayOverlay   bool
@@ -158,13 +160,13 @@ func (wnd *window) index() {
 	wnd.indexFocusable(wnd.content, Pos{0, 0})
 }
 
-func (wnd *window) draw(wgt Widget, pos Pos, lines []string, ansi [][]string) {
+func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 	if wgt == nil {
 		return
 	}
 	if c, ok := wgt.(Container); ok {
 		for i, ch := range c.Child() {
-			wnd.draw(ch, Pos{Line: pos.Line + c.Pos(i).Line, Col: pos.Col + c.Pos(i).Col}, lines, ansi)
+			wnd.draw(ch, Pos{Line: pos.Line + c.Pos(i).Line, Col: pos.Col + c.Pos(i).Col}, buf)
 		}
 
 	} else {
@@ -190,115 +192,93 @@ func (wnd *window) draw(wgt Widget, pos Pos, lines []string, ansi [][]string) {
 				continue
 			}
 
-			a, c := findAnsiSequences(line)
+			c := cell.Parse(line)
 
-			for _, v := range a {
-				if pos.Col+v.Index < wnd.Width() {
-					ansi[pos.Line+i][pos.Col+v.Index] = v.Seq
-				}
-			}
-
-			r := []rune(c)
-
-			if len(r) > w {
-				r = r[:w]
-			}
-
-			line := []rune(lines[pos.Line+i])
-			copy(line[pos.Col:], r)
-			lines[pos.Line+i] = string(line)
+			copy(buf[pos.Line+i][pos.Col:], c)
 		}
 	}
 }
 
-func (wnd *window) render() ([]string, [][]string) {
+func (wnd *window) render() [][]cell.Cell {
 	h := wnd.Height()
 	w := wnd.Width()
-	lines := make([]string, h)
+	buf := make([][]cell.Cell, h)
 
-	line := strings.Repeat(" ", w)
-
-	for i := range lines {
-		lines[i] = line
+	for i := range buf {
+		buf[i] = make([]cell.Cell, w)
 	}
 
 	if wnd.content == nil {
-		return lines, nil
+		return buf
 	}
 
-	ansi := make([][]string, h)
-	for i := range lines {
-		ansi[i] = make([]string, w)
-	}
-
-	wnd.draw(wnd.content, Pos{0, 0}, lines, ansi)
+	wnd.draw(wnd.content, Pos{0, 0}, buf)
 	if wnd.displayOverlay {
-		wnd.draw(wnd.overlay, Pos{0, 0}, lines, ansi)
+		wnd.draw(wnd.overlay, Pos{0, 0}, buf)
 	}
-	return lines, ansi
+	return buf
 }
 
 func (wnd *window) Redraw() {
 	if wnd.content == nil || !wnd.runned {
 		return
 	}
+	newBuf := wnd.render()
+	oldBuf := wnd.buf
+
 	h := wnd.Height()
-	newLines, ansi := wnd.render()
-	oldLines := wnd.buf
+	w := wnd.Width()
 
-	for len(oldLines) < h {
-		oldLines = append(oldLines, "")
-	}
-
-	// Находим изменившиеся строки
-	changed := []int{}
-	for i := 0; i < h && i < len(newLines); i++ {
-		if i >= len(oldLines) || oldLines[i] != newLines[i] {
-			changed = append(changed, i)
-		}
-	}
-
-	// Очищаем строки, которые стали пустыми или исчезли
-	for i := 0; i < h; i++ {
-		if i >= len(newLines) && i < len(oldLines) && oldLines[i] != "" {
-			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
-		} else if i < len(newLines) && newLines[i] == "" && oldLines[i] != "" {
-			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", i+1)
-		}
-	}
-
-	// Выводим изменённые строки с учётом ANSI-кодов
-	for _, idx := range changed {
-		if idx >= h {
-			break
-		}
-		if idx < len(newLines) && idx < len(ansi) {
-			row := newLines[idx]
-			chars := []rune(row)
-			if len(chars) == 0 {
-				fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", idx+1)
-				continue
+	if len(oldBuf) < h {
+		newOld := make([][]cell.Cell, h)
+		copy(newOld, oldBuf)
+		for i := len(oldBuf); i < h; i++ {
+			newOld[i] = make([]cell.Cell, w)
+			for j := range newOld[i] {
+				newOld[i][j] = cell.Cell{Char: ' ', ANSI: nil}
 			}
+		}
+		oldBuf = newOld
+	}
+
+	for row := 0; row < h && row < len(newBuf); row++ {
+		if row >= len(oldBuf) || !cellsEqual(newBuf[row], oldBuf[row]) {
 
 			var builder strings.Builder
-			for j, ch := range chars {
-				if j < len(ansi[idx]) && ansi[idx][j] != "" {
-					builder.WriteString(ansi[idx][j])
-				}
-				builder.WriteRune(ch)
-			}
-			builder.WriteString("\033[0m")
 
-			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K%s", idx+1, builder.String())
-		} else {
-			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K%s", idx+1, newLines[idx])
+			for _, c := range newBuf[row] {
+				if len(c.ANSI) > 0 {
+					builder.WriteString("\x1b[")
+					builder.WriteString(strings.Join(c.ANSI, ";"))
+					builder.WriteString("m")
+				}
+				builder.WriteRune(c.Char)
+			}
+
+			builder.WriteString("\033[0m") // сброс в конце строки
+			fmt.Fprintf(wnd.f, "\033[%d;1H%s", row+1, builder.String())
 		}
 	}
 
-	wnd.buf = newLines
-	if len(wnd.buf) > h {
-		wnd.buf = wnd.buf[:h]
+	if len(newBuf) < len(oldBuf) {
+		for row := len(newBuf); row < len(oldBuf); row++ {
+			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", row+1)
+		}
 	}
+
+	wnd.buf = newBuf
+}
+
+func cellsEqual(a, b []cell.Cell) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Char != b[i].Char || !slices.Equal(a[i].ANSI, b[i].ANSI) {
+			return false
+		}
+	}
+	return true
 }
 
 func (wnd *window) SetOverlay(wgt Widget) {
@@ -634,7 +614,7 @@ func (wnd *window) startInputCatcher() {
 				return
 			}
 			data := buf[:n]
-			if ev, err := input.ParseMouseEvent(data); err == nil {
+			if ev := input.ParseMouseEvent(data); ev != nil {
 				wnd.handleMouseEvent(ev)
 				continue
 			}

@@ -2,7 +2,6 @@
 package input
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -16,29 +15,29 @@ type MouseEvent struct {
 	Pos    Point
 }
 
-func ParseMouseEvent(input []byte) (*MouseEvent, error) {
+func ParseMouseEvent(input []byte) *MouseEvent {
 	s := string(input)
 	if !strings.HasPrefix(s, "\x1b[<") {
-		return nil, fmt.Errorf("не SGR последовательность")
+		return nil
 	}
 	rest := strings.TrimPrefix(s, "\x1b[<")
 	rest = strings.TrimSuffix(rest, "m")
 
 	parts := strings.Split(rest, ";")
 	if len(parts) != 3 {
-		return nil, fmt.Errorf("неверный формат: %v", parts)
+		return nil
 	}
 	btn, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return nil, err
+		return nil
 	}
 	x, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return nil, err
+		return nil
 	}
 	y, err := strconv.Atoi(parts[2])
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
 	button := btn & 0x03
@@ -46,5 +45,5 @@ func ParseMouseEvent(input []byte) (*MouseEvent, error) {
 	return &MouseEvent{
 		Button: button,
 		Pos:    Point{y - 1, x - 1},
-	}, nil
+	}
 }
