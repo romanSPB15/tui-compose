@@ -20,10 +20,10 @@ type Focusable interface {
 	OnBlur()
 }
 
-// Clickable это интерфейс виджетов, которые могут получить фокус и быть нажатыми(ENTER или мышью).
+// Clickable это интерфейс виджетов, которые могут быть нажатыми мышью.
 // Добавлено в TUI 2.0.0.
 type Clickable interface {
-	Focusable
+	Widget
 	OnClick()
 }
 
@@ -35,7 +35,7 @@ type ClickableAt interface {
 }
 
 // Добавлено в TUI 3.0.0.
-type TextInput interface {
+type KeyReceiver interface {
 	Focusable
 	OnKeyPress(ev *input.KeyboardEvent)
 }

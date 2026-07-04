@@ -232,6 +232,14 @@ func (btn *Button) WithHandler(h func()) *Button {
 	return btn
 }
 
+func (btn *Button) OnKeyPress(ev *input.KeyboardEvent) {
+	if ev.Key == input.KeyEnter || ev.Key == input.KeySpace {
+		if btn.OnClicked != nil {
+			btn.OnClicked()
+		}
+	}
+}
+
 // ColorProgress — это виджет шкалы прогресса.
 // Добавлено в TUI v1.2.0
 type ColorProgress struct {
@@ -437,6 +445,12 @@ func (c *Check) MaxWidth() int {
 	return len([]rune("[x] " + c.text))
 }
 
+func (c *Check) OnKeyPress(ev *input.KeyboardEvent) {
+	if ev.Key == input.KeyEnter || ev.Key == input.KeySpace {
+		c.OnClick()
+	}
+}
+
 // MaxHeight реализует интерфейс Widget.
 // Добавлено в TUI v3.0.0
 func (c *Check) MaxHeight() int {
@@ -576,7 +590,8 @@ func (f *InputField) InnerText() string {
 
 	// Текст до курсора (с общим стилем)
 	if cursor > 0 {
-		builder.WriteString(style.String() + string(runes[:cursor]))
+		builder.WriteString(style.String())
+		builder.WriteString(string(runes[:cursor]))
 	}
 
 	// Курсор
@@ -584,7 +599,9 @@ func (f *InputField) InnerText() string {
 		cursorDisplay := f.cursorStyle.String() + string(runes[cursor]) + Reset.String()
 		builder.WriteString(cursorDisplay)
 		if cursor+1 < len(runes) {
-			builder.WriteString(style.String() + string(runes[cursor+1:]) + Reset.String())
+			builder.WriteString(style.String())
+			builder.WriteString(string(runes[cursor+1:]))
+			builder.WriteString(Reset.String())
 		}
 	} else {
 		cursorDisplay := f.cursorStyle.String() + " " + Reset.String()
@@ -684,5 +701,5 @@ func init() {
 	var _ Widget = (*Check)(nil)
 	var _ Focusable = (*Check)(nil)
 	var _ Clickable = (*Check)(nil)
-	var _ TextInput = (*InputField)(nil)
+	var _ KeyReceiver = (*InputField)(nil)
 }

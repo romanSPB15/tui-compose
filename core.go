@@ -586,17 +586,11 @@ func (wnd *window) startInputCatcher() {
 				wnd.focusableWidgets[wnd.focusIndex].OnBlur()
 				wnd.focusIndex--
 				wnd.focusableWidgets[wnd.focusIndex].OnFocus()
-			case input.KeyEnter:
-				if wnd.focusIndex != -1 {
-					if cl, ok := wnd.focusableWidgets[wnd.focusIndex].(Clickable); ok {
-						wnd.Do(cl.OnClick)
-					}
-				}
 			}
 		})
 		wnd.RegisterKeyHandler(func(ke *input.KeyboardEvent) {
 			if wnd.focusIndex != -1 {
-				if te, ok := wnd.focusableWidgets[wnd.focusIndex].(TextInput); ok {
+				if te, ok := wnd.focusableWidgets[wnd.focusIndex].(KeyReceiver); ok {
 					te.OnKeyPress(ke)
 				}
 			}
