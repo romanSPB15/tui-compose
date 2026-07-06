@@ -610,7 +610,12 @@ func (f *InputField) InnerText() string {
 
 	currentLen := len([]rune(builder.String()))
 	if currentLen < f.width {
+		if f.focused {
+			builder.WriteString(f.styleF.String())
+		}
+
 		builder.WriteString(strings.Repeat(" ", f.width-currentLen))
+		builder.WriteString(Reset.String())
 	}
 
 	return builder.String()
