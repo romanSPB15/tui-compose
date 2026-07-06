@@ -170,7 +170,9 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 		}
 
 	} else {
+
 		txt := wgt.InnerText()
+		fmt.Println(pos, txt)
 
 		if txt == "" {
 			return
@@ -206,6 +208,9 @@ func (wnd *window) render() [][]cell.Cell {
 
 	for i := range buf {
 		buf[i] = make([]cell.Cell, w)
+		for j := range buf[i] {
+			buf[i][j] = cell.Cell{Char: ' ', ANSI: nil}
+		}
 	}
 
 	if wnd.content == nil {
@@ -241,43 +246,41 @@ func (wnd *window) Redraw() {
 		oldBuf = newOld
 	}
 
-	for row := 0; row < h && row < len(newBuf); row++ {
-		var builder strings.Builder
-		currentStyle := ""
-		for _, cell := range newBuf[row] {
-			cellStyle := strings.Join(cell.ANSI, ";")
-			if cellStyle != currentStyle {
-				if cellStyle == "" {
-					builder.WriteString("\x1b[0m")
-				} else {
-					builder.WriteString("\x1b[" + cellStyle + "m")
+	//fmt.Fprintf(wnd.f, "\033[%d;1H%s", row+1, builder.String())
+
+	var res strings.Builder
+
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			if !cellsEqual(newBuf[y][x], oldBuf[y][x]) {
+				fmt.Println(x, y, newBuf[y][x])
+				fmt.Fprintf(&res, "\033[%d;%dH", y+1, x+1)
+				// Сброс всех атрибутов
+				res.WriteString("\033[0m")
+				// Затем применяем новый стиль, если есть
+				if len(newBuf[y][x].ANSI) > 0 {
+					for _, a := range newBuf[y][x].ANSI {
+						res.WriteString("\033[")
+						res.WriteString(a)
+						res.WriteRune('m')
+					}
 				}
-				currentStyle = cellStyle
+				// Выводим символ
+				res.WriteString(string(newBuf[y][x].Char))
+				// После символа тоже сброс (уже есть)
+				res.WriteString("\033[0m")
 			}
-			builder.WriteRune(cell.Char)
 		}
-		// сброс в конце строки
-		builder.WriteString("\x1b[0m")
-		fmt.Fprintf(wnd.f, "\033[%d;1H%s", row+1, builder.String())
 	}
 
-	if len(newBuf) < len(oldBuf) {
-		for row := len(newBuf); row < len(oldBuf); row++ {
-			fmt.Fprintf(wnd.f, "\033[%d;1H\033[K", row+1)
-		}
-	}
+	fmt.Fprint(wnd.f, res.String())
 
 	wnd.buf = newBuf
 }
 
-func cellsEqual(a, b []cell.Cell) bool {
-	if len(a) != len(b) {
+func cellsEqual(a, b cell.Cell) bool {
+	if a.Char != b.Char || !slices.Equal(a.ANSI, b.ANSI) {
 		return false
-	}
-	for i := range a {
-		if a[i].Char != b[i].Char || !slices.Equal(a[i].ANSI, b[i].ANSI) {
-			return false
-		}
 	}
 	return true
 }
@@ -347,7 +350,7 @@ func (wnd *window) Run() {
 	wnd.runned = false
 
 	wnd.restoreOut()
-	fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
+	fmt.Fprint(wnd.f, "\033[0m\033[2J\033[H\033[?25h")
 }
 
 func (wnd *window) restoreOut() {
