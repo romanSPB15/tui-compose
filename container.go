@@ -98,6 +98,11 @@ func (v *HBox) SetGap(gap int) {
 	v.layout()
 }
 
+func (v *HBox) WithGap(gap int) *HBox {
+	v.SetGap(gap)
+	return v
+}
+
 func (v *HBox) InnerText() string { return "" }
 
 func (v *HBox) MaxWidth() int {
