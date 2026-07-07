@@ -3,12 +3,12 @@ package cell
 import (
 	"strings"
 
-	"github.com/romanSPB15/tui-compose/v3/ansi" // ваш пакет ansi
+	"github.com/romanSPB15/tui-compose/v3/ansi"
 )
 
 type Cell struct {
 	Char rune
-	ANSI []string // коды, например ["31", "1"]
+	ANSI []string
 }
 
 // Parse преобразует строку с ANSI-кодами в слайс ячеек.
@@ -49,7 +49,6 @@ func Parse(s string) []Cell {
 			continue
 		}
 
-		// Обычный символ
 		cell := Cell{
 			Char: runes[i],
 			ANSI: copyStyles(currentStyles),

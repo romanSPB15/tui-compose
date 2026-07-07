@@ -255,9 +255,8 @@ func (wnd *window) Redraw() {
 			if !cellsEqual(newBuf[y][x], oldBuf[y][x]) {
 				fmt.Println(x, y, newBuf[y][x])
 				fmt.Fprintf(&res, "\033[%d;%dH", y+1, x+1)
-				// Сброс всех атрибутов
+
 				res.WriteString("\033[0m")
-				// Затем применяем новый стиль, если есть
 				if len(newBuf[y][x].ANSI) > 0 {
 					for _, a := range newBuf[y][x].ANSI {
 						res.WriteString("\033[")
@@ -265,9 +264,8 @@ func (wnd *window) Redraw() {
 						res.WriteRune('m')
 					}
 				}
-				// Выводим символ
 				res.WriteString(string(newBuf[y][x].Char))
-				// После символа тоже сброс (уже есть)
+
 				res.WriteString("\033[0m")
 			}
 		}
