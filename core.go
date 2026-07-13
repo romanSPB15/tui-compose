@@ -552,6 +552,8 @@ func (wnd *window) startInputCatcher() {
 			wnd.NextFocus()
 		case input.KeyShiftTab:
 			wnd.BeforeFocus()
+		case input.KeyCtrlC:
+			wnd.Quit()
 		}
 	})
 
