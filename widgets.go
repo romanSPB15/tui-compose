@@ -10,6 +10,19 @@ import (
 	"github.com/romanSPB15/tui-compose/v3/input"
 )
 
+// DisableState хранит состояние disabled и предоставляет методы.
+type DisableState struct {
+	disabled bool
+}
+
+func (d *DisableState) SetDisabled(v bool) {
+	d.disabled = v
+}
+
+func (d *DisableState) IsDisabled() bool {
+	return d.disabled
+}
+
 // Label — это виджет текстовой метки.
 type Label struct {
 	ANSI  string // Приставка ANSI escape последовательности
@@ -156,10 +169,11 @@ func (l *Label) SetText(new string) {
 
 // Button это виджет кнопки.
 type Button struct {
-	text          string
-	OnClicked     func()
-	style, styleF Style
-	focused       bool
+	text                  string
+	OnClicked             func()
+	style, styleF, styleD Style
+	focused               bool
+	DisableState
 }
 
 // NewButton() создаёт кнопку.
@@ -168,6 +182,7 @@ func NewButton(text string, h func()) *Button {
 		text:      text,
 		OnClicked: h,
 		styleF:    BgWhite | FrBlack,
+		styleD:    FrBrightBlack,
 	}
 	return btn
 }
@@ -189,11 +204,15 @@ func (btn *Button) OnClick() {
 }
 
 func (btn *Button) InnerText() string {
-	if btn.focused {
-		return btn.styleF.String() + btn.text + Reset.String()
+	var s Style
+	if btn.IsDisabled() {
+		s = btn.styleD
+	} else if btn.focused {
+		s = btn.styleF
 	} else {
-		return btn.style.String() + btn.text + Reset.String()
+		s = btn.style
 	}
+	return s.String() + btn.text + Reset.String()
 }
 
 func (btn *Button) MaxWidth() int {
@@ -215,6 +234,13 @@ func (btn *Button) WithStyle(s Style) *Button {
 // Добавлено в TUI v3.1.0
 func (btn *Button) WithFocusedStyle(s Style) *Button {
 	btn.styleF = s
+	return btn
+}
+
+// WithDisabledStyle устанавливает стиль кнопки в фокусе.
+// Добавлено в TUI v3.1.0
+func (btn *Button) WithDisabledStyle(s Style) *Button {
+	btn.styleD = s
 	return btn
 }
 

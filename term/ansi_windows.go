@@ -1,6 +1,6 @@
 //go:build windows
 
-package tui
+package term
 
 import (
 	"os"
@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func enableANSI() {
+func EnableANSIWindows() {
 	stdout := windows.Handle(os.Stdout.Fd())
 	var mode uint32
 	if err := windows.GetConsoleMode(stdout, &mode); err != nil {

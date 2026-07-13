@@ -15,7 +15,7 @@ type MouseEvent struct {
 	Pos    Point
 }
 
-func ParseMouseEvent(input []byte) *MouseEvent {
+func parseMouseEvent(input []byte) *MouseEvent {
 	s := string(input)
 	if !strings.HasPrefix(s, "\x1b[<") {
 		return nil

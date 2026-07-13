@@ -85,3 +85,7 @@ func (a *App[T]) ShowOverlay() {
 func (a *App[T]) HideOverlay() {
 	a.wnd.HideOverlay()
 }
+
+func (a *App[T]) Focus() tui.FocusManager {
+	return a.wnd.Focus()
+}

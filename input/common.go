@@ -1,50 +1,89 @@
 package input
 
 import (
-	"os"
-	"time"
+	"sync"
+
+	"github.com/romanSPB15/tui-compose/v3/term"
 )
 
 var (
-	stopCh chan struct{}
+	mouseCh    chan *MouseEvent
+	keyboardCh chan *KeyboardEvent
+	mu         sync.Mutex
+	started    bool
+	stopCh     chan struct{}
 )
 
-func Start(buf int) (mouse <-chan *MouseEvent, keyboard <-chan *KeyboardEvent) {
-	stopCh = make(chan struct{})
-	mouseW := make(chan *MouseEvent, buf)
-	keyboardW := make(chan *KeyboardEvent, buf)
-	go readLoop(mouseW, keyboardW)
-	return mouseW, keyboardW
-}
+// Start запускает чтение событий ввода.
+// Возвращает каналы для мыши и клавиатуры.
+func Start(buf int) (<-chan *MouseEvent, <-chan *KeyboardEvent) {
+	mu.Lock()
+	defer mu.Unlock()
 
-func Stop() {
-	close(stopCh)
-}
-
-func readLoop(mouse chan<- *MouseEvent, keyboard chan<- *KeyboardEvent) {
-	buf := make([]byte, 512)
-	for {
-		os.Stdin.SetReadDeadline(time.Now().Add(60 * time.Millisecond))
-		n, err := os.Stdin.Read(buf)
-		if err != nil {
-			if os.IsTimeout(err) {
-				select {
-				case <-stopCh:
-					return
-				default:
-					continue
-				}
-			}
-			return
-		}
-
-		data := buf[:n]
-
-		if ev := ParseKeyboardInput(data); ev != nil {
-			keyboard <- ev
-		}
-		if ev := ParseMouseEvent(data); ev != nil {
-			mouse <- ev
-		}
+	if started {
+		// Если уже запущено, возвращаем существующие каналы.
+		// Но если они были закрыты, пользователь получит nil.
+		// Рекомендуется всегда вызывать Stop() перед новым Start().
+		return mouseCh, keyboardCh
 	}
+
+	term.Start()
+
+	mouseCh = make(chan *MouseEvent, buf)
+	keyboardCh = make(chan *KeyboardEvent, buf)
+	stopCh = make(chan struct{})
+
+	term.OnInput(func(data []byte) {
+		// Проверяем, не остановлен ли пакет
+		select {
+		case <-stopCh:
+			return
+		default:
+		}
+
+		if ev := parseKeyboardInput(data); ev != nil {
+			select {
+			case keyboardCh <- ev:
+			default:
+				// Канал переполнен — пропускаем
+			}
+		}
+		if ev := parseMouseEvent(data); ev != nil {
+			select {
+			case mouseCh <- ev:
+			default:
+			}
+		}
+	})
+
+	started = true
+	return mouseCh, keyboardCh
+}
+
+// Stop останавливает чтение и закрывает каналы.
+func Stop() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if !started {
+		return
+	}
+
+	if stopCh != nil {
+		close(stopCh)
+		stopCh = nil
+	}
+
+	term.Stop()
+
+	if mouseCh != nil {
+		close(mouseCh)
+		mouseCh = nil
+	}
+	if keyboardCh != nil {
+		close(keyboardCh)
+		keyboardCh = nil
+	}
+
+	started = false
 }

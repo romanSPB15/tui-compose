@@ -1,6 +1,6 @@
 //go:build windows
 
-package tui
+package term
 
 /*
 #include <windows.h>
@@ -27,10 +27,8 @@ import (
 	"unsafe"
 )
 
-func copyToClipboard(text string) {
-	// Конвертируем строку в UTF-16 (с нулевым терминатором)
+func CopyToClipboard(text string) {
 	utf16 := utf16.Encode([]rune(text))
-	utf16 = append(utf16, 0) // нулевой символ
-	// Вызываем C функцию
+	utf16 = append(utf16, 0)
 	C.copy_to_clipboard_utf16((*C.wchar_t)(unsafe.Pointer(&utf16[0])), C.int(len(utf16)-1))
 }

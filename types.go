@@ -40,6 +40,13 @@ type KeyReceiver interface {
 	OnKeyPress(ev *input.KeyboardEvent)
 }
 
+// Disablable — интерфейс для виджетов, которые могут быть отключены.
+// Добавлено в TUI 3.1.0.
+type Disablable interface {
+	SetDisabled(bool)
+	IsDisabled() bool
+}
+
 // Window — это объект приложения.
 type Window interface {
 	SetContent(Widget) // SetContent() устанавливает содержимое окна.
@@ -64,14 +71,25 @@ type Window interface {
 	Width() int  // Ширина окна в символах
 	Height() int // Высота окна в символах
 
-	DisableFocusChange() // DisableFocusChange() выключает смену фокуса.
-
 	SetTitle(title string)
 	CopyToClipboard(text string)
 
 	SetOverlay(wgt Widget)
 	ShowOverlay()
 	HideOverlay()
+
+	Focus() FocusManager
+}
+
+// FocusManager — интерфейс менеджера фокуса.
+// Добавлено в TUI 3.1.0.
+type FocusManager interface {
+	FocusedWidget() Focusable // FocusedWidget() вовзращает виджет, на котором установлен фокус.
+	NextFocus()               // NextFocus() переносит фокус дальше.
+	BeforeFocus()             // BeforeFocus() переносит фокус назад.
+	SetFocus(Focusable) bool  // BeforeFocus() устанавливает фокус на переданный виджет.
+	ClearFocus()              // ClearFocus() сбрасывает фокус.
+	Disable()                 // Disable() отключает смену фокуса.
 }
 
 // Container это интерфейс контейнеров.

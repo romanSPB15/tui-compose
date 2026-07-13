@@ -4,6 +4,7 @@ package tui
 
 import (
 	"fmt"
+	"image"
 )
 
 type PixelSize int
@@ -139,6 +140,13 @@ func (c *Canvas) Height() int {
 	return c.height
 }
 
+func (cnv *Canvas) Get(x, y int) Color {
+	if x < 0 || x >= cnv.width || y < 0 || y >= cnv.height {
+		return NoColor
+	}
+	return cnv.pole[y][x]
+}
+
 // Canvas — это многострочный виджет, на котором можно "рисовать" RGB-пиксели. Требуется терминал с True Color.
 type CanvasRGB struct {
 	width, height int
@@ -270,4 +278,45 @@ func (c *CanvasRGB) Height() int {
 func init() {
 	var _ Widget = (*Canvas)(nil)
 	var _ Widget = (*CanvasRGB)(nil)
+}
+
+func (cnv *CanvasRGB) Load(img image.Image) {
+	bounds := img.Bounds()
+	srcW, srcH := bounds.Dx(), bounds.Dy()
+	dstW, dstH := cnv.Width(), cnv.Height()
+
+	for y := 0; y < dstH; y++ {
+		for x := 0; x < dstW; x++ {
+			x0 := x * srcW / dstW
+			x1 := (x + 1) * srcW / dstW
+			y0 := y * srcH / dstH
+			y1 := (y + 1) * srcH / dstH
+
+			var r, g, b uint64
+			count := 0
+			for sy := y0; sy < y1; sy++ {
+				for sx := x0; sx < x1; sx++ {
+					col := img.At(sx+bounds.Min.X, sy+bounds.Min.Y)
+					rr, gg, bb, _ := col.RGBA()
+					r += uint64(rr >> 8)
+					g += uint64(gg >> 8)
+					b += uint64(bb >> 8)
+					count++
+				}
+			}
+			if count > 0 {
+				avgR := uint8(r / uint64(count))
+				avgG := uint8(g / uint64(count))
+				avgB := uint8(b / uint64(count))
+				cnv.Draw(x, y, ColorRGB{avgR, avgG, avgB})
+			}
+		}
+	}
+}
+
+func (cnv *CanvasRGB) Get(x, y int) ColorRGB {
+	if x < 0 || x >= cnv.width || y < 0 || y >= cnv.height {
+		return ColorRGB{}
+	}
+	return cnv.pole[y][x]
 }

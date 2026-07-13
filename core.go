@@ -12,6 +12,7 @@ import (
 
 	"github.com/romanSPB15/tui-compose/v3/cell"
 	"github.com/romanSPB15/tui-compose/v3/input"
+	termL "github.com/romanSPB15/tui-compose/v3/term"
 	"golang.org/x/term"
 )
 
@@ -172,7 +173,6 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 	} else {
 
 		txt := wgt.InnerText()
-		fmt.Println(pos, txt)
 
 		if txt == "" {
 			return
@@ -329,8 +329,8 @@ func (wnd *window) Run() {
 	wnd.stderr = os.Stderr
 	os.Stdout, os.Stderr = wnd.log, wnd.log
 
-	wnd.enableRawMode()
-	defer wnd.restoreTerminalMode()
+	termL.MakeRaw()
+	defer termL.Restore()
 
 	fmt.Fprint(wnd.f, "\033[2J")
 
@@ -381,7 +381,7 @@ func NewWindow() Window {
 		}
 		wnd.log = f
 	}
-	enableANSI()
+	termL.EnableANSIWindows()
 	currentWindow = wnd
 	go wnd.runWorker()
 	return wnd
@@ -477,41 +477,11 @@ func (wnd *window) runWorker() {
 }
 
 func (wnd *window) Width() int {
-	width, _, err := term.GetSize(int(wnd.f.Fd()))
-	if err != nil {
-		wnd.LogFatal("tui: get window size error")
-	}
-	return width
+	return termL.Width()
 }
 
 func (wnd *window) Height() int {
-	_, height, err := term.GetSize(int(wnd.f.Fd()))
-	if err != nil {
-		wnd.LogFatal("tui: get window size error")
-	}
-	return height
-}
-
-func (wnd *window) DisableFocusChange() {
-	wnd.Do(func() {
-		wnd.focusChange = false
-	})
-}
-
-func (wnd *window) enableRawMode() {
-	old, err := term.MakeRaw(int(os.Stdin.Fd()))
-	if err != nil {
-		wnd.LogFatal("Ошибка перехода в RAW режим:")
-	}
-	wnd.oldMode = old
-	fmt.Fprint(wnd.f, "\033[?1000h\033[?1006h")
-}
-
-func (wnd *window) restoreTerminalMode() {
-	if wnd.oldMode != nil {
-		fmt.Fprint(wnd.f, "\033[?1006l\033[?1000l")
-		term.Restore(int(os.Stdin.Fd()), wnd.oldMode)
-	}
+	return termL.Height()
 }
 
 func (wnd *window) startStopSignalCatcher() {
@@ -562,42 +532,26 @@ func (wnd *window) RegisterClickHandler(h func(ev *input.MouseEvent)) {
 }
 
 func (wnd *window) CopyToClipboard(text string) {
-	copyToClipboard(text)
+	termL.CopyToClipboard(text)
 }
 
 func (wnd *window) startInputCatcher() {
-	if wnd.focusChange && len(wnd.focusableWidgets) != 0 {
-		wnd.RegisterKeyHandler(func(ke *input.KeyboardEvent) {
-			switch ke.Key {
-			case input.KeyTab:
-				if wnd.focusIndex > len(wnd.focusableWidgets)-2 {
-					return
-				}
-				if wnd.focusIndex == -1 {
-					wnd.focusableWidgets[0].OnFocus()
-					wnd.focusIndex = 0
-					return
-				}
-				wnd.focusableWidgets[wnd.focusIndex].OnBlur()
-				wnd.focusIndex++
-				wnd.focusableWidgets[wnd.focusIndex].OnFocus()
-			case input.KeyShiftTab:
-				if wnd.focusIndex <= 0 {
-					return
-				}
-				wnd.focusableWidgets[wnd.focusIndex].OnBlur()
-				wnd.focusIndex--
-				wnd.focusableWidgets[wnd.focusIndex].OnFocus()
+	wnd.RegisterKeyHandler(func(ke *input.KeyboardEvent) {
+		if wnd.focusIndex != -1 {
+			if te, ok := wnd.focusableWidgets[wnd.focusIndex].(KeyReceiver); ok {
+				te.OnKeyPress(ke)
 			}
-		})
-		wnd.RegisterKeyHandler(func(ke *input.KeyboardEvent) {
-			if wnd.focusIndex != -1 {
-				if te, ok := wnd.focusableWidgets[wnd.focusIndex].(KeyReceiver); ok {
-					te.OnKeyPress(ke)
-				}
-			}
-		})
-	}
+		}
+		if !wnd.focusChange {
+			return
+		}
+		switch ke.Key {
+		case input.KeyTab:
+			wnd.NextFocus()
+		case input.KeyShiftTab:
+			wnd.BeforeFocus()
+		}
+	})
 
 	mouse, keyboard := input.Start(1)
 	for {
@@ -627,6 +581,10 @@ func (wnd *window) SetContent(w Widget) {
 
 func (wnd *window) SetTitle(title string) {
 	fmt.Fprintf(wnd.f, "\033]0;%s\033\\", title)
+}
+
+func (wnd *window) Focus() FocusManager {
+	return wnd
 }
 
 func CurrentWindow() Window {

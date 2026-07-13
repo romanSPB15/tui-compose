@@ -140,7 +140,7 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 	return 0, KeyUnknown
 }
 
-func ParseKeyboardInput(data []byte) *KeyboardEvent {
+func parseKeyboardInput(data []byte) *KeyboardEvent {
 	if len(data) == 0 {
 		return nil
 	}
