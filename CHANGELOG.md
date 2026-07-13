@@ -81,5 +81,8 @@
 ### Added
 * Добавлено отображение курсора при пустом тексте в `InputField`
 
-### Remved
+### Removed
 * Убран белый фон при фокусе по умолчанию в `InputField`
+
+### Fixed
+* Исправлен `DrawAndRender` у `Canvas` и `CanvasRGB`
