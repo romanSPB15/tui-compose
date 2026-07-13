@@ -1,4 +1,4 @@
-![demo.gif](demo.gif)
+![demo/demo.gif](demo/demo.gif)
 
 # TUI Compose
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
