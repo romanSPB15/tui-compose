@@ -477,11 +477,13 @@ func (wnd *window) runWorker() {
 }
 
 func (wnd *window) Width() int {
-	return termL.Width()
+	w, _ := termL.SizeFd(wnd.stdout.Fd())
+	return w
 }
 
 func (wnd *window) Height() int {
-	return termL.Height()
+	_, h := termL.SizeFd(wnd.stdout.Fd())
+	return h
 }
 
 func (wnd *window) startStopSignalCatcher() {
