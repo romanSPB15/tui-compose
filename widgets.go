@@ -529,9 +529,8 @@ type InputField struct {
 func NewInputField(width int) *InputField {
 	return &InputField{
 		width:            width,
-		styleF:           BgWhite | FrBlack, // стандартный стиль фокуса
-		cursorStyle:      Reverse,           // инверсия по умолчанию
-		placeholderStyle: FrBrightBlack,     // серый текст для плейсхолдера
+		cursorStyle:      Reverse,       // инверсия по умолчанию
+		placeholderStyle: FrBrightBlack, // серый текст для плейсхолдера
 	}
 }
 
@@ -610,17 +609,25 @@ func (f *InputField) InnerText() string {
 
 	var builder strings.Builder
 
-	if !f.focused || len(runes) == 0 {
+	if !f.focused {
+		if f.Text == "" && f.placeholder != "" {
+			ps := f.placeholderStyle
+			return ps.String() + f.placeholder + Reset.String()
+		}
 		return style.String() + f.Text + Reset.String()
 	}
 
-	// Текст до курсора (с общим стилем)
+	if len(runes) == 0 {
+		cursorDisplay := f.cursorStyle.String() + " " + Reset.String()
+		padding := strings.Repeat(" ", f.width-1)
+		return style.String() + cursorDisplay + padding + Reset.String()
+	}
+
 	if cursor > 0 {
 		builder.WriteString(style.String())
 		builder.WriteString(string(runes[:cursor]))
 	}
 
-	// Курсор
 	if cursor < len(runes) {
 		cursorDisplay := f.cursorStyle.String() + string(runes[cursor]) + Reset.String()
 		builder.WriteString(cursorDisplay)
@@ -710,7 +717,6 @@ func (f *InputField) OnKeyPress(ev *input.KeyboardEvent) {
 		}
 	default:
 		if ev.Rune != 0 {
-			// Вставка символа
 			runes = append(runes[:f.CursorPos], append([]rune{ev.Rune}, runes[f.CursorPos:]...)...)
 			f.Text = string(runes)
 			f.CursorPos++
