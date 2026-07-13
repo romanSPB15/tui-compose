@@ -33,7 +33,6 @@ func NewCanvas(width, height int) *Canvas {
 		pole:   p,
 		width:  width,
 		height: height,
-		idx:    -1,
 	}
 }
 
@@ -51,7 +50,7 @@ func (c *Canvas) DrawAndRender(x, y int, clr Color) {
 		return
 	}
 	c.pole[y][x] = clr
-	if currentWindow != nil && c.idx != -1 {
+	if currentWindow != nil {
 		currentWindow.Redraw()
 	}
 }
@@ -151,11 +150,10 @@ func (cnv *Canvas) Get(x, y int) Color {
 type CanvasRGB struct {
 	width, height int
 	pole          [][]ColorRGB
-	idx           int
 	PixelSize     PixelSize
 }
 
-// NewCanvas() создаёт виждет Canvas.ы
+// NewCanvas() создаёт виждет Canvas.
 func NewCanvasRGB(width, height int) *CanvasRGB {
 	p := make([][]ColorRGB, height)
 	for i := range height {
@@ -165,7 +163,6 @@ func NewCanvasRGB(width, height int) *CanvasRGB {
 		pole:      p,
 		width:     width,
 		height:    height,
-		idx:       -1,
 		PixelSize: PixelOneSymbol,
 	}
 }
@@ -184,7 +181,7 @@ func (c *CanvasRGB) DrawAndRender(x, y int, clr ColorRGB) {
 		return
 	}
 	c.pole[y][x] = clr
-	if currentWindow != nil && c.idx != -1 {
+	if currentWindow != nil {
 		currentWindow.Redraw()
 	}
 }
