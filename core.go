@@ -253,7 +253,6 @@ func (wnd *window) Redraw() {
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
 			if !cellsEqual(newBuf[y][x], oldBuf[y][x]) {
-				fmt.Println(x, y, newBuf[y][x])
 				fmt.Fprintf(&res, "\033[%d;%dH", y+1, x+1)
 
 				res.WriteString("\033[0m")
@@ -324,8 +323,6 @@ func (wnd *window) Run() {
 		}
 	}()
 	if !term.IsTerminal(int(wnd.f.Fd())) {
-		fmt.Fprintln(wnd.f, "Приложение запущено не в терминале. Выход...")
-		time.Sleep(time.Second * 3)
 		wnd.LogFatal("tui: stdout is not terminal")
 	}
 	if err := termL.MakeRaw(); err != nil {
