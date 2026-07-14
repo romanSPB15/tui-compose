@@ -258,11 +258,14 @@ func (wnd *window) Redraw() {
 
 				res.WriteString("\033[0m")
 				if len(newBuf[y][x].ANSI) > 0 {
-					for _, a := range newBuf[y][x].ANSI {
-						res.WriteString("\033[")
+					res.WriteString("\033[")
+					for i, a := range newBuf[y][x].ANSI {
 						res.WriteString(a)
-						res.WriteRune('m')
+						if i != len(newBuf[y][x].ANSI)-1 {
+							res.WriteRune(';')
+						}
 					}
+					res.WriteRune('m')
 				}
 				res.WriteString(string(newBuf[y][x].Char))
 
