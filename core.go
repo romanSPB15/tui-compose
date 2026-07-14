@@ -328,12 +328,13 @@ func (wnd *window) Run() {
 		time.Sleep(time.Second * 3)
 		wnd.LogFatal("tui: stdout is not terminal")
 	}
+	if err := termL.MakeRaw(); err != nil {
+		wnd.LogInfo("Cannot make raw: %s", err)
+	}
+
 	wnd.stdout = os.Stdout
 	wnd.stderr = os.Stderr
 	os.Stdout, os.Stderr = wnd.log, wnd.log
-
-	termL.MakeRaw()
-	defer termL.Restore()
 
 	fmt.Fprint(wnd.f, "\033[2J")
 
@@ -351,6 +352,7 @@ func (wnd *window) Run() {
 	wnd.runned = false
 
 	wnd.restoreOut()
+	termL.Restore()
 	fmt.Fprint(wnd.f, "\033[0m\033[2J\033[H\033[?25h")
 }
 
