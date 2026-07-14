@@ -337,6 +337,8 @@ func (wnd *window) Run() {
 
 	fmt.Fprint(wnd.f, "\033[?25l")
 
+	fmt.Fprint(wnd.f, "\033[?1006h\033[?1000h")
+
 	go wnd.startStopSignalCatcher()
 	go wnd.startScreenResizeChecker()
 	go wnd.startInputCatcher()
@@ -351,6 +353,7 @@ func (wnd *window) Run() {
 	wnd.restoreOut()
 	termL.Restore()
 	fmt.Fprint(wnd.f, "\033[0m\033[2J\033[H\033[?25h")
+	fmt.Fprint(wnd.f, "\033[?1006l\033[?1000l")
 }
 
 func (wnd *window) restoreOut() {
