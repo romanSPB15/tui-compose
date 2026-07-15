@@ -24,6 +24,11 @@ jobs:
         run: |
           go test -v ./... -covermode=count -coverprofile=coverage.out
 
+      - name: Show coverage summary
+        run: |
+          go tool cover -func=coverage.out | grep total
+          head -n 10 coverage.out
+
       - name: Generate coverage badge
         uses: tj-actions/coverage-badge-go@v2
         with:
