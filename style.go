@@ -100,7 +100,7 @@ func (s Style) String() string {
 		codes = append(codes, 7)
 	}
 	if s&Reset != 0 {
-		codes = append(codes, 0)
+		codes = []int{0}
 	}
 
 	if len(codes) == 0 {
