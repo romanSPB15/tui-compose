@@ -6,7 +6,7 @@
 [![README-ENGLISH](https://img.shields.io/badge/README-ENGLISH-blueviolet.svg?style=flat-square)](https://github-com.translate.goog/romanSPB15/tui-compose?_x_tr_sl=ru&_x_tr_tl=en&_x_tr_hl=ru&_x_tr_pto=wapp)  
 ![Go Report Card](https://goreportcard.com/badge/github.com/romanSPB15/tui-compose)
 [![Build](https://github.com/romanSPB15/tui-compose/actions/workflows/build.yml/badge.svg)](https://github.com/romanSPB15/tui-compose/actions/workflows/build.yml)
-![Coverage](https://img.shields.io/badge/Coverage-0-red)
+[![Test](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml/badge.svg)](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml)
 
 
 Легковесный фреймворк для удобной разработки TUI-интерфейсов на Go с поддержкой мыши, готовыми виджетами и автоматической системой фокуса без зависимостей. Идеально подходит для дашбордов, консольных утилит и интерактивных CLI-приложений.
