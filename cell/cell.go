@@ -1,142 +1,180 @@
 package cell
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/romanSPB15/tui-compose/v3/ansi"
 )
 
+// BIURBlRe - Bold Italic Underline Reverse Blink
+
+type Style struct {
+	Fg   string
+	Bg   string
+	Args uint32
+}
+
+const (
+	bold = 1 << iota
+	italic
+	underline
+	reverse
+	blink
+	reset
+)
+
 // Cell представляет одну ячейку экрана.
 type Cell struct {
-	Char rune
-	ANSI []string
+	Char  rune
+	Style Style
 }
 
-type styleState struct {
-	fg        string
-	bg        string
-	bold      bool
-	italic    bool
-	underline bool
-	reverse   bool
-	strike    bool
-}
+// ANSI возвращает последовательность для перехода от предыдущего стиля к текущему.
+func (c Style) ANSI(last Style) string {
+	var codes []string
 
-func (s *styleState) reset() {
-	s.fg = ""
-	s.bg = ""
-	s.bold = false
-	s.italic = false
-	s.underline = false
-	s.reverse = false
-	s.strike = false
-}
-
-func (s *styleState) applyParams(params []string) {
-	if len(params) == 0 {
-		return
-	}
-	if params[0] == "0" {
-		s.reset()
-		return
+	if c.Args&bold != 0 && last.Args&bold == 0 {
+		codes = append(codes, "1")
+	} else if c.Args&bold == 0 && last.Args&bold != 0 {
+		codes = append(codes, "22")
 	}
 
-	for i := 0; i < len(params); i++ {
-		code, _ := strconv.Atoi(params[i])
-		switch {
-		case code == 0:
-			s.reset()
-		case code == 1:
-			s.bold = true
-		case code == 3:
-			s.italic = true
-		case code == 4:
-			s.underline = true
-		case code == 7:
-			s.reverse = true
-		case code == 9:
-			s.strike = true
-		case code == 21:
-			s.underline = true
-		case code == 22:
-			s.bold = false
-		case code == 23:
-			s.italic = false
-		case code == 24:
-			s.underline = false
-		case code == 27:
-			s.reverse = false
-		case code == 29:
-			s.strike = false
-		case code >= 30 && code <= 37:
-			s.fg = strconv.Itoa(code)
-		case code >= 40 && code <= 47:
-			s.bg = strconv.Itoa(code)
-		case code >= 90 && code <= 97:
-			s.fg = strconv.Itoa(code)
-		case code >= 100 && code <= 107:
-			s.bg = strconv.Itoa(code)
-		case code == 38:
-			if i+1 < len(params) {
-				if params[i+1] == "2" && i+4 < len(params) {
-					r, _ := strconv.Atoi(params[i+2])
-					g, _ := strconv.Atoi(params[i+3])
-					b, _ := strconv.Atoi(params[i+4])
-					s.fg = "38;2;" + strconv.Itoa(r) + ";" + strconv.Itoa(g) + ";" + strconv.Itoa(b)
-					i += 4
-				} else if params[i+1] == "5" && i+2 < len(params) {
-					idx, _ := strconv.Atoi(params[i+2])
-					s.fg = "38;5;" + strconv.Itoa(idx)
-					i += 2
-				}
-			}
-		case code == 39:
-			s.fg = ""
-		case code == 48:
-			if i+1 < len(params) {
-				if params[i+1] == "2" && i+4 < len(params) {
-					r, _ := strconv.Atoi(params[i+2])
-					g, _ := strconv.Atoi(params[i+3])
-					b, _ := strconv.Atoi(params[i+4])
-					s.bg = "48;2;" + strconv.Itoa(r) + ";" + strconv.Itoa(g) + ";" + strconv.Itoa(b)
-					i += 4
-				} else if params[i+1] == "5" && i+2 < len(params) {
-					idx, _ := strconv.Atoi(params[i+2])
-					s.bg = "48;5;" + strconv.Itoa(idx)
-					i += 2
-				}
-			}
-		case code == 49:
-			s.bg = ""
+	if c.Args&italic != 0 && last.Args&italic == 0 {
+		codes = append(codes, "3")
+	} else if c.Args&italic == 0 && last.Args&italic != 0 {
+		codes = append(codes, "23")
+	}
+
+	if c.Args&underline != 0 && last.Args&underline == 0 {
+		codes = append(codes, "4")
+	} else if c.Args&underline == 0 && last.Args&underline != 0 {
+		codes = append(codes, "24")
+	}
+
+	if c.Args&reverse != 0 && last.Args&reverse == 0 {
+		codes = append(codes, "7")
+	} else if c.Args&reverse == 0 && last.Args&reverse != 0 {
+		codes = append(codes, "27")
+	}
+
+	if c.Args&blink != 0 && last.Args&blink == 0 {
+		codes = append(codes, "5")
+	} else if c.Args&blink == 0 && last.Args&blink != 0 {
+		codes = append(codes, "25")
+	}
+
+	if c.Fg != last.Fg {
+		if c.Fg == "" {
+			codes = append(codes, "39")
+		} else {
+			codes = append(codes, strings.Split(c.Fg, ";")...)
 		}
 	}
+
+	if c.Bg != last.Bg {
+		if c.Bg == "" {
+			codes = append(codes, "49")
+		} else {
+			codes = append(codes, strings.Split(c.Bg, ";")...)
+		}
+	}
+
+	if c.Args&reset != 0 {
+		codes = []string{"0"}
+	}
+
+	if len(codes) == 0 {
+		return ""
+	}
+	return "\033[" + strings.Join(codes, ";") + "m"
 }
 
-func (s *styleState) toSlice() []string {
-	var parts []string
-	if s.fg != "" {
-		parts = append(parts, s.fg)
+func (c Style) Merge(new Style) Style {
+	c.Args |= new.Args
+
+	if new.Fg != "" {
+		c.Fg = new.Fg
 	}
-	if s.bg != "" {
-		parts = append(parts, s.bg)
+	if new.Bg != "" {
+		c.Bg = new.Bg
 	}
-	if s.bold {
-		parts = append(parts, "1")
+
+	return c
+}
+
+func parseANSI(seq string) Style {
+	if !strings.HasPrefix(seq, "\033[") || !strings.HasSuffix(seq, "m") {
+		return Style{}
 	}
-	if s.italic {
-		parts = append(parts, "3")
+	params := strings.Split(strings.TrimSuffix(strings.TrimPrefix(seq, "\033["), "m"), ";")
+	if len(params) == 0 {
+		return Style{}
 	}
-	if s.underline {
-		parts = append(parts, "4")
+
+	var s Style
+
+	i := 0
+	for i < len(params) {
+		v, _ := strconv.Atoi(params[i])
+		switch v {
+		case 0:
+			return Style{} // reset
+		case 1:
+			s.Args |= bold
+		case 3:
+			s.Args |= italic
+		case 4:
+			s.Args |= underline
+		case 5:
+			s.Args |= blink
+		case 7:
+			s.Args |= reverse
+		case 22:
+			s.Args &^= bold
+		case 23:
+			s.Args &^= italic
+		case 24:
+			s.Args &^= underline
+		case 25:
+			s.Args &^= blink
+		case 27:
+			s.Args &^= reverse
+		case 30, 31, 32, 33, 34, 35, 36, 37:
+			s.Fg = fmt.Sprintf("%d", v)
+		case 39:
+			s.Fg = ""
+		case 40, 41, 42, 43, 44, 45, 46, 47:
+			s.Bg = fmt.Sprintf("%d", v)
+		case 49:
+			s.Bg = ""
+		case 38:
+			if i+1 < len(params) {
+				if params[i+1] == "2" && i+3 < len(params) {
+					s.Fg = fmt.Sprintf("38;2;%s;%s;%s", params[i+2], params[i+3], params[i+4])
+					i += 4
+				} else if params[i+1] == "5" && i+2 < len(params) {
+					s.Fg = fmt.Sprintf("38;5;%s", params[i+2])
+					i += 2
+				}
+			}
+		case 48:
+			if i+1 < len(params) {
+				if params[i+1] == "2" && i+3 < len(params) {
+					s.Bg = fmt.Sprintf("48;2;%s;%s;%s", params[i+2], params[i+3], params[i+4])
+					i += 4
+				} else if params[i+1] == "5" && i+2 < len(params) {
+					s.Bg = fmt.Sprintf("48;5;%s", params[i+2])
+					i += 2
+				}
+			}
+		default:
+			// ignore
+		}
+		i++
 	}
-	if s.reverse {
-		parts = append(parts, "7")
-	}
-	if s.strike {
-		parts = append(parts, "9")
-	}
-	return parts
+	return s
 }
 
 // Parse разбирает строку с ANSI-кодами и возвращает слайс ячеек.
@@ -145,61 +183,37 @@ func Parse(s string) []Cell {
 		return nil
 	}
 
-	matches, clean := ansi.Find(s)
+	matches, _ := ansi.Find(s)
 	if len(matches) == 0 {
-		runes := []rune(clean)
+		runes := []rune(s)
 		cells := make([]Cell, len(runes))
 		for i, r := range runes {
-			cells[i] = Cell{Char: r, ANSI: nil}
+			cells[i] = Cell{Char: r}
 		}
 		return cells
 	}
 
-	styleMap := make(map[int]string)
+	seqMap := make(map[int]string)
 	for _, m := range matches {
-		styleMap[m.Index] = m.Seq
+		seqMap[m.Index] = m.Seq
 	}
 
-	runes := []rune(clean)
 	var cells []Cell
-	state := &styleState{}
-	state.reset()
+	var currentStyle Style
 
-	for i := 0; i < len(runes); i++ {
-		if seq, ok := styleMap[i]; ok {
-			params := extractParams(seq)
-			if len(params) > 0 {
-				state.applyParams(params)
-			}
+	runes := []rune(s)
+
+	i := 0
+	for i < len(runes) {
+		if seq, ok := seqMap[i]; ok {
+			newStyle := parseANSI(seq)
+			currentStyle = currentStyle.Merge(newStyle)
+			i += len([]rune(seq))
 			continue
 		}
-
-		c := Cell{
-			Char: runes[i],
-			ANSI: state.toSlice(),
-		}
-		cells = append(cells, c)
+		cells = append(cells, Cell{Char: runes[i], Style: currentStyle})
+		i++
 	}
 
 	return cells
-}
-
-func extractParams(seq string) []string {
-	if !strings.HasPrefix(seq, "\x1b[") {
-		return nil
-	}
-	lastIdx := strings.LastIndexFunc(seq, func(r rune) bool {
-		return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z'
-	})
-	if lastIdx == -1 {
-		return nil
-	}
-	if seq[lastIdx] != 'm' {
-		return nil
-	}
-	params := seq[len("\x1b["):lastIdx]
-	if params == "" {
-		return nil
-	}
-	return strings.Split(params, ";")
 }

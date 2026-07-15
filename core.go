@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -209,7 +208,7 @@ func (wnd *window) render() [][]cell.Cell {
 	for i := range buf {
 		buf[i] = make([]cell.Cell, w)
 		for j := range buf[i] {
-			buf[i][j] = cell.Cell{Char: ' ', ANSI: nil}
+			buf[i][j] = cell.Cell{Char: ' '}
 		}
 	}
 
@@ -240,7 +239,7 @@ func (wnd *window) Redraw() {
 		for i := len(oldBuf); i < h; i++ {
 			newOld[i] = make([]cell.Cell, w)
 			for j := range newOld[i] {
-				newOld[i][j] = cell.Cell{Char: ' ', ANSI: nil}
+				newOld[i][j] = cell.Cell{Char: ' '}
 			}
 		}
 		oldBuf = newOld
@@ -250,22 +249,16 @@ func (wnd *window) Redraw() {
 
 	var res strings.Builder
 
+	var last cell.Style
+
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
-			if !cellsEqual(newBuf[y][x], oldBuf[y][x]) {
+			if newBuf[y][x] != oldBuf[y][x] {
 				fmt.Fprintf(&res, "\033[%d;%dH", y+1, x+1)
 
-				res.WriteString("\033[0m")
-				if len(newBuf[y][x].ANSI) > 0 {
-					res.WriteString("\033[")
-					for i, a := range newBuf[y][x].ANSI {
-						res.WriteString(a)
-						if i != len(newBuf[y][x].ANSI)-1 {
-							res.WriteRune(';')
-						}
-					}
-					res.WriteRune('m')
-				}
+				res.WriteString(newBuf[y][x].Style.ANSI(last))
+				last = newBuf[y][x].Style
+
 				res.WriteString(string(newBuf[y][x].Char))
 
 				res.WriteString("\033[0m")
@@ -276,13 +269,6 @@ func (wnd *window) Redraw() {
 	fmt.Fprint(wnd.f, res.String())
 
 	wnd.buf = newBuf
-}
-
-func cellsEqual(a, b cell.Cell) bool {
-	if a.Char != b.Char || !slices.Equal(a.ANSI, b.ANSI) {
-		return false
-	}
-	return true
 }
 
 func (wnd *window) SetOverlay(wgt Widget) {
