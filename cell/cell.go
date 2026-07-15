@@ -17,12 +17,12 @@ type Style struct {
 }
 
 const (
-	bold = 1 << iota
-	italic
-	underline
-	reverse
-	blink
-	reset
+	Bold = 1 << iota
+	Italic
+	Underline
+	Reverse
+	Blink
+	Reset
 )
 
 // Cell представляет одну ячейку экрана.
@@ -35,33 +35,33 @@ type Cell struct {
 func (c Style) ANSI(last Style) string {
 	var codes []string
 
-	if c.Args&bold != 0 && last.Args&bold == 0 {
+	if c.Args&Bold != 0 && last.Args&Bold == 0 {
 		codes = append(codes, "1")
-	} else if c.Args&bold == 0 && last.Args&bold != 0 {
+	} else if c.Args&Bold == 0 && last.Args&Bold != 0 {
 		codes = append(codes, "22")
 	}
 
-	if c.Args&italic != 0 && last.Args&italic == 0 {
+	if c.Args&Italic != 0 && last.Args&Italic == 0 {
 		codes = append(codes, "3")
-	} else if c.Args&italic == 0 && last.Args&italic != 0 {
+	} else if c.Args&Italic == 0 && last.Args&Italic != 0 {
 		codes = append(codes, "23")
 	}
 
-	if c.Args&underline != 0 && last.Args&underline == 0 {
+	if c.Args&Underline != 0 && last.Args&Underline == 0 {
 		codes = append(codes, "4")
-	} else if c.Args&underline == 0 && last.Args&underline != 0 {
+	} else if c.Args&Underline == 0 && last.Args&Underline != 0 {
 		codes = append(codes, "24")
 	}
 
-	if c.Args&reverse != 0 && last.Args&reverse == 0 {
+	if c.Args&Reverse != 0 && last.Args&Reverse == 0 {
 		codes = append(codes, "7")
-	} else if c.Args&reverse == 0 && last.Args&reverse != 0 {
+	} else if c.Args&Reverse == 0 && last.Args&Reverse != 0 {
 		codes = append(codes, "27")
 	}
 
-	if c.Args&blink != 0 && last.Args&blink == 0 {
+	if c.Args&Blink != 0 && last.Args&Blink == 0 {
 		codes = append(codes, "5")
-	} else if c.Args&blink == 0 && last.Args&blink != 0 {
+	} else if c.Args&Blink == 0 && last.Args&Blink != 0 {
 		codes = append(codes, "25")
 	}
 
@@ -81,7 +81,7 @@ func (c Style) ANSI(last Style) string {
 		}
 	}
 
-	if c.Args&reset != 0 {
+	if c.Args&Reset != 0 {
 		codes = []string{"0"}
 	}
 
@@ -92,6 +92,10 @@ func (c Style) ANSI(last Style) string {
 }
 
 func (c Style) Merge(new Style) Style {
+	if new.Args&Reset != 0 {
+		return Style{}
+	}
+
 	c.Args |= new.Args
 
 	if new.Fg != "" {
@@ -120,27 +124,28 @@ func parseANSI(seq string) Style {
 		v, _ := strconv.Atoi(params[i])
 		switch v {
 		case 0:
-			return Style{} // reset
+			s.Args |= Reset
+			return s
 		case 1:
-			s.Args |= bold
+			s.Args |= Bold
 		case 3:
-			s.Args |= italic
+			s.Args |= Italic
 		case 4:
-			s.Args |= underline
+			s.Args |= Underline
 		case 5:
-			s.Args |= blink
+			s.Args |= Blink
 		case 7:
-			s.Args |= reverse
+			s.Args |= Reverse
 		case 22:
-			s.Args &^= bold
+			s.Args &^= Bold
 		case 23:
-			s.Args &^= italic
+			s.Args &^= Italic
 		case 24:
-			s.Args &^= underline
+			s.Args &^= Underline
 		case 25:
-			s.Args &^= blink
+			s.Args &^= Blink
 		case 27:
-			s.Args &^= reverse
+			s.Args &^= Reverse
 		case 30, 31, 32, 33, 34, 35, 36, 37:
 			s.Fg = fmt.Sprintf("%d", v)
 		case 39:
