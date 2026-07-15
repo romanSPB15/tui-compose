@@ -33,6 +33,10 @@ type Cell struct {
 
 // ANSI возвращает последовательность для перехода от предыдущего стиля к текущему.
 func (c Style) ANSI(last Style) string {
+	if (last == Style{}) && (c != Style{}) {
+		return "\x1b[0m"
+	}
+
 	var codes []string
 
 	if c.Args&Bold != 0 && last.Args&Bold == 0 {
