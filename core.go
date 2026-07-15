@@ -260,8 +260,6 @@ func (wnd *window) Redraw() {
 				last = newBuf[y][x].Style
 
 				res.WriteString(string(newBuf[y][x].Char))
-
-				res.WriteString("\033[0m")
 			}
 		}
 	}
