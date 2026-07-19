@@ -250,6 +250,7 @@ func (wnd *window) Redraw() {
 	var res strings.Builder
 
 	res.WriteString("\x1b[0m")
+
 	var last cell.Style
 
 	for y := 0; y < h; y++ {

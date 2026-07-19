@@ -7,10 +7,21 @@ import (
 	"github.com/romanSPB15/tui-compose/v3/cell"
 )
 
-func cells(chars string, style cell.Style) []cell.Cell {
-	res := make([]cell.Cell, len(chars))
-	for i, ch := range chars {
-		res[i] = cell.Cell{Char: ch, Style: style}
+func cells(chars string, styles ...cell.Style) []cell.Cell {
+	runes := []rune(chars)
+
+	res := make([]cell.Cell, len(runes))
+
+	currentStyle := styles[0]
+
+	sIdx := 1
+
+	for i, ch := range runes {
+		res[i] = cell.Cell{Char: ch, Style: currentStyle}
+		if sIdx < len(styles) {
+			currentStyle = styles[sIdx]
+			sIdx++
+		}
 	}
 	return res
 }
@@ -32,6 +43,24 @@ func TestParse(t *testing.T) {
 				cells("Bold green", cell.Style{Fg: "32", Args: cell.Bold}),
 				cells("Normal", cell.Style{})...,
 			),
+		},
+		{
+			Input: "\033[40;30m▀\033[0m▀",
+			Expected: append(
+				cells("▀", cell.Style{Fg: "30", Bg: "40"}),
+				cells("▀", cell.Style{})...,
+			),
+		},
+		{
+			Input: "\033[40;30m▀\033[0m▀\033[43m",
+			Expected: append(
+				cells("▀", cell.Style{Fg: "30", Bg: "40"}),
+				cells("▀", cell.Style{})...,
+			),
+		},
+		{
+			Input:    "\033[30m▀\033[40m▀\033[35m",
+			Expected: cells("▀▀", cell.Style{Fg: "30"}, cell.Style{Fg: "30", Bg: "40"}),
 		},
 	}
 	for i, test := range tt {
