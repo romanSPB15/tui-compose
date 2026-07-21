@@ -152,10 +152,14 @@ func parseANSI(seq string) Style {
 			s.Args &^= Reverse
 		case 30, 31, 32, 33, 34, 35, 36, 37:
 			s.Fg = fmt.Sprintf("%d", v)
-		case 39:
-			s.Fg = ""
+		case 90, 91, 92, 93, 94, 95, 96, 97:
+			s.Fg = fmt.Sprintf("%d", v) // яркий текст
 		case 40, 41, 42, 43, 44, 45, 46, 47:
 			s.Bg = fmt.Sprintf("%d", v)
+		case 100, 101, 102, 103, 104, 105, 106, 107:
+			s.Bg = fmt.Sprintf("%d", v) // яркий фон
+		case 39:
+			s.Fg = ""
 		case 49:
 			s.Bg = ""
 		case 38:
