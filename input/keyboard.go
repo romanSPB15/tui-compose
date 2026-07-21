@@ -164,16 +164,4 @@ func parseKeyboardInput(data []byte) *KeyboardEvent {
 		Rune: r,
 		Alt:  alt,
 	}
-
-	// wnd.doWithMessageAndWait(func() {
-	// 	for _, h := range wnd.keyHandlers {
-	// 		wnd.doWithMessage(func() {
-	// 			h(&KeyboardEvent{
-	// 				Key:  k,
-	// 				Rune: r,
-	// 				Alt:  alt,
-	// 			})
-	// 		}, "keyboard handler")
-	// 	}
-	// }, "key handler")
 }
