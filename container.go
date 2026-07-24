@@ -1,13 +1,5 @@
 package tui
 
-import "strings"
-
-func linesCount(widget Widget) int {
-	text := widget.InnerText()
-	text = strings.ReplaceAll(text, "\r\n", "\n")
-	return len(strings.Split(text, "\n"))
-}
-
 // Добавлено в TUI 3.0.0.
 type VBox struct {
 	children  []Widget
@@ -31,7 +23,7 @@ func (v *VBox) layout() {
 	line := 0
 	for i := range v.children {
 		v.positions[i] = Pos{Line: line, Col: 0}
-		line += linesCount(v.children[i])
+		line += v.children[i].MaxHeight()
 	}
 }
 
