@@ -3,8 +3,9 @@
 package tui
 
 import (
-	"fmt"
 	"image"
+	"strconv"
+	"strings"
 )
 
 type PixelSize int
@@ -15,12 +16,13 @@ const (
 )
 
 // Canvas — это многострочный виджет, на котором можно "рисовать" цветные пиксели.
-// В символах Canvas в 2 раза шире чем указано при создании, чтобы пиксели были квадратные а не прямоугольные.
 type Canvas struct {
 	width, height int
 	pole          [][]Color
 	idx           int
 	PixelSize     PixelSize
+	dirty         bool
+	cached        string
 }
 
 // NewCanvas() создаёт виждет Canvas.
@@ -56,7 +58,14 @@ func (c *Canvas) DrawAndRender(x, y int, clr Color) {
 }
 
 // InnerText() реализует интерфейс Widget
-func (c *Canvas) InnerText() (res string) {
+func (c *Canvas) InnerText() string {
+	if !c.dirty && c.cached != "" {
+		return c.cached
+	}
+
+	var b strings.Builder
+	b.Grow(c.width * c.height * 6)
+
 	if c.PixelSize == PixelTwoSymbol {
 		lastClr := Color(-1)
 		for y := 0; y < c.height; y++ {
@@ -64,21 +73,25 @@ func (c *Canvas) InnerText() (res string) {
 				clr := c.pole[y][x]
 				if lastClr != clr {
 					if clr == NoColor {
-						res += "\033[0m"
+						b.WriteString("\033[0m")
 					} else {
-						res += fmt.Sprintf("\033[%dm", clr+10)
+						// Фоновый цвет: clr + 10
+						b.WriteString("\033[")
+						b.WriteString(strconv.Itoa(int(clr + 10)))
+						b.WriteString("m")
 					}
 					lastClr = clr
 				}
-				res += "  " // 2 пробела чтобы придать пикселям более квадратную форму
+				b.WriteString("  ")
 			}
-			res += "\r\n"
+			b.WriteString("\r\n")
 		}
 	} else {
-		lastBg, lastFr := Color(-1), Color(-1)
+		lastBg := Color(-1)
+		lastFr := Color(-1)
 		z := Color(0)
 
-		res += "\033[30m"
+		b.WriteString("\033[30m")
 		for y := 0; y < c.height/2; y++ {
 			for x := 0; x < c.width; x++ {
 				var bg Color
@@ -91,28 +104,35 @@ func (c *Canvas) InnerText() (res string) {
 				fr := c.pole[y*2][x]
 				if lastBg != bg {
 					if bg == z {
-						res += "\033[40m"
+						b.WriteString("\033[40m")
 					} else {
-						res += fmt.Sprintf("\033[%dm", bg+10) //background
+						b.WriteString("\033[")
+						b.WriteString(strconv.Itoa(int(bg + 10)))
+						b.WriteString("m")
 					}
 					lastBg = bg
 				}
 				if lastFr != fr {
 					if fr == z {
-						res += "\033[30m"
+						b.WriteString("\033[30m")
 					} else {
-						res += fmt.Sprintf("\033[%dm", fr) //foreground
+						b.WriteString("\033[")
+						b.WriteString(strconv.Itoa(int(fr)))
+						b.WriteString("m")
 					}
 					lastFr = fr
 				}
-				res += "▀"
+				b.WriteString("▀")
 			}
-			res += "\r\n"
+			b.WriteString("\r\n")
 		}
 	}
 
-	res += "\033[0m"
-	return
+	b.WriteString("\033[0m")
+
+	c.cached = b.String()
+	c.dirty = false
+	return c.cached
 }
 
 // MaxWidth() реализует интерфейс Widget
@@ -151,6 +171,8 @@ type CanvasRGB struct {
 	width, height int
 	pole          [][]ColorRGB
 	PixelSize     PixelSize
+	dirty         bool
+	cached        string
 }
 
 // NewCanvas() создаёт виждет Canvas.
@@ -173,6 +195,7 @@ func (c *CanvasRGB) Draw(x, y int, clr ColorRGB) {
 		return
 	}
 	c.pole[y][x] = clr
+	c.dirty = true
 }
 
 // Draw() устанавливает указанный цвет в указанном месте Canvas, и перерисовывает.
@@ -181,13 +204,22 @@ func (c *CanvasRGB) DrawAndRender(x, y int, clr ColorRGB) {
 		return
 	}
 	c.pole[y][x] = clr
+	c.dirty = true
 	if currentWindow != nil {
 		currentWindow.Redraw()
 	}
 }
 
 // InnerText() реализует интерфейс Widget
-func (c *CanvasRGB) InnerText() (res string) {
+func (c *CanvasRGB) InnerText() string {
+	if !c.dirty && c.cached != "" {
+		return c.cached
+	}
+
+	var b strings.Builder
+
+	b.Grow(c.width * c.height * 10)
+
 	if c.PixelSize == PixelTwoSymbol {
 		lastClr := ColorRGB{}
 		z := ColorRGB{}
@@ -196,22 +228,28 @@ func (c *CanvasRGB) InnerText() (res string) {
 				clr := c.pole[y][x]
 				if lastClr != clr {
 					if clr == z {
-						res += "\033[0m"
+						b.WriteString("\033[0m")
 					} else {
-						res += fmt.Sprintf("\033[48;2;%d;%d;%dm", clr.R, clr.G, clr.B)
+						b.WriteString("\033[48;2;")
+						b.WriteString(strconv.Itoa(int(clr.R)))
+						b.WriteString(";")
+						b.WriteString(strconv.Itoa(int(clr.G)))
+						b.WriteString(";")
+						b.WriteString(strconv.Itoa(int(clr.B)))
+						b.WriteString("m")
 					}
 					lastClr = clr
 				}
-				res += "  " // 2 пробела чтобы придать пикселям более квадратную форму
+				b.WriteString("  ")
 			}
-			res += "\r\n"
+			b.WriteString("\r\n")
 		}
 	} else {
 		lastBg := ColorRGB{}
 		lastFr := ColorRGB{}
 		z := ColorRGB{}
 
-		res += "\033[30m"
+		b.WriteString("\033[30m")
 		for y := 0; y < c.height/2; y++ {
 			for x := 0; x < c.width; x++ {
 				var bg ColorRGB
@@ -224,28 +262,44 @@ func (c *CanvasRGB) InnerText() (res string) {
 				fr := c.pole[y*2][x]
 				if lastBg != bg {
 					if bg == z {
-						res += "\033[40m"
+						b.WriteString("\033[40m")
 					} else {
-						res += fmt.Sprintf("\033[48;2;%d;%d;%dm", bg.R, bg.G, bg.B)
+						b.WriteString("\033[48;2;")
+						b.WriteString(strconv.Itoa(int(bg.R)))
+						b.WriteString(";")
+						b.WriteString(strconv.Itoa(int(bg.G)))
+						b.WriteString(";")
+						b.WriteString(strconv.Itoa(int(bg.B)))
+						b.WriteString("m")
 					}
 					lastBg = bg
 				}
 				if lastFr != fr {
 					if fr == z {
-						res += "\033[30m"
+						b.WriteString("\033[30m")
 					} else {
-						res += fmt.Sprintf("\033[38;2;%d;%d;%dm", fr.R, fr.G, fr.B)
+						b.WriteString("\033[38;2;")
+						b.WriteString(strconv.Itoa(int(fr.R)))
+						b.WriteString(";")
+						b.WriteString(strconv.Itoa(int(fr.G)))
+						b.WriteString(";")
+						b.WriteString(strconv.Itoa(int(fr.B)))
+						b.WriteString("m")
 					}
 					lastFr = fr
 				}
-				res += "▀"
+				b.WriteString("▀")
 			}
-			res += "\r\n"
+			b.WriteString("\r\n")
 		}
 	}
 
-	res += "\033[0m"
-	return
+	b.WriteString("\033[0m")
+
+	c.cached = b.String()
+	c.dirty = false
+
+	return b.String()
 }
 
 // MaxWidth() реализует интерфейс Widget
@@ -309,6 +363,7 @@ func (cnv *CanvasRGB) Load(img image.Image) {
 			}
 		}
 	}
+	cnv.dirty = true
 }
 
 func (cnv *CanvasRGB) Get(x, y int) ColorRGB {
