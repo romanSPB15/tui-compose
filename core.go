@@ -196,8 +196,9 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 
 			c := cell.Parse(line)
 
-			if len(c) < w {
-				for range w - len(c) {
+			wgtWidth := wgt.MaxWidth()
+			if len(c) < wgtWidth {
+				for range w - wgtWidth {
 					c = append(c, cell.Cell{Char: ' '})
 				}
 			}
