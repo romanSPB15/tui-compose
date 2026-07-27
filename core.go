@@ -97,6 +97,7 @@ type window struct {
 	focusableWidgets []Focusable
 	overlay          Widget
 	displayOverlay   bool
+	initCell         cell.Cell
 }
 
 func (wnd *window) indexClickable(wgt Widget, offset Pos) {
@@ -584,4 +585,15 @@ func (wnd *window) Focus() FocusManager {
 
 func CurrentWindow() Window {
 	return currentWindow
+}
+
+// SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
+// Обычно используется для установки фона.
+func (wnd *window) SetInitCell(c cell.Cell) {
+	wnd.initCell = c
+}
+
+// SetInitCell устанавливает фон пустых позиций окна.
+func (wnd *window) SetBackground(s Style) {
+	wnd.SetInitCell(cell.Cell{Char: ' ', Style: СonvertToCellStyle(s)})
 }

@@ -230,3 +230,61 @@ func Parse(s string) []Cell {
 
 	return cells
 }
+
+func ParseMultiline(s string) [][]Cell {
+	if s == "" {
+		return nil
+	}
+
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	lines := strings.Split(s, "\n")
+	result := make([][]Cell, len(lines))
+	for i, line := range lines {
+		line = strings.TrimSuffix(line, "\r")
+		result[i] = Parse(line)
+	}
+	if len(result) == 0 {
+		return result
+	}
+	maxW := 0
+	for _, row := range result {
+		if len(row) > maxW {
+			maxW = len(row)
+		}
+	}
+	for i, row := range result {
+		if len(row) < maxW {
+			pad := make([]Cell, maxW-len(row))
+			for j := range pad {
+				pad[j] = Cell{Char: ' ', Style: Style{}}
+			}
+			result[i] = append(row, pad...)
+		}
+	}
+	return result
+}
+
+func ToString(cells [][]Cell) string {
+	if len(cells) == 0 {
+		return ""
+	}
+	var builder strings.Builder
+	for rowIdx, row := range cells {
+		if rowIdx > 0 {
+			builder.WriteString("\r\n")
+		}
+		var last Style
+		for _, cell := range row {
+			if ansi := cell.Style.ANSI(last); ansi != "" {
+				builder.WriteString(ansi)
+			}
+			builder.WriteRune(cell.Char)
+			last = cell.Style
+		}
+
+		if last != (Style{}) {
+			builder.WriteString("\033[0m")
+		}
+	}
+	return builder.String()
+}

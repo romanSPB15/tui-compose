@@ -1,6 +1,9 @@
 package tui
 
-import "github.com/romanSPB15/tui-compose/v3/input"
+import (
+	"github.com/romanSPB15/tui-compose/v3/cell"
+	"github.com/romanSPB15/tui-compose/v3/input"
+)
 
 // Widget — это интерфейс для любого TUI-виджета или контейнера. Но в контейнере эти методы не используются.
 type Widget interface {
@@ -79,6 +82,12 @@ type Window interface {
 	HideOverlay()
 
 	Focus() FocusManager
+
+	// SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
+	SetInitCell(c cell.Cell)
+
+	// SetInitCell устанавливает фон пустых позиций окна.
+	SetBackground(s Style)
 }
 
 // FocusManager — интерфейс менеджера фокуса.
