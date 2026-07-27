@@ -196,6 +196,12 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 
 			c := cell.Parse(line)
 
+			if len(c) < w {
+				for range w - len(c) {
+					c = append(c, cell.Cell{Char: ' '})
+				}
+			}
+
 			copy(buf[pos.Line+i][pos.Col:], c)
 		}
 	}
