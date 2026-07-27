@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/romanSPB15/tui-compose/v3"
 	"github.com/romanSPB15/tui-compose/v3/cell"
 )
 
@@ -138,22 +137,22 @@ func СonvertToCellStyle(s Style) cell.Style {
 		}
 	}
 
-	if s&tui.Bold != 0 {
+	if s&Bold != 0 {
 		cs.Args |= cell.Bold
 	}
-	if s&tui.Italic != 0 {
+	if s&Italic != 0 {
 		cs.Args |= cell.Italic
 	}
-	if s&tui.Underline != 0 {
+	if s&Underline != 0 {
 		cs.Args |= cell.Underline
 	}
-	if s&tui.Blink != 0 {
+	if s&Blink != 0 {
 		cs.Args |= cell.Blink
 	}
-	if s&tui.Reverse != 0 {
+	if s&Reverse != 0 {
 		cs.Args |= cell.Reverse
 	}
-	if s&tui.Reset != 0 {
+	if s&Reset != 0 {
 		cs.Args |= cell.Reset
 	}
 	return cs
