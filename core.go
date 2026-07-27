@@ -595,5 +595,5 @@ func (wnd *window) SetInitCell(c cell.Cell) {
 
 // SetInitCell устанавливает фон пустых позиций окна.
 func (wnd *window) SetBackground(s Style) {
-	wnd.SetInitCell(cell.Cell{Char: ' ', Style: СonvertToCellStyle(s)})
+	wnd.SetInitCell(cell.Cell{Char: ' ', Style: ConvertToCellStyle(s)})
 }
