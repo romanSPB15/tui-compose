@@ -403,7 +403,7 @@ const taskBufSize = 32
 
 func NewWindow() Window {
 	wnd := &window{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: []KeyboardEventHandler{},
-		work: make(chan *task, taskBufSize), focusIndex: -1, focusChange: true,
+		work: make(chan *task, taskBufSize), focusIndex: -1, focusChange: true, cellBuf: make([]cell.Cell, 0, 256),
 	}
 	if DEBUG {
 		f, err := os.Create(fmt.Sprintf("debug_log_%d", time.Now().UnixMilli()))

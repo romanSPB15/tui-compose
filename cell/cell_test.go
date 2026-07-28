@@ -12,7 +12,10 @@ func cells(chars string, styles ...cell.Style) []cell.Cell {
 
 	res := make([]cell.Cell, len(runes))
 
-	currentStyle := styles[0]
+	var currentStyle cell.Style
+	if len(styles) > 0 {
+		currentStyle = styles[0]
+	}
 
 	sIdx := 1
 
@@ -61,6 +64,10 @@ func TestParse(t *testing.T) {
 		{
 			Input:    "\033[30m▀\033[40m▀\033[35m",
 			Expected: cells("▀▀", cell.Style{Fg: "30"}, cell.Style{Fg: "30", Bg: "40"}),
+		},
+		{
+			Input:    "\033[30m⣾\033[0m⢿",
+			Expected: cells("⣾⢿", cell.Style{Fg: "30"}, cell.Style{}),
 		},
 	}
 	buf := make([]cell.Cell, 0, 256)
