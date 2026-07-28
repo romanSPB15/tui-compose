@@ -15,5 +15,5 @@ func recoveryScreen(message string) {
 	currentWindow.restoreOut()
 	term.Restore()
 
-	fmt.Fprint(currentWindow.f, message)
+	fmt.Fprintln(currentWindow.f, message)
 }
