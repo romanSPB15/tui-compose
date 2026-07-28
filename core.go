@@ -268,7 +268,7 @@ func (wnd *window) releaseBuffer(buf [][]cell.Cell) {
 
 func (wnd *window) Redraw() {
 	if DEBUG && !gorid.Is("worker") {
-		panic("Redraw called outside worker goroutine: data race")
+		wnd.LogFatal("Redraw called outside worker goroutine: data race")
 	}
 	if wnd.content == nil || !wnd.runned {
 		return
@@ -404,7 +404,7 @@ func (wnd *window) OnQuit() <-chan struct{} {
 
 func (wnd *window) IsRunned() bool {
 	if DEBUG && !gorid.Is("worker") {
-		panic("IsRunned called outside worker goroutine: data race")
+		wnd.LogFatal("IsRunned called outside worker goroutine: data race")
 	}
 	return wnd.runned
 }
@@ -430,7 +430,7 @@ func NewWindow() Window {
 
 func (wnd *window) RegisterKeyHandler(keh KeyboardEventHandler) {
 	if DEBUG && !gorid.Is("worker") {
-		panic("RegisterKeyHandler called outside worker goroutine: data race")
+		wnd.LogFatal("RegisterKeyHandler called outside worker goroutine: data race")
 	}
 	wnd.keyHandlers = append(wnd.keyHandlers, keh)
 }
@@ -576,7 +576,7 @@ func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
 
 func (wnd *window) RegisterClickHandler(h func(ev *input.MouseEvent)) {
 	if DEBUG && !gorid.Is("worker") {
-		panic("RegisterClickHandler called outside worker goroutine: data race")
+		wnd.LogFatal("RegisterClickHandler called outside worker goroutine: data race")
 	}
 	wnd.mouseHandlers = append(wnd.mouseHandlers, h)
 }
@@ -629,7 +629,7 @@ func (wnd *window) startInputCatcher() {
 
 func (wnd *window) SetContent(w Widget) {
 	if DEBUG && !gorid.Is("worker") {
-		panic("SetContent called outside worker goroutine: data race")
+		wnd.LogFatal("SetContent called outside worker goroutine: data race")
 	}
 	wnd.content = w
 	wnd.index() // перестраиваем список кликабельных
@@ -652,7 +652,7 @@ func CurrentWindow() Window {
 // Обычно используется для установки фона.
 func (wnd *window) SetInitCell(c cell.Cell) {
 	if DEBUG && !gorid.Is("worker") {
-		panic("SetInitCell called outside worker goroutine: data race")
+		wnd.LogFatal("SetInitCell called outside worker goroutine: data race")
 	}
 	wnd.initCell = c
 }
@@ -660,7 +660,7 @@ func (wnd *window) SetInitCell(c cell.Cell) {
 // SetInitCell устанавливает фон пустых позиций окна.
 func (wnd *window) SetBackground(s Style) {
 	if DEBUG && !gorid.Is("worker") {
-		panic("SetBackground called outside worker goroutine: data race")
+		wnd.LogFatal("SetBackground called outside worker goroutine: data race")
 	}
 	wnd.SetInitCell(cell.Cell{Char: ' ', Style: ConvertToCellStyle(s)})
 }

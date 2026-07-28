@@ -6,12 +6,17 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	term "github.com/romanSPB15/tui-compose/v3/term"
 )
 
 func recoveryScreen(message string) {
-	if currentWindow.IsRunned() {
-		currentWindow.Quit()
-	}
+	fmt.Fprint(currentWindow.f, "\033[0m")
+	fmt.Fprint(currentWindow.f, "\033[2J\033[H\033[?25h")
+	fmt.Fprint(currentWindow.f, "\033[?1006l\033[?1000l")
+	currentWindow.restoreOut()
+	term.Restore()
+
 	fmt.Fprint(currentWindow.f, "\033[3J")
 	fmt.Fprint(currentWindow.f, "\033[44m")
 	time.Sleep(time.Millisecond * 300)
