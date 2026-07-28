@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/romanSPB15/tui-compose/v3/ansi"
 )
@@ -191,41 +192,44 @@ func parseANSI(seq string) Style {
 }
 
 // Parse разбирает строку с ANSI-кодами и возвращает слайс ячеек.
-func Parse(s string) []Cell {
+// zero-allocation
+func Parse(s string, buf *[]Cell) []Cell {
 	if s == "" {
 		return nil
 	}
 
 	matches, _ := ansi.Find(s)
+
+	cells := *buf
+	cells = cells[:0]
+
 	if len(matches) == 0 {
-		runes := []rune(s)
-		cells := make([]Cell, len(runes))
-		for i, r := range runes {
-			cells[i] = Cell{Char: r}
+		for i := 0; i < len(s); {
+			r, size := utf8.DecodeRuneInString(s[i:])
+			cells = append(cells, Cell{Char: r, Style: Style{}})
+			i += size
 		}
 		return cells
 	}
 
-	seqMap := make(map[int]string)
-	for _, m := range matches {
-		seqMap[m.Index] = m.Seq
-	}
-
-	var cells []Cell
 	var currentStyle Style
-
-	runes := []rune(s)
-
 	i := 0
-	for i < len(runes) {
-		if seq, ok := seqMap[i]; ok {
+	mi := 0
+
+	for i < len(s) {
+
+		if mi < len(matches) && matches[mi].Index == i {
+			seq := matches[mi].Seq
 			newStyle := parseANSI(seq)
 			currentStyle = currentStyle.Merge(newStyle)
-			i += len([]rune(seq))
+			i += len(seq)
+			mi++
 			continue
 		}
-		cells = append(cells, Cell{Char: runes[i], Style: currentStyle})
-		i++
+
+		r, size := utf8.DecodeRuneInString(s[i:])
+		cells = append(cells, Cell{Char: r, Style: currentStyle})
+		i += size
 	}
 
 	return cells
@@ -239,9 +243,12 @@ func ParseMultiline(s string) [][]Cell {
 	s = strings.ReplaceAll(s, "\r\n", "\n")
 	lines := strings.Split(s, "\n")
 	result := make([][]Cell, len(lines))
+
 	for i, line := range lines {
 		line = strings.TrimSuffix(line, "\r")
-		result[i] = Parse(line)
+		var buf []Cell
+		cells := Parse(line, &buf)
+		result[i] = append([]Cell(nil), cells...) // копируем
 	}
 	if len(result) == 0 {
 		return result

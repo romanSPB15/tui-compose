@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -98,6 +99,8 @@ type window struct {
 	overlay          Widget
 	displayOverlay   bool
 	initCell         cell.Cell
+	bufferPool       *sync.Pool
+	cellBuf          []cell.Cell
 }
 
 func (wnd *window) indexClickable(wgt Widget, offset Pos) {
@@ -194,16 +197,16 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 				continue
 			}
 
-			c := cell.Parse(line)
+			c := cell.Parse(line, &wnd.cellBuf)
+
+			copy(buf[pos.Line+i][pos.Col:], c)
 
 			wgtWidth := wgt.MaxWidth()
 			if len(c) < wgtWidth {
-				for range len(c) - wgtWidth {
-					c = append(c, cell.Cell{Char: ' '})
+				for j := range wgtWidth - len(c) {
+					buf[pos.Line+i][pos.Col+j+len(c)] = cell.Cell{Char: ' '}
 				}
 			}
-
-			copy(buf[pos.Line+i][pos.Col:], c)
 		}
 	}
 }
@@ -211,72 +214,101 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 func (wnd *window) render() [][]cell.Cell {
 	h := wnd.Height()
 	w := wnd.Width()
-	buf := make([][]cell.Cell, h)
 
-	for i := range buf {
-		buf[i] = make([]cell.Cell, w)
-		for j := range buf[i] {
-			buf[i][j] = cell.Cell{Char: ' '}
-		}
-	}
+	buf := wnd.newBuffer(h, w)
 
 	if wnd.content == nil {
 		return buf
 	}
 
-	wnd.draw(wnd.content, Pos{0, 0}, buf)
-	if wnd.displayOverlay {
-		wnd.draw(wnd.overlay, Pos{0, 0}, buf)
+	wnd.draw(wnd.content, Pos{Line: 0, Col: 0}, buf)
+
+	if wnd.displayOverlay && wnd.overlay != nil {
+		wnd.draw(wnd.overlay, Pos{Line: 0, Col: 0}, buf)
+	}
+
+	return buf
+}
+
+func (wnd *window) newBuffer(h, w int) [][]cell.Cell {
+	if wnd.bufferPool != nil {
+		buf := wnd.bufferPool.Get().([][]cell.Cell)
+		if len(buf) != h || len(buf[0]) != w {
+			return make([][]cell.Cell, h)
+		}
+
+		for y := 0; y < h; y++ {
+			row := buf[y]
+			for x := 0; x < w; x++ {
+				row[x] = cell.Cell{Char: ' ', Style: cell.Style{}}
+			}
+		}
+		return buf
+	}
+
+	buf := make([][]cell.Cell, h)
+	for i := range buf {
+		buf[i] = make([]cell.Cell, w)
 	}
 	return buf
+}
+
+func (wnd *window) releaseBuffer(buf [][]cell.Cell) {
+	if wnd.bufferPool != nil && buf != nil {
+		for y := range buf {
+			for x := range buf[y] {
+				buf[y][x] = cell.Cell{Char: ' ', Style: cell.Style{}}
+			}
+		}
+		wnd.bufferPool.Put(buf)
+	}
 }
 
 func (wnd *window) Redraw() {
 	if wnd.content == nil || !wnd.runned {
 		return
 	}
+
 	newBuf := wnd.render()
-	oldBuf := wnd.buf
+	if newBuf == nil {
+		return
+	}
 
 	h := wnd.Height()
 	w := wnd.Width()
 
-	if len(oldBuf) < h {
-		newOld := make([][]cell.Cell, h)
-		copy(newOld, oldBuf)
-		for i := len(oldBuf); i < h; i++ {
-			newOld[i] = make([]cell.Cell, w)
-			for j := range newOld[i] {
-				newOld[i][j] = cell.Cell{Char: ' '}
-			}
+	if wnd.buf == nil || len(wnd.buf) != h || len(wnd.buf[0]) != w {
+		if wnd.buf != nil {
+			wnd.releaseBuffer(wnd.buf)
 		}
-		oldBuf = newOld
+		wnd.buf = wnd.newBuffer(h, w)
 	}
-
-	//fmt.Fprintf(wnd.f, "\033[%d;1H%s", row+1, builder.String())
-
-	var res strings.Builder
-
-	res.WriteString("\x1b[0m")
+	oldBuf := wnd.buf
 
 	var last cell.Style
-
 	for y := 0; y < h; y++ {
+		if len(newBuf[y]) < w {
+			continue
+		}
 		for x := 0; x < w; x++ {
 			if newBuf[y][x] != oldBuf[y][x] {
-				fmt.Fprintf(&res, "\033[%d;%dH", y+1, x+1)
 
-				res.WriteString(newBuf[y][x].Style.ANSI(last))
-				last = newBuf[y][x].Style
+				fmt.Fprintf(wnd.f, "\033[%d;%dH", y+1, x+1)
 
-				res.WriteString(string(newBuf[y][x].Char))
+				ansi := newBuf[y][x].Style.ANSI(last)
+				if ansi != "" {
+					fmt.Fprint(wnd.f, ansi)
+					last = newBuf[y][x].Style
+				}
+
+				fmt.Fprint(wnd.f, string(newBuf[y][x].Char))
+
+				oldBuf[y][x] = newBuf[y][x]
 			}
 		}
 	}
 
-	fmt.Fprint(wnd.f, res.String())
-
-	wnd.buf = newBuf
+	wnd.releaseBuffer(newBuf)
 }
 
 func (wnd *window) SetOverlay(wgt Widget) {

@@ -63,8 +63,9 @@ func TestParse(t *testing.T) {
 			Expected: cells("▀▀", cell.Style{Fg: "30"}, cell.Style{Fg: "30", Bg: "40"}),
 		},
 	}
+	buf := make([]cell.Cell, 0, 256)
 	for i, test := range tt {
-		got := cell.Parse(test.Input)
+		got := cell.Parse(test.Input, &buf)
 		if !slices.Equal(got, test.Expected) {
 			t.Errorf("#%d: expected %v, but got %v", i, test.Expected, got)
 		}
