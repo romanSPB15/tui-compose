@@ -338,7 +338,7 @@ func (wnd *window) HideOverlay() {
 	wnd.Do(func() {
 		if wnd.displayOverlay {
 			wnd.displayOverlay = false
-			wnd.Redraw()
+			wnd.Do(wnd.Redraw)
 		}
 	})
 }
@@ -375,7 +375,7 @@ func (wnd *window) Run() {
 
 	wnd.runned = true
 
-	wnd.Redraw()
+	wnd.Do(wnd.Redraw)
 
 	<-wnd.stopCh
 	wnd.runned = false

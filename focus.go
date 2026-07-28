@@ -52,7 +52,7 @@ func (wnd *window) setFocusTo(idx int) {
 	}
 	wnd.focusIndex = idx
 	wnd.focusableWidgets[idx].OnFocus()
-	wnd.Redraw()
+	wnd.Do(wnd.Redraw)
 }
 
 func (wnd *window) SetFocus(f Focusable) bool {
@@ -75,7 +75,7 @@ func (wnd *window) ClearFocus() {
 	if wnd.focusIndex != -1 {
 		wnd.focusableWidgets[wnd.focusIndex].OnBlur()
 		wnd.focusIndex = -1
-		wnd.Redraw()
+		wnd.Do(wnd.Redraw)
 	}
 }
 
