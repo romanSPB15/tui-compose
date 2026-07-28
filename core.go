@@ -586,23 +586,25 @@ func (wnd *window) CopyToClipboard(text string) {
 }
 
 func (wnd *window) startInputCatcher() {
-	wnd.RegisterKeyHandler(func(ke *input.KeyboardEvent) {
-		if wnd.focusIndex != -1 {
-			if te, ok := wnd.focusableWidgets[wnd.focusIndex].(KeyReceiver); ok {
-				te.OnKeyPress(ke)
+	wnd.Do(func() {
+		wnd.RegisterKeyHandler(func(ke *input.KeyboardEvent) {
+			if wnd.focusIndex != -1 {
+				if te, ok := wnd.focusableWidgets[wnd.focusIndex].(KeyReceiver); ok {
+					te.OnKeyPress(ke)
+				}
 			}
-		}
-		if !wnd.focusChange {
-			return
-		}
-		switch ke.Key {
-		case input.KeyTab:
-			wnd.NextFocus()
-		case input.KeyShiftTab:
-			wnd.BeforeFocus()
-		case input.KeyCtrlC:
-			wnd.Quit()
-		}
+			if !wnd.focusChange {
+				return
+			}
+			switch ke.Key {
+			case input.KeyTab:
+				wnd.NextFocus()
+			case input.KeyShiftTab:
+				wnd.BeforeFocus()
+			case input.KeyCtrlC:
+				wnd.Quit()
+			}
+		})
 	})
 
 	mouse, keyboard := input.Start(1)
