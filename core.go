@@ -101,6 +101,7 @@ type window struct {
 	initCell         cell.Cell
 	bufferPool       *sync.Pool
 	cellBuf          []cell.Cell
+	last             cell.Style
 }
 
 func (wnd *window) indexClickable(wgt Widget, offset Pos) {
@@ -285,7 +286,6 @@ func (wnd *window) Redraw() {
 	}
 	oldBuf := wnd.buf
 
-	var last cell.Style
 	for y := 0; y < h; y++ {
 		if len(newBuf[y]) < w {
 			continue
@@ -295,10 +295,10 @@ func (wnd *window) Redraw() {
 
 				fmt.Fprintf(wnd.f, "\033[%d;%dH", y+1, x+1)
 
-				ansi := newBuf[y][x].Style.ANSI(last)
+				ansi := newBuf[y][x].Style.ANSI(wnd.last)
 				if ansi != "" {
 					fmt.Fprint(wnd.f, ansi)
-					last = newBuf[y][x].Style
+					wnd.last = newBuf[y][x].Style
 				}
 
 				fmt.Fprint(wnd.f, string(newBuf[y][x].Char))
@@ -378,7 +378,10 @@ func (wnd *window) Run() {
 
 	wnd.restoreOut()
 	termL.Restore()
-	fmt.Fprint(wnd.f, "\033[0m\033[2J\033[H\033[?25h")
+	if wnd.last != (cell.Style{}) {
+		fmt.Fprint(wnd.f, "\033[0m")
+	}
+	fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
 	fmt.Fprint(wnd.f, "\033[?1006l\033[?1000l")
 }
 
