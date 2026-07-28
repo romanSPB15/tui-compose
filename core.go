@@ -436,6 +436,8 @@ func (wnd *window) RegisterKeyHandler(keh KeyboardEventHandler) {
 }
 
 func (wnd *window) Do(f func()) {
+	defer recover()
+
 	select {
 	case <-wnd.stopCh:
 		return
@@ -445,6 +447,8 @@ func (wnd *window) Do(f func()) {
 }
 
 func (wnd *window) DoAndWait(f func()) {
+	defer recover()
+
 	tsk := &task{
 		f:    f,
 		done: make(chan struct{}),
@@ -458,6 +462,8 @@ func (wnd *window) DoAndWait(f func()) {
 }
 
 func (wnd *window) doWithMessage(f func(), msg string) {
+	defer recover()
+
 	select {
 	case <-wnd.stopCh:
 		return
@@ -469,6 +475,8 @@ func (wnd *window) doWithMessage(f func(), msg string) {
 }
 
 func (wnd *window) doWithMessageAndWait(f func(), msg string) {
+	defer recover()
+
 	tsk := &task{
 		f:    f,
 		done: make(chan struct{}),
