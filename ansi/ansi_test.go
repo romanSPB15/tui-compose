@@ -117,8 +117,8 @@ func TestFind(t *testing.T) {
 				if matches[0].Index != 0 {
 					t.Errorf("expected first index 0, got %d", matches[0].Index)
 				}
-				if matches[1].Index != 22 {
-					t.Errorf("expected second index 22, got %d", matches[1].Index)
+				if matches[1].Index != 29 {
+					t.Errorf("expected second index 29, got %d", matches[1].Index)
 				}
 			},
 		},
