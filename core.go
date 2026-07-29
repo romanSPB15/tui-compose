@@ -152,7 +152,7 @@ func (wnd *window) indexFocusable(wgt Widget, offset Pos) {
 	}
 }
 
-func (wnd *window) index() {
+func (wnd *window) Index() {
 	if wnd.content == nil {
 		return
 	}
@@ -321,7 +321,7 @@ func (wnd *window) SetOverlay(wgt Widget) {
 		if wnd.displayOverlay {
 			wnd.Redraw()
 		}
-		wnd.index()
+		wnd.Index()
 	})
 }
 
@@ -338,7 +338,7 @@ func (wnd *window) HideOverlay() {
 	wnd.Do(func() {
 		if wnd.displayOverlay {
 			wnd.displayOverlay = false
-			wnd.Do(wnd.Redraw)
+			wnd.Redraw()
 		}
 	})
 }
@@ -375,7 +375,7 @@ func (wnd *window) Run() {
 
 	wnd.runned = true
 
-	wnd.Do(wnd.Redraw)
+	wnd.Redraw()
 
 	<-wnd.stopCh
 	wnd.runned = false
@@ -640,7 +640,7 @@ func (wnd *window) SetContent(w Widget) {
 		wnd.LogFatal("SetContent called outside worker goroutine: data race")
 	}
 	wnd.content = w
-	wnd.index() // перестраиваем список кликабельных
+	wnd.Index() // перестраиваем список кликабельных
 	wnd.focusIndex = -1
 }
 

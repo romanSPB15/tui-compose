@@ -52,30 +52,30 @@ type Disablable interface {
 
 // Window — это объект приложения.
 type Window interface {
-	SetContent(Widget) // SetContent() устанавливает содержимое окна.
+	SetContent(Widget) // SetContent устанавливает содержимое окна.
 
-	Redraw() // Redraw() перерисовывает все виджеты.
+	Redraw() // Redraw перерисовывает окно.
 
-	Run()           // Run() — это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
-	IsRunned() bool // IsRunned() возращает true, если приложение запущено. Иначе возвращает false.
+	Run()           // Run — это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
+	IsRunned() bool // IsRunned возращает true, если приложение запущено. Иначе возвращает false.
 
-	Quit()                   // Quit() — это принудительный выход из приложения.
-	OnQuit() <-chan struct{} // Run() возвращает канал сигнализации о выходе.
+	Quit()                   // Quit — это принудительный выход из приложения.
+	OnQuit() <-chan struct{} // Run возвращает канал сигнализации о выходе.
 
-	RegisterKeyHandler(KeyboardEventHandler)           // RegisterKeyHandler() регистрирует обработчик нажатия указанной клавиши
-	RegisterClickHandler(h func(ev *input.MouseEvent)) // RegisterClickHandler() регистрирует обрабочик событий мыши
+	RegisterKeyHandler(KeyboardEventHandler)           // RegisterKeyHandler регистрирует обработчик нажатия указанной клавиши
+	RegisterClickHandler(h func(ev *input.MouseEvent)) // RegisterClickHandler регистрирует обрабочик событий мыши
 
-	LogInfo(message string, args ...any)  // LogInfo() логирует указанное сообщение подобно fmt.Printf() в файл, если приложение создано как Debug.
-	LogFatal(message string, args ...any) // LogFatal() логирует указанное сообщение подобно fmt.Printf() в файл, если приложение создано как Debug. Потом в любом случае выходит
+	LogInfo(message string, args ...any)  // LogInfo логирует указанное сообщение подобно fmt.Printf() в файл, если включен debug режим.
+	LogFatal(message string, args ...any) // LogFatal логирует указанное сообщение подобно fmt.Printf() в файл, если включен debug режим. Потом в любом случае выходит
 
-	Do(f func())
-	DoAndWait(f func())
+	Do(f func())        // Do отправляет задачу в UI поток
+	DoAndWait(f func()) // DoAndWait отправляет задачу в UI поток и ждёт завершения
 
 	Width() int  // Ширина окна в символах
 	Height() int // Высота окна в символах
 
-	SetTitle(title string)
-	CopyToClipboard(text string)
+	SetTitle(title string)       // SetTitle устанавливает заголовок окна терминала.
+	CopyToClipboard(text string) // CopyToClipboard копирует текст в буфер обмена.
 
 	SetOverlay(wgt Widget)
 	ShowOverlay()
@@ -83,11 +83,10 @@ type Window interface {
 
 	Focus() FocusManager
 
-	// SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
-	SetInitCell(c cell.Cell)
+	SetInitCell(c cell.Cell) // SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
+	SetBackground(s Style)   // SetInitCell устанавливает фон пустых позиций окна.
 
-	// SetInitCell устанавливает фон пустых позиций окна.
-	SetBackground(s Style)
+	Index() // Index обновляет кеши фокуса и кликабельных виджетов
 }
 
 // FocusManager — интерфейс менеджера фокуса.
