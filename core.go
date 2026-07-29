@@ -207,7 +207,7 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 			wgtWidth := wgt.MaxWidth()
 			if len(c) < wgtWidth {
 				for j := range wgtWidth - len(c) {
-					buf[pos.Line+i][pos.Col+j+len(c)] = cell.Cell{Char: ' '}
+					buf[pos.Line+i][pos.Col+j+len(c)] = wnd.initCell
 				}
 			}
 		}
@@ -243,7 +243,7 @@ func (wnd *window) newBuffer(h, w int) [][]cell.Cell {
 		for y := 0; y < h; y++ {
 			row := buf[y]
 			for x := 0; x < w; x++ {
-				row[x] = cell.Cell{Char: ' ', Style: cell.Style{}}
+				row[x] = wnd.initCell
 			}
 		}
 		return buf
@@ -252,6 +252,9 @@ func (wnd *window) newBuffer(h, w int) [][]cell.Cell {
 	buf := make([][]cell.Cell, h)
 	for i := range buf {
 		buf[i] = make([]cell.Cell, w)
+		for x := 0; x < w; x++ {
+			buf[i][x] = wnd.initCell
+		}
 	}
 	return buf
 }
@@ -260,7 +263,7 @@ func (wnd *window) releaseBuffer(buf [][]cell.Cell) {
 	if wnd.bufferPool != nil && buf != nil {
 		for y := range buf {
 			for x := range buf[y] {
-				buf[y][x] = cell.Cell{Char: ' ', Style: cell.Style{}}
+				buf[y][x] = wnd.initCell
 			}
 		}
 		wnd.bufferPool.Put(buf)
