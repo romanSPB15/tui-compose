@@ -156,6 +156,7 @@ func (wnd *window) Index() {
 	if wnd.content == nil {
 		return
 	}
+	wnd.focusableWidgets = nil
 	wnd.cl = nil
 	wnd.clAt = nil
 
@@ -640,7 +641,7 @@ func (wnd *window) SetContent(w Widget) {
 		wnd.LogFatal("SetContent called outside worker goroutine: data race")
 	}
 	wnd.content = w
-	wnd.Index() // перестраиваем список кликабельных
+	wnd.Index()
 	wnd.focusIndex = -1
 }
 
