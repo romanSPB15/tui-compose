@@ -646,7 +646,7 @@ func (wnd *window) SetContent(w Widget) {
 	}
 	wnd.content = w
 	wnd.Index()
-	wnd.focusIndex = -1
+	wnd.ClearFocus()
 }
 
 func (wnd *window) SetTitle(title string) {
