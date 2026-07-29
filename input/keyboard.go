@@ -79,10 +79,11 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 	if len(data) == 1 {
 		v := data[0]
 		switch {
+		case v == 13:
+			return 0, KeyEnter
+		case v == 9:
+			return 0, KeyTab
 		case v < 27:
-			if v == 13 {
-				return 0, KeyEnter
-			}
 			return 0, KeyCtrlA + Key(v-1)
 		case v == 32:
 			return ' ', KeySpace
@@ -90,8 +91,6 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 			return '/', KeySlash
 		case v == 92:
 			return '\\', KeyReverseSlash
-		case v == 9:
-			return 0, KeyTab
 		case v == 127:
 			return 0, KeyBackspace
 		default:
@@ -133,7 +132,6 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 
 	return 0, KeyUnknown
 }
-
 func parseKeyboardInput(data []byte) *KeyboardEvent {
 	if len(data) == 0 {
 		return nil
