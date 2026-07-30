@@ -363,6 +363,10 @@ func (wnd *window) Run() {
 		wnd.LogInfo("Cannot make raw: %s", err)
 	}
 
+	if DEBUG {
+		gorid.Register("worker")
+	}
+
 	wnd.stdout = os.Stdout
 	wnd.stderr = os.Stderr
 	os.Stdout, os.Stderr = wnd.log, wnd.log
@@ -381,7 +385,8 @@ func (wnd *window) Run() {
 
 	wnd.Redraw()
 
-	<-wnd.stopCh
+	wnd.runWorker()
+
 	wnd.runned = false
 
 	wnd.restoreOut()
@@ -429,7 +434,6 @@ func NewWindow() Window {
 	}
 	termL.EnableANSIWindows()
 	currentWindow = wnd
-	go wnd.runWorker()
 	return wnd
 }
 
@@ -496,9 +500,6 @@ func (wnd *window) doWithMessageAndWait(f func(), msg string) {
 }
 
 func (wnd *window) runWorker() {
-	if DEBUG {
-		gorid.Register("worker")
-	}
 	wnd.LogInfo("Воркер запущен...")
 	for {
 		select {
