@@ -363,10 +363,6 @@ func (wnd *window) Run() {
 		wnd.LogInfo("Cannot make raw: %s", err)
 	}
 
-	if DEBUG {
-		gorid.Register("worker")
-	}
-
 	wnd.stdout = os.Stdout
 	wnd.stderr = os.Stderr
 	os.Stdout, os.Stderr = wnd.log, wnd.log
@@ -434,6 +430,9 @@ func NewWindow() Window {
 	}
 	termL.EnableANSIWindows()
 	currentWindow = wnd
+	if DEBUG {
+		gorid.Register("worker")
+	}
 	return wnd
 }
 
