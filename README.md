@@ -20,13 +20,31 @@ func main() {
     wnd := tui.NewWindow()
     wnd.SetTitle("Моё приложение")
 
-    label := tui.NewStaticLabel("Привет, TUI!").ColorizeForeground(tui.Cyan)
+    label := tui.NewStaticLabel("Привет, TUI!").WithStyle(tui.FrCyan)
 
-    btn := tui.NewButton("Выход", func() {
+    btnQuit := tui.NewButton("Выход", func() {
         wnd.Quit()
     })
 
-    box := tui.NewVBox(label, btn)
+    v := 0
+
+    btnAdd := tui.NewButton("+", func() {
+        v++
+        wnd.Commit(func() {
+            label.SetText(strconv.Itoa(v))
+        })
+    }).WithStyle(tui.BgRed)
+
+    btnSub := tui.NewButton("-", func() {
+        if v > 0 {
+            v--
+            wnd.Commit(func() {
+                label.SetText(strconv.Itoa(v))
+            })
+        }
+    }).WithStyle(tui.BgBlue)
+
+    box := tui.NewVBox(label, tui.NewHBox(btnAdd), btnQuit)
     wnd.SetContent(box)
 
     wnd.Run()

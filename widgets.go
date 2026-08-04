@@ -164,7 +164,6 @@ func (l *Label) MaxHeight() int {
 // Добавлено в TUI v3.0.0
 func (l *Label) SetText(new string) {
 	l.Text = new
-	currentWindow.Do(currentWindow.Redraw)
 }
 
 // Button это виджет кнопки.
@@ -299,7 +298,6 @@ func (p *ColorProgress) SetValue(f float64) {
 	}
 	on := int(float64(p.size) * f)
 	p.text = fmt.Sprintf("\033[%dm%s\033[%dm%s\033[0m", p.clrOn+10, strings.Repeat(" ", on), p.clrOff+10, strings.Repeat(" ", p.size-on))
-	currentWindow.Do(currentWindow.Redraw)
 }
 
 func (p *ColorProgress) MaxWidth() int {
@@ -347,7 +345,6 @@ func (p *TextProgress) SetValue(f float64) {
 	}
 	on := int(float64(p.size) * f)
 	p.text = fmt.Sprintf("%s%s", strings.Repeat(string(p.sOn), on), strings.Repeat(string(p.sOff), p.size-on))
-	currentWindow.Do(currentWindow.Redraw)
 }
 
 func (p *TextProgress) MaxWidth() int {
@@ -489,14 +486,12 @@ func (c *Check) State() bool {
 // Добавлено в TUI v1.0.0
 func (c *Check) SetState(b bool) {
 	c.checkedState = b
-	currentWindow.Do(currentWindow.Redraw)
 }
 
 // WithState устанавливает состояние чекбокса и возращает его.
 // Добавлено в TUI v3.1.0
 func (c *Check) WithState(b bool) *Check {
 	c.checkedState = b
-	currentWindow.Do(currentWindow.Redraw)
 	return c
 }
 
