@@ -237,7 +237,14 @@ func (wnd *window) newBuffer(h, w int) [][]cell.Cell {
 	if wnd.bufferPool != nil {
 		buf := wnd.bufferPool.Get().([][]cell.Cell)
 		if len(buf) != h || len(buf[0]) != w {
-			return make([][]cell.Cell, h)
+			buf := make([][]cell.Cell, h)
+			for i := range buf {
+				buf[i] = make([]cell.Cell, w)
+				for x := 0; x < w; x++ {
+					buf[i][x] = wnd.initCell
+				}
+			}
+			return buf
 		}
 
 		for y := 0; y < h; y++ {
@@ -655,6 +662,13 @@ func (wnd *window) SetTitle(title string) {
 
 func (wnd *window) Focus() FocusManager {
 	return wnd
+}
+
+func (wnd *window) Commit(f func()) {
+	wnd.Do(func() {
+		f()
+		wnd.Redraw()
+	})
 }
 
 func CurrentWindow() Window {

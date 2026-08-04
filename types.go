@@ -87,6 +87,8 @@ type Window interface {
 	SetBackground(s Style)   // SetInitCell устанавливает фон пустых позиций окна.
 
 	Index() // Index обновляет кеши фокуса и кликабельных виджетов
+
+	Commit(f func()) // Commit выполняет задачу в UI потоке, и автоматически перерисовывает
 }
 
 // FocusManager — интерфейс менеджера фокуса.
