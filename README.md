@@ -5,7 +5,7 @@
 [![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/releases)
 [![Test](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml/badge.svg)](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml)
 [![Documentation](https://img.shields.io/badge/GitHub-Wiki-red?logo=github)](https://github.com/romanSPB15/tui-compose/wiki)
-![Lightweight](https://img.shields.io/badge/Lightweight-<4000_lines-brightgreen)
+![Lightweight](https://img.shields.io/badge/Lightweight-<5500_lines-brightgreen)
 ![Paradigm](https://img.shields.io/badge/Paradigm-Reactive%20%2B%20Imperative-blue?logo=go)
 
 Легковесный фреймворк для удобной разработки TUI-интерфейсов на Go с поддержкой мыши, готовыми виджетами и автоматической системой фокуса без зависимостей. Идеально подходит для дашбордов, консольных утилит и интерактивных CLI-приложений.
