@@ -83,3 +83,7 @@ func (wnd *window) Disable() {
 	wnd.focusChange = false
 	wnd.ClearFocus()
 }
+
+func (wnd *window) Enable() {
+	wnd.focusChange = true
+}

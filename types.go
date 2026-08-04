@@ -5,17 +5,17 @@ import (
 	"github.com/romanSPB15/tui-compose/v3/input"
 )
 
-// Widget — это интерфейс для любого TUI-виджета или контейнера. Но в контейнере эти методы не используются.
+// Widget — это интерфейс для TUI-виджетов.
 type Widget interface {
-	InnerText() string // InnerText() возращает текст виджета
+	InnerText() string // InnerText возращает текст виджета.
 
-	MaxWidth() int // MaxWidth() возращает длину текста виджета без учёта ANSI Escape последовательностей
-	MaxHeight() int
+	MaxWidth() int  // MaxWidth возращает ширину виджета.
+	MaxHeight() int // MaxHeight возращает высоту виджета.
 }
 
 // Focusable это интерфейс виджетов, которые могут получить фокус.
 // Переключение проиходит с помощью Tab и Shift+Tab.
-// Отключить переключение можно через Window.DisableFocusChange().
+// Отключить автоматическое переключение можно через Window.Focus().Disable().
 // Добавлено в TUI 2.0.0.
 type Focusable interface {
 	Widget
@@ -46,6 +46,7 @@ type KeyReceiver interface {
 // Disablable — интерфейс для виджетов, которые могут быть отключены.
 // Добавлено в TUI 3.1.0.
 type Disablable interface {
+	Widget
 	SetDisabled(bool)
 	IsDisabled() bool
 }
@@ -56,56 +57,57 @@ type Window interface {
 
 	Redraw() // Redraw перерисовывает окно.
 
-	Run()           // Run — это блокирующий запуск TUI-приложения. Если пользователь закроет окно, то будет произведён graceful shutdown и выход из метода.
-	IsRunned() bool // IsRunned возращает true, если приложение запущено. Иначе возвращает false.
+	Run()           // Run запускает TUI-приложение. Если пользователь закроет окно(Ctrl+C), то будет произведён graceful shutdown и выход из метода.
+	IsRunned() bool // IsRunned возращает, запущено ли приложение.
 
-	Quit()                   // Quit — это принудительный выход из приложения.
+	Quit()                   // Quit выходит из приложения.
 	OnQuit() <-chan struct{} // Run возвращает канал сигнализации о выходе.
 
-	RegisterKeyHandler(KeyboardEventHandler)           // RegisterKeyHandler регистрирует обработчик нажатия указанной клавиши
-	RegisterClickHandler(h func(ev *input.MouseEvent)) // RegisterClickHandler регистрирует обрабочик событий мыши
+	RegisterKeyHandler(KeyboardEventHandler)         // RegisterKeyHandler регистрирует обработчик событий клавиатуры.
+	RegisterClickHandler(func(ev *input.MouseEvent)) // RegisterClickHandler регистрирует обрабочик событий мыши.
 
-	LogInfo(message string, args ...any)  // LogInfo логирует указанное сообщение подобно fmt.Printf() в файл, если включен debug режим.
-	LogFatal(message string, args ...any) // LogFatal логирует указанное сообщение подобно fmt.Printf() в файл, если включен debug режим. Потом в любом случае выходит
+	LogInfo(message string, args ...any)  // LogInfo логирует сообщение подобно fmt.Printf в файл, если включен debug режим.
+	LogFatal(message string, args ...any) // LogFatal логирует сообщение подобно fmt.Printf в файл, если включен debug режим, и завершает приложение.
 
-	Do(f func())        // Do отправляет задачу в UI поток
-	DoAndWait(f func()) // DoAndWait отправляет задачу в UI поток и ждёт завершения
+	Do(func())        // Do отправляет задачу в UI поток.
+	DoAndWait(func()) // DoAndWait отправляет задачу в UI поток и блокируется до завершения.
 
-	Width() int  // Ширина окна в символах
-	Height() int // Высота окна в символах
+	Width() int  // Width возвращает ширину окна в символах.
+	Height() int // Height возвращает высоту окна в символах.
 
-	SetTitle(title string)       // SetTitle устанавливает заголовок окна терминала.
-	CopyToClipboard(text string) // CopyToClipboard копирует текст в буфер обмена.
+	SetTitle(string)        // SetTitle устанавливает заголовок окна терминала.
+	CopyToClipboard(string) // CopyToClipboard копирует текст в буфер обмена.
 
-	SetOverlay(wgt Widget)
+	SetOverlay(Widget)
 	ShowOverlay()
 	HideOverlay()
 
 	Focus() FocusManager
 
-	SetInitCell(c cell.Cell) // SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
-	SetBackground(s Style)   // SetInitCell устанавливает фон пустых позиций окна.
+	SetInitCell(cell.Cell) // SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
+	SetBackground(Style)   // SetBackground устанавливает стиль пустых позиций окна.
 
-	Index() // Index обновляет кеши фокуса и кликабельных виджетов
+	Index() // Index обновляет кеши фокуса и кликабельных виджетов. Используется при динамическом обновлении дерева виджетов.
 
-	Commit(f func()) // Commit выполняет задачу в UI потоке, и автоматически перерисовывает
+	Commit(func()) // Commit выполняет задачу в UI потоке, и автоматически перерисовывает окно.
 }
 
 // FocusManager — интерфейс менеджера фокуса.
 // Добавлено в TUI 3.1.0.
 type FocusManager interface {
-	FocusedWidget() Focusable // FocusedWidget() вовзращает виджет, на котором установлен фокус.
-	NextFocus()               // NextFocus() переносит фокус дальше.
-	BeforeFocus()             // BeforeFocus() переносит фокус назад.
-	SetFocus(Focusable) bool  // BeforeFocus() устанавливает фокус на переданный виджет.
-	ClearFocus()              // ClearFocus() сбрасывает фокус.
-	Disable()                 // Disable() отключает смену фокуса.
+	FocusedWidget() Focusable // FocusedWidget вовзращает виджет, на котором установлен фокус.
+	NextFocus()               // NextFocus переносит фокус вперёд.
+	BeforeFocus()             // BeforeFocus переносит фокус назад.
+	SetFocus(Focusable) bool  // BeforeFocus устанавливает фокус на переданный виджет.
+	ClearFocus()              // ClearFocus сбрасывает фокус.
+	Disable()                 // Disable отключает автоматическую смену фокуса.
+	Enable()                  // Enable включает автоматическую смену фокуса, если была выключена.
 }
 
 // Container это интерфейс контейнеров.
 // Добавлено в TUI 3.0.0.
 type Container interface {
 	Widget
-	Child() []Widget
-	Pos(int) Pos
+	Child() []Widget // Child возвращает детей контейнера.
+	Pos(int) Pos     // Pos возвращает позицию ребёнка с индексом.
 }
