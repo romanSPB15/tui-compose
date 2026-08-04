@@ -10,9 +10,7 @@ func main() {
 	pg2 := tui.NewPage(tui.NewStaticLabel("Это страница 2!")).SetTitle("Page 2")
 
 	lbl := tui.NewStaticLabel("Страница 1")
-	btn := tui.NewButton("Перейти на страницу 2", func() {
-		pg2.Open()
-	})
+	btn := tui.NewButton("Перейти на страницу 2", pg2.Open)
 
 	box := tui.NewVBox(lbl, btn)
 

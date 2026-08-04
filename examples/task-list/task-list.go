@@ -9,15 +9,14 @@ func main() {
 
 	a.SetTitle("TUI Compose")
 
-	label := tui.NewDynamicLabel("", 30).ColorizeForeground(tui.Red)
+	label := tui.NewDynamicLabel("", 30).WithStyle(tui.FrRed)
 
 	count := 0
 
 	checkIfAll := func() {
 		if count == 3 {
-			a.Do(func() {
+			a.Commit(func() {
 				label.Text = "Все дела сделаны"
-				a.Redraw()
 			})
 		}
 	}
@@ -25,6 +24,8 @@ func main() {
 	onChange := func(b bool) {
 		if b {
 			count++
+		} else {
+			count--
 		}
 		checkIfAll()
 	}
