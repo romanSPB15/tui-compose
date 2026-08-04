@@ -102,6 +102,8 @@ type FocusManager interface {
 	ClearFocus()              // ClearFocus сбрасывает фокус.
 	Disable()                 // Disable отключает автоматическую смену фокуса.
 	Enable()                  // Enable включает автоматическую смену фокуса, если была выключена.
+	FocusedIndex() int        // FocusedIndex возвращает индекс текущего фокуса, или -1 если фокус не установлен.
+	SetIndex(idx int)         // SetIndex устанавливает фокус на виджет с индексом idx.
 }
 
 // Container это интерфейс контейнеров.

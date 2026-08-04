@@ -31,8 +31,15 @@ func New[T any](initial T, render func(*App[T], T) tui.Widget) *App[T] {
 // react.App.Mutate
 func (a *App[T]) Mutate(f func(*T)) {
 	a.wnd.Commit(func() {
+		idx := a.wnd.Focus().FocusedIndex() // SetContent вызывает ClearFocus, а нам это не надо в этом случае.
+
 		f(&a.model)
+
 		a.wnd.SetContent(a.render(a, a.model))
+
+		if idx >= 0 {
+			a.wnd.Focus().SetIndex(idx)
+		}
 	})
 }
 

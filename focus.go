@@ -87,3 +87,31 @@ func (wnd *window) Disable() {
 func (wnd *window) Enable() {
 	wnd.focusChange = true
 }
+
+func (wnd *window) FocusedIndex() int {
+	return wnd.focusIndex
+}
+
+func (wnd *window) SetIndex(idx int) {
+	if idx < -1 || idx >= len(wnd.focusableWidgets) {
+		return
+	}
+
+	if wnd.focusIndex == idx {
+		return
+	}
+
+	if wnd.focusIndex != -1 && wnd.focusIndex < len(wnd.focusableWidgets) {
+		wnd.focusableWidgets[wnd.focusIndex].OnBlur()
+	}
+
+	if idx == -1 {
+		wnd.focusIndex = -1
+		wnd.Redraw()
+		return
+	}
+
+	wnd.focusIndex = idx
+	wnd.focusableWidgets[idx].OnFocus()
+	wnd.Redraw()
+}
