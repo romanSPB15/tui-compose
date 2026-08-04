@@ -28,11 +28,11 @@ func New[T any](initial T, render func(*App[T], T) tui.Widget) *App[T] {
 
 // Mutate безопасно изменяет модель и автоматически перерисовывает UI.
 // f — функция, которая получает указатель на текущую модель и изменяет её.
+// react.App.Mutate
 func (a *App[T]) Mutate(f func(*T)) {
-	a.wnd.DoAndWait(func() {
+	a.wnd.Commit(func() {
 		f(&a.model)
 		a.wnd.SetContent(a.render(a, a.model))
-		a.wnd.Redraw()
 	})
 }
 
