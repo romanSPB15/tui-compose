@@ -299,7 +299,7 @@ func (c *CanvasRGB) InnerText() string {
 	c.cached = b.String()
 	c.dirty = false
 
-	return b.String()
+	return c.cached
 }
 
 // MaxWidth() реализует интерфейс Widget
