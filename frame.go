@@ -6,7 +6,6 @@ import (
 	"github.com/romanSPB15/tui-compose/v3/cell"
 )
 
-// tui
 type TitlePosition int
 
 const (
@@ -18,11 +17,12 @@ const (
 	TitleBottomRight
 )
 
-// tui
+// Frame – контейнер, который оборачивает содержимое в рамку.
 type Frame struct {
 	border border
 }
 
+// Title – заголовок рамки.
 type Title struct {
 	Pos   TitlePosition
 	Text  string
@@ -39,7 +39,7 @@ type border struct {
 	titles      []Title
 }
 
-// tui
+// NewFrame создаёт рамку.
 func NewFrame(content Widget) *Frame {
 	return &Frame{
 		border: border{
@@ -52,7 +52,7 @@ func NewFrame(content Widget) *Frame {
 	}
 }
 
-// Custom – вручную задать  символы рамки.
+// Custom – вручную задать символы рамки.
 func (b *Frame) Custom(tl, tr, bl, br, h, v rune) *Frame {
 	b.border.tl, b.border.tr, b.border.bl, b.border.br = tl, tr, bl, br
 	b.border.h, b.border.v = h, v
@@ -104,11 +104,13 @@ func (b *Frame) BevelASCII() *Frame {
 	return b.Custom('/', '\\', '\\', '/', '─', '│')
 }
 
+// WithTitle добавляет заголовок. Можно вызвать несколько раз, чтобы добавить несколько.
 func (b *Frame) WithTitle(t Title) *Frame {
 	b.border.titles = append(b.border.titles, t)
 	return b
 }
 
+// WithBorderStyle устанавливает стиль рамки.
 func (b *Frame) WithBorderStyle(s Style) *Frame {
 	b.border.borderStyle = s
 	return b
