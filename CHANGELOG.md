@@ -94,3 +94,26 @@
 
 ### Fixed
 * Исправлены баги инкрементального рендерера.
+
+## [3.2.0] - 2026-08-06
+
+### Added
+* `Frame` - рамка.
+* low-allocation рендер.
+* Метод `Commit` у `Window`, который вызывает и `Do`, и `Redraw`.
+* Поддержка ввода всех печатных ASCII-символов.
+* Проверка вызывающей горутины в `Redraw` и подобных методах `Window` с помощью `gorid`.
+* Восстановление состояния терминала в `LogFatal`.
+* Вывод стека вызовов в `LogFatal`.
+* Метод `Enable` у `FocusManager`.
+* Гонки данных в виджетах.
+* Кеширование строки в `Canvas` и `CanvasRGB`.
+
+### Fixed
+* Исправлены баги рендера.
+
+### Changed
+* Рефакторинг комментариев в [`types.go`](https://github.com/romanSPB15/tui-compose/blob/main/types.go)
+
+### Dependencies
+- Добавлена [`github.com/romanSPB15/x/gorid`](https://github.com/romanSPB15/x/tree/master/gorid).

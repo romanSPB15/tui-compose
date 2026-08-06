@@ -160,7 +160,7 @@ func (l *Label) MaxHeight() int {
 	return 1
 }
 
-// SetText() устанавливает текст метки и перерисовывает окно.
+// SetText() устанавливает текст метки.
 // Добавлено в TUI v3.0.0
 func (l *Label) SetText(new string) {
 	l.Text = new
@@ -400,14 +400,12 @@ func (c *Check) InnerText() string {
 }
 
 // OnFocus реализует интерфейс Focusable.
-// Добавлено в TUI v2.0.0
 func (c *Check) OnFocus() {
 	c.focused = true
 	currentWindow.Redraw()
 }
 
 // OnBlur реализует интерфейс Focusable.
-// Добавлено в TUI v2.0.0
 func (c *Check) OnBlur() {
 	c.focused = false
 	currentWindow.Redraw()
@@ -459,7 +457,6 @@ func (c *Check) WithOnChanged(h func(bool)) *Check {
 }
 
 // MaxWidth реализует интерфейс Widget.
-// Добавлено в TUI v1.0.0
 func (c *Check) MaxWidth() int {
 	return len([]rune("[x] " + c.text))
 }
@@ -477,13 +474,11 @@ func (c *Check) MaxHeight() int {
 }
 
 // State возвращает текущее состояние чекбокса.
-// Добавлено в TUI v1.0.0
 func (c *Check) State() bool {
 	return c.checkedState
 }
 
 // SetState устанавливает состояние чекбокса.
-// Добавлено в TUI v1.0.0
 func (c *Check) SetState(b bool) {
 	c.checkedState = b
 }

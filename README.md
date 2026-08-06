@@ -5,8 +5,8 @@
 [![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/releases)
 [![Test](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml/badge.svg)](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml)
 [![Documentation](https://img.shields.io/badge/GitHub-Wiki-red?logo=github)](https://github.com/romanSPB15/tui-compose/wiki)
-![Lightweight](https://img.shields.io/badge/Lightweight-<5500_lines-brightgreen)
-![Paradigm](https://img.shields.io/badge/Paradigm-Reactive%20%2B%20Imperative-blue?logo=go)
+![Lightweight](https://img.shields.io/badge/Lightweight-4590_lines-brightgreen)
+[![Examples](https://img.shields.io/badge/GitHub-Wiki-red?logo=github)](https://github.com/romanSPB15/tui-compose/tree/main/examples)
 
 Легковесный фреймворк для удобной разработки TUI-интерфейсов на Go с поддержкой мыши, готовыми виджетами и автоматической системой фокуса без зависимостей. Идеально подходит для дашбордов, консольных утилит и интерактивных CLI-приложений.
 
@@ -14,41 +14,46 @@
 ```go
 package main
 
-import "github.com/romanSPB15/tui-compose/v3"
+import (
+	"strconv"
+
+	"github.com/romanSPB15/tui-compose/v3"
+)
 
 func main() {
-    wnd := tui.NewWindow()
-    wnd.SetTitle("Моё приложение")
+	wnd := tui.NewWindow()
+	wnd.SetTitle("Моё приложение")
 
-    label := tui.NewStaticLabel("Привет, TUI!").WithStyle(tui.FrCyan)
+	label := tui.NewStaticLabel("Привет, TUI!").WithStyle(tui.FrCyan)
 
-    btnQuit := tui.NewButton("Выход", func() {
-        wnd.Quit()
-    })
+	btnQuit := tui.NewButton("Выход", func() {
+		wnd.Quit()
+	})
 
-    v := 0
+	v := 0
 
-    btnAdd := tui.NewButton("+", func() {
-        v++
-        wnd.Commit(func() {
-            label.SetText(strconv.Itoa(v))
-        })
-    }).WithStyle(tui.BgRed)
+	btnAdd := tui.NewButton("+", func() {
+		v++
+		wnd.Commit(func() {
+			label.SetText(strconv.Itoa(v))
+		})
+	}).WithStyle(tui.BgRed)
 
-    btnSub := tui.NewButton("-", func() {
-        if v > 0 {
-            v--
-            wnd.Commit(func() {
-                label.SetText(strconv.Itoa(v))
-            })
-        }
-    }).WithStyle(tui.BgBlue)
+	btnSub := tui.NewButton("-", func() {
+		if v > 0 {
+			v--
+			wnd.Commit(func() {
+				label.SetText(strconv.Itoa(v))
+			})
+		}
+	}).WithStyle(tui.BgBlue)
 
-    box := tui.NewVBox(label, tui.NewHBox(btnAdd), btnQuit)
-    wnd.SetContent(box)
+	box := tui.NewVBox(label, tui.NewHBox(btnAdd, btnSub), btnQuit)
+	wnd.SetContent(box)
 
-    wnd.Run()
+	wnd.Run()
 }
+
 ```
 
 ## Готовые виджеты
@@ -63,13 +68,10 @@ func main() {
 | `TextProgress`  | Прогресс бар из любых символов                              |
 | `Canvas`        | Холст с 16-цветными пикселями                               |
 | `CanvasRGB`     | Холст с RGB-пикселями                                       |
-
+| `Frame`         | Контейнер, который оборачивает содержимое в рамку           |
 
 
 ## Установка
 ```
 go get -u github.com/romanSPB15/tui-compose/v3
 ```
-
-
-#
