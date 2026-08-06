@@ -106,11 +106,12 @@
 * Восстановление состояния терминала в `LogFatal`.
 * Вывод стека вызовов в `LogFatal`.
 * Метод `Enable` у `FocusManager`.
-* Гонки данных в виджетах.
+
 * Кеширование строки в `Canvas` и `CanvasRGB`.
 
 ### Fixed
 * Исправлены баги рендера.
+* Гонки данных в виджетах.
 
 ### Changed
 * Рефакторинг комментариев в [`types.go`](https://github.com/romanSPB15/tui-compose/blob/main/types.go)
