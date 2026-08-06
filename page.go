@@ -26,5 +26,5 @@ func (p *Page) Open() {
 		currentWindow.SetTitle(p.title)
 	}
 	currentWindow.SetContent(p.content)
-	currentWindow.Do(currentWindow.Redraw)
+	currentWindow.Redraw()
 }
