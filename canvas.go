@@ -44,6 +44,7 @@ func (c *Canvas) Draw(x, y int, clr Color) {
 		return
 	}
 	c.pole[y][x] = clr
+	c.dirty = true
 }
 
 // Draw() устанавливает указанный цвет в указанном месте Canvas, и перерисовывает.
@@ -52,6 +53,7 @@ func (c *Canvas) DrawAndRender(x, y int, clr Color) {
 		return
 	}
 	c.pole[y][x] = clr
+	c.dirty = true
 	if currentWindow != nil {
 		currentWindow.Redraw()
 	}
