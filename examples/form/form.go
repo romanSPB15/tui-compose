@@ -16,6 +16,11 @@ func main() {
 		nameValue := name.Text
 		comValue := com.Text
 		proValue := pro.State()
+
+		_ = nameValue
+		_ = comValue
+		_ = proValue
+
 		// ...
 	}).WithStyle(tui.BgBrightCyan), tui.NewButton("Отмена", func() {
 		// ...
