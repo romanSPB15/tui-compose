@@ -34,17 +34,15 @@ func main() {
 
 	btnAdd := tui.NewButton("+", func() {
 		v++
-		wnd.Commit(func() {
-			label.SetText(strconv.Itoa(v))
-		})
+		label.SetText(strconv.Itoa(v))
+		wnd.Redraw()
 	}).WithStyle(tui.BgRed)
 
 	btnSub := tui.NewButton("-", func() {
 		if v > 0 {
 			v--
-			wnd.Commit(func() {
-				label.SetText(strconv.Itoa(v))
-			})
+			label.SetText(strconv.Itoa(v))
+			wnd.Redraw()
 		}
 	}).WithStyle(tui.BgBlue)
 
@@ -53,7 +51,6 @@ func main() {
 
 	wnd.Run()
 }
-
 ```
 
 ## Готовые виджеты
