@@ -20,17 +20,13 @@ func main() {
 
 	btnAdd := tui.NewButton("+", func() {
 		v++
-		wnd.Commit(func() {
-			label.SetText(strconv.Itoa(v))
-		})
+		label.SetText(strconv.Itoa(v))
 	}).WithStyle(tui.BgRed)
 
 	btnSub := tui.NewButton("-", func() {
 		if v > 0 {
 			v--
-			wnd.Commit(func() {
-				label.SetText(strconv.Itoa(v))
-			})
+			label.SetText(strconv.Itoa(v))
 		}
 	}).WithStyle(tui.BgBlue)
 
