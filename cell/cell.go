@@ -235,6 +235,47 @@ func Parse(s string, buf *[]Cell) []Cell {
 	return cells
 }
 
+func parseFromTo(s string, buf *[]Cell, currentStyle Style) ([]Cell, Style) {
+	if s == "" {
+		return nil, Style{}
+	}
+
+	matches, _ := ansi.Find(s)
+
+	cells := *buf
+	cells = cells[:0]
+
+	if len(matches) == 0 {
+		for i := 0; i < len(s); {
+			r, size := utf8.DecodeRuneInString(s[i:])
+			cells = append(cells, Cell{Char: r, Style: Style{}})
+			i += size
+		}
+		return cells, currentStyle
+	}
+
+	i := 0
+	mi := 0
+
+	for i < len(s) {
+
+		if mi < len(matches) && matches[mi].Index == i {
+			seq := matches[mi].Seq
+			newStyle := parseANSI(seq)
+			currentStyle = currentStyle.Merge(newStyle)
+			i += len(seq)
+			mi++
+			continue
+		}
+
+		r, size := utf8.DecodeRuneInString(s[i:])
+		cells = append(cells, Cell{Char: r, Style: currentStyle})
+		i += size
+	}
+
+	return cells, currentStyle
+}
+
 func ParseMultiline(s string) [][]Cell {
 	if s == "" {
 		return nil
@@ -244,10 +285,15 @@ func ParseMultiline(s string) [][]Cell {
 	lines := strings.Split(s, "\n")
 	result := make([][]Cell, len(lines))
 
+	current := Style{}
+
 	for i, line := range lines {
 		line = strings.TrimSuffix(line, "\r")
+
 		var buf []Cell
-		cells := Parse(line, &buf)
+		cells, s := parseFromTo(line, &buf, current)
+		current = s
+
 		result[i] = append([]Cell(nil), cells...) // копируем
 	}
 	if len(result) == 0 {

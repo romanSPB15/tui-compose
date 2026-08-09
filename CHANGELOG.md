@@ -106,7 +106,6 @@
 * Восстановление состояния терминала в `LogFatal`.
 * Вывод стека вызовов в `LogFatal`.
 * Метод `Enable` у `FocusManager`.
-
 * Кеширование строки в `Canvas` и `CanvasRGB`.
 
 ### Fixed
