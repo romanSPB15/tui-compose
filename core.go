@@ -187,6 +187,8 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 		txt = strings.ReplaceAll(txt, "\r\n", "\n")
 		widgetLines := strings.Split(txt, "\n")
 
+		current := cell.Style{}
+
 		for i, line := range widgetLines {
 			if i >= wgt.MaxHeight() {
 				return
@@ -200,7 +202,8 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 				continue
 			}
 
-			c := cell.Parse(line, &wnd.cellBuf)
+			c, s := cell.ParseFromTo(line, &wnd.cellBuf, current)
+			current = s
 
 			copy(buf[pos.Line+i][pos.Col:], c)
 

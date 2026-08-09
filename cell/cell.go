@@ -194,11 +194,11 @@ func parseANSI(seq string) Style {
 // Parse разбирает строку с ANSI-кодами и возвращает слайс ячеек.
 // zero-allocation
 func Parse(s string, buf *[]Cell) []Cell {
-	cells, _ := parseFromTo(s, buf, Style{})
+	cells, _ := ParseFromTo(s, buf, Style{})
 	return cells
 }
 
-func parseFromTo(s string, buf *[]Cell, currentStyle Style) ([]Cell, Style) {
+func ParseFromTo(s string, buf *[]Cell, currentStyle Style) ([]Cell, Style) {
 	if s == "" {
 		return nil, Style{}
 	}
@@ -254,7 +254,7 @@ func ParseMultiline(s string) [][]Cell {
 		line = strings.TrimSuffix(line, "\r")
 
 		var buf []Cell
-		cells, s := parseFromTo(line, &buf, current)
+		cells, s := ParseFromTo(line, &buf, current)
 		current = s
 
 		result[i] = append([]Cell(nil), cells...) // копируем
