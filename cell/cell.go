@@ -194,44 +194,7 @@ func parseANSI(seq string) Style {
 // Parse разбирает строку с ANSI-кодами и возвращает слайс ячеек.
 // zero-allocation
 func Parse(s string, buf *[]Cell) []Cell {
-	if s == "" {
-		return nil
-	}
-
-	matches, _ := ansi.Find(s)
-
-	cells := *buf
-	cells = cells[:0]
-
-	if len(matches) == 0 {
-		for i := 0; i < len(s); {
-			r, size := utf8.DecodeRuneInString(s[i:])
-			cells = append(cells, Cell{Char: r, Style: Style{}})
-			i += size
-		}
-		return cells
-	}
-
-	var currentStyle Style
-	i := 0
-	mi := 0
-
-	for i < len(s) {
-
-		if mi < len(matches) && matches[mi].Index == i {
-			seq := matches[mi].Seq
-			newStyle := parseANSI(seq)
-			currentStyle = currentStyle.Merge(newStyle)
-			i += len(seq)
-			mi++
-			continue
-		}
-
-		r, size := utf8.DecodeRuneInString(s[i:])
-		cells = append(cells, Cell{Char: r, Style: currentStyle})
-		i += size
-	}
-
+	cells, _ := parseFromTo(s, buf, Style{})
 	return cells
 }
 
