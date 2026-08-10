@@ -200,7 +200,7 @@ func Parse(s string, buf *[]Cell) []Cell {
 
 func ParseFromTo(s string, buf *[]Cell, currentStyle Style) ([]Cell, Style) {
 	if s == "" {
-		return nil, Style{}
+		return nil, currentStyle
 	}
 
 	matches, _ := ansi.Find(s)
