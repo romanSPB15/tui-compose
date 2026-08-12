@@ -7,6 +7,13 @@ import (
 	"github.com/romanSPB15/tui-compose/v3/input"
 )
 
+type TabPosition int
+
+const (
+	TabsTop = iota
+	TabsBottom
+)
+
 type tabsTopPanel struct {
 	t       *Tabs
 	focused bool
@@ -118,12 +125,14 @@ type Tabs struct {
 	current  int
 	topPanel tabsTopPanel
 	selected tui.Style
+	tp       TabPosition
 }
 
 func NewTabs(t []Tab) *Tabs {
 	tabs := &Tabs{
 		tabs:     t,
 		selected: tui.BgBrightWhite,
+		tp:       TabsTop,
 	}
 	tabs.topPanel = tabsTopPanel{t: tabs}
 	return tabs
@@ -138,6 +147,12 @@ func (acc *Tabs) Child() []tui.Widget {
 }
 
 func (acc *Tabs) Pos(i int) tui.Pos {
+	if acc.tp == TabsBottom {
+		if i == 1 {
+			return tui.Pos{0, 0}
+		}
+		return tui.Pos{acc.tabs[acc.current].Content.MaxHeight(), 0}
+	}
 	if i == 1 {
 		return tui.Pos{acc.topPanel.MaxHeight(), 0}
 	}
@@ -163,5 +178,11 @@ func (acc *Tabs) WithCurrent(i int) *Tabs {
 	if i > 0 && i < len(acc.tabs) {
 		acc.current = i
 	}
+	return acc
+}
+
+// WithTabPosition выбирает расположение панели с кнопками.
+func (acc *Tabs) WithTabPosition(tp TabPosition) *Tabs {
+	acc.tp = tp
 	return acc
 }
