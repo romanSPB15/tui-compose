@@ -8,6 +8,8 @@
 ![Lightweight](https://img.shields.io/badge/Lightweight-4590_lines-brightgreen)
 [![Examples](https://img.shields.io/badge/Examples-9-blue?logo=github)](https://github.com/romanSPB15/tui-compose/tree/main/examples)
 
+**Лёгкий путь для создания приложений в терминале на Go.**
+
 * 🍬 9 готовых виджетов — Label, Button, InputField, Canvas, Frame и другие
 * 👓 Diff-рендер, low-allocation — без мерцаний и аллокаций
 * ✨ Автоматическое фокус по Tab/Shift+Tab
@@ -17,6 +19,8 @@
 * 🎨 Удобная кастомизация через битовые маски Style — быстро и удобно
 * 🔧 Кастомные виджеты — 3-6 методов(зависит от функцонала)
 * 🛒 Контейнеры — не нужно считать координаты вручную
+
+---
 
 <p align="center">
 <table>
