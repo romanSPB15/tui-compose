@@ -8,7 +8,29 @@
 ![Lightweight](https://img.shields.io/badge/Lightweight-4590_lines-brightgreen)
 [![Examples](https://img.shields.io/badge/Examples-9-blue?logo=github)](https://github.com/romanSPB15/tui-compose/tree/main/examples)
 
-Легковесный фреймворк для удобной разработки TUI-интерфейсов на Go с поддержкой мыши, готовыми виджетами и автоматической системой фокуса без зависимостей. Идеально подходит для дашбордов, консольных утилит и интерактивных CLI-приложений.
+* 🍬 9 готовых виджетов — Label, Button, InputField, Canvas, Frame и другие
+* 👓 Diff-рендер, low-allocation — без мерцаний и аллокаций
+* ✨ Автоматическое фокус по Tab/Shift+Tab
+* 💎 Минимальный размер: ~4600 строк кода, только x/sys + x/term
+* 🎁 Полная поддержка Windows — без WSL
+* 🛠 Детекция data race при вызове методов окна — `-tags debug`
+* 🎨 Удобная кастомизация через битовые маски Style — быстро и удобно
+* 🔧 Кастомные виджеты — 3-6 методов(зависит от функцонала)
+* 🛒 Контейнеры — не нужно считать координаты вручную
+
+<p align="center">
+<table>
+<tbody>
+</tbody>
+</table>
+</p>
+<h3  align="center"><pre>go get -u github.com/romanSPB15/tui-compose/v3</pre></h3>
+<p align="center">
+<table>
+<tbody>
+</tbody>
+</table>
+</p>
 
 ## Быстрый старт
 ```go
@@ -67,8 +89,5 @@ func main() {
 | `CanvasRGB`     | Холст с RGB-пикселями                                       |
 | `Frame`         | Контейнер, который оборачивает содержимое в рамку           |
 
-
-## Установка
-```
-go get -u github.com/romanSPB15/tui-compose/v3
-```
+## Лицензия
+[**MIT**](https://github.com/romanSPB15/tui-compose/blob/main/LICENSE)
