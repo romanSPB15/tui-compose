@@ -95,3 +95,12 @@ func main() {
 
 ## Лицензия
 [**MIT**](https://github.com/romanSPB15/tui-compose/blob/main/LICENSE)
+
+<div align="center">
+  <h3>⭐ Нравится проект? Поддержи его звездой!</h3>
+  <p>
+    <a href="https://github.com/romanSPB15/tui-compose">
+      <img src="https://img.shields.io/github/stars/romanSPB15/tui-compose?style=for-the-badge" alt="GitHub stars">
+    </a>
+  </p>
+</div>
