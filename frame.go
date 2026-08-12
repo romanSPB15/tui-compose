@@ -181,9 +181,13 @@ func convertToCellStyle(s Style) cell.Style {
 func (b *border) InnerText() string {
 	w := b.MaxWidth()
 	h := b.MaxHeight()
+
 	cells := make([][]cell.Cell, h)
 	for i := range cells {
 		cells[i] = make([]cell.Cell, w)
+		for j := range cells[i] {
+			cells[i][j] = cell.Cell{Char: ' '}
+		}
 	}
 
 	borderStyle := convertToCellStyle(b.borderStyle)
