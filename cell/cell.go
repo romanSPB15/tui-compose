@@ -113,16 +113,17 @@ func (c Style) Merge(new Style) Style {
 	return c
 }
 
-func parseANSI(seq string) Style {
+func parseANSI(seq string) (Style, uint16) {
 	if !strings.HasPrefix(seq, "\033[") || !strings.HasSuffix(seq, "m") {
-		return Style{}
+		return Style{}, 0
 	}
 	params := strings.Split(strings.TrimSuffix(strings.TrimPrefix(seq, "\033["), "m"), ";")
 	if len(params) == 0 {
-		return Style{}
+		return Style{}, 0
 	}
 
 	var s Style
+	var clearMask uint16
 
 	i := 0
 	for i < len(params) {
@@ -130,7 +131,7 @@ func parseANSI(seq string) Style {
 		switch v {
 		case 0:
 			s.Args |= Reset
-			return s
+			return s, 0
 		case 1:
 			s.Args |= Bold
 		case 3:
@@ -142,23 +143,23 @@ func parseANSI(seq string) Style {
 		case 7:
 			s.Args |= Reverse
 		case 22:
-			s.Args &^= Bold
+			clearMask |= Bold
 		case 23:
-			s.Args &^= Italic
+			clearMask |= Italic
 		case 24:
-			s.Args &^= Underline
+			clearMask |= Underline
 		case 25:
-			s.Args &^= Blink
+			clearMask |= Blink
 		case 27:
-			s.Args &^= Reverse
+			clearMask |= Reverse
 		case 30, 31, 32, 33, 34, 35, 36, 37:
 			s.Fg = fmt.Sprintf("%d", v)
 		case 90, 91, 92, 93, 94, 95, 96, 97:
-			s.Fg = fmt.Sprintf("%d", v) // яркий текст
+			s.Fg = fmt.Sprintf("%d", v)
 		case 40, 41, 42, 43, 44, 45, 46, 47:
 			s.Bg = fmt.Sprintf("%d", v)
 		case 100, 101, 102, 103, 104, 105, 106, 107:
-			s.Bg = fmt.Sprintf("%d", v) // яркий фон
+			s.Bg = fmt.Sprintf("%d", v)
 		case 39:
 			s.Fg = ""
 		case 49:
@@ -188,7 +189,7 @@ func parseANSI(seq string) Style {
 		}
 		i++
 	}
-	return s
+	return s, clearMask
 }
 
 // Parse разбирает строку с ANSI-кодами и возвращает слайс ячеек.
@@ -221,10 +222,12 @@ func ParseFromTo(s string, buf *[]Cell, currentStyle Style) ([]Cell, Style) {
 	mi := 0
 
 	for i < len(s) {
-
 		if mi < len(matches) && matches[mi].Index == i {
 			seq := matches[mi].Seq
-			newStyle := parseANSI(seq)
+			newStyle, clearMask := parseANSI(seq)
+			// Сначала сбрасываем биты
+			currentStyle.Args &^= uint32(clearMask)
+			// Затем применяем новый стиль (Merge добавит биты, установит цвета)
 			currentStyle = currentStyle.Merge(newStyle)
 			i += len(seq)
 			mi++
@@ -287,7 +290,7 @@ func ToString(cells [][]Cell) string {
 	var builder strings.Builder
 	for rowIdx, row := range cells {
 		if rowIdx > 0 {
-			builder.WriteString("\r\n")
+			builder.WriteString("\n")
 		}
 		var last Style
 		for _, cell := range row {

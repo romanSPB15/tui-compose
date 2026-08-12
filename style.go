@@ -105,10 +105,6 @@ func (s Style) String() string {
 		codes = []int{0}
 	}
 
-	if len(codes) == 0 {
-		return ""
-	}
-
 	codesString := []string{}
 
 	for _, v := range codes {

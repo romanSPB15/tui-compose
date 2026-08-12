@@ -1,6 +1,7 @@
 package cell_test
 
 import (
+	"reflect"
 	"slices"
 	"testing"
 
@@ -80,6 +81,20 @@ func TestParse(t *testing.T) {
 				Bg: "48;2;120;255;80",
 			}),
 		},
+		{
+			Input: "\033[101;5;4;7m\033[95mH\033[39mi",
+			Expected: cells("Hi", cell.Style{
+				Fg:   "95",
+				Bg:   "101",
+				Args: cell.Blink | cell.Underline | cell.Reverse,
+			}),
+		},
+		{
+			Input: "\x1b[1;3;4;5;7m1\x1b[22;23;24;25;27m2",
+			Expected: cells("12", cell.Style{
+				Args: cell.Blink | cell.Underline | cell.Reverse | cell.Bold | cell.Italic,
+			}, cell.Style{}),
+		},
 	}
 	buf := make([]cell.Cell, 0, 256)
 	for i, test := range tt {
@@ -108,6 +123,16 @@ func TestParseFromTo(t *testing.T) {
 			Expected: cells("1234", cell.Style{Args: cell.Bold, Fg: "90"}, cell.Style{Fg: "33", Args: cell.Bold}, cell.Style{Fg: "33", Args: cell.Bold | cell.Italic}, cell.Style{Fg: "33", Args: cell.Bold | cell.Italic | cell.Blink}),
 			From:     cell.Style{Args: cell.Bold, Fg: "90"},
 			To:       cell.Style{},
+		},
+		{Input: "",
+			Expected: nil,
+			From:     cell.Style{Args: cell.Underline, Fg: "90"},
+			To:       cell.Style{Args: cell.Underline, Fg: "90"},
+		},
+		{Input: "Hello",
+			Expected: cells("Hello"),
+			From:     cell.Style{Args: cell.Underline, Fg: "90"},
+			To:       cell.Style{Args: cell.Underline, Fg: "90"},
 		},
 	}
 	buf := make([]cell.Cell, 0, 128)
@@ -252,5 +277,73 @@ func TestStyleANSI(t *testing.T) {
 				t.Errorf("ANSI(%+v) = %q, want %q", tc.last, got, tc.expected)
 			}
 		})
+	}
+}
+
+func TestToString(t *testing.T) {
+	tt := []struct {
+		input    [][]cell.Cell
+		expected string
+	}{
+		{
+			input: [][]cell.Cell{
+				cells("123"),
+			},
+			expected: "123",
+		},
+		{
+			input: [][]cell.Cell{
+				cells("456"),
+				cells("123"),
+			},
+			expected: "456\n123",
+		},
+		{
+			input: [][]cell.Cell{
+				cells("456", cell.Style{Fg: "30", Args: cell.Italic}),
+				cells("123"),
+			},
+			expected: "\033[3;30m456\033[0m\n123",
+		},
+		{
+			input: [][]cell.Cell{
+				cells("text", cell.Style{Args: cell.Bold | cell.Italic | cell.Underline}),
+			},
+			expected: "\x1b[1;3;4mtext\x1b[0m",
+		},
+		{
+			input:    [][]cell.Cell{},
+			expected: "",
+		},
+	}
+
+	for i, tc := range tt {
+		got := cell.ToString(tc.input)
+		if got != tc.expected {
+			t.Errorf("#%d: expected %v, but got %v", i, []byte(tc.expected), []byte(got))
+		}
+	}
+}
+
+func TestParseMultiline(t *testing.T) {
+	tt := []struct {
+		Input    string
+		Expected [][]cell.Cell
+	}{
+		{Input: "",
+			Expected: nil,
+		},
+		{Input: "Hello\nH",
+			Expected: [][]cell.Cell{
+				cells("Hello"),
+				cells("H    "),
+			},
+		},
+	}
+	for i, test := range tt {
+		got := cell.ParseMultiline(test.Input)
+		if !reflect.DeepEqual(got, test.Expected) {
+			t.Errorf("#%d: expected cells %v, but got %v", i, test.Expected, got)
+		}
 	}
 }
