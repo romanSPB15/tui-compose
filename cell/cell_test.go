@@ -69,12 +69,55 @@ func TestParse(t *testing.T) {
 			Input:    "\033[30m⣾\033[0m⢿",
 			Expected: cells("⣾⢿", cell.Style{Fg: "30"}, cell.Style{}),
 		},
+		{
+			Input:    "\033[30m⣾\033[0m⢿",
+			Expected: cells("⣾⢿", cell.Style{Fg: "30"}, cell.Style{}),
+		},
+		{
+			Input: "\033[2mH\033[38;2;200;100;50m\033[48;2;120;255;80mi",
+			Expected: cells("Hi", cell.Style{}, cell.Style{
+				Fg: "38;2;200;100;50",
+				Bg: "48;2;120;255;80",
+			}),
+		},
 	}
 	buf := make([]cell.Cell, 0, 256)
 	for i, test := range tt {
 		got := cell.Parse(test.Input, &buf)
 		if !slices.Equal(got, test.Expected) {
 			t.Errorf("#%d: expected %v, but got %v", i, test.Expected, got)
+		}
+	}
+}
+
+func TestParseFromTo(t *testing.T) {
+	tt := []struct {
+		Input    string
+		Expected []cell.Cell
+		From, To cell.Style
+	}{
+		{Input: "\033[31mHello\033[0m World",
+			Expected: append(
+				cells("Hello", cell.Style{Fg: "31", Args: cell.Bold}),
+				cells(" World", cell.Style{})...,
+			),
+			From: cell.Style{Args: cell.Bold},
+			To:   cell.Style{},
+		},
+		{Input: "1\033[33m2\033[3m3\033[5m4\033[0m",
+			Expected: cells("1234", cell.Style{Args: cell.Bold, Fg: "90"}, cell.Style{Fg: "33", Args: cell.Bold}, cell.Style{Fg: "33", Args: cell.Bold | cell.Italic}, cell.Style{Fg: "33", Args: cell.Bold | cell.Italic | cell.Blink}),
+			From:     cell.Style{Args: cell.Bold, Fg: "90"},
+			To:       cell.Style{},
+		},
+	}
+	buf := make([]cell.Cell, 0, 128)
+	for i, test := range tt {
+		got, to := cell.ParseFromTo(test.Input, &buf, test.From)
+		if !slices.Equal(got, test.Expected) {
+			t.Errorf("#%d: expected cells %v, but got %v", i, test.Expected, got)
+		}
+		if to != test.To {
+			t.Errorf("#%d: expected to %v, but got %v", i, test.To, to)
 		}
 	}
 }
@@ -193,6 +236,12 @@ func TestStyleANSI(t *testing.T) {
 			last:     cell.Style{Fg: "31", Args: cell.Bold | cell.Underline},
 			new:      cell.Style{},
 			expected: "\x1b[0m",
+		},
+		{
+			name:     "bright black",
+			last:     cell.Style{Fg: "90"},
+			new:      cell.Style{Fg: "90"},
+			expected: "",
 		},
 	}
 
