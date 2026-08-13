@@ -320,7 +320,7 @@ func (wnd *window) Redraw() {
 			if newBuf[y][x] != oldBuf[y][x] {
 				b.WriteString("\033[")
 				b.WriteString(strconv.Itoa(y + 1))
-				b.WriteByte(' ')
+				b.WriteByte(';')
 				b.WriteString(strconv.Itoa(x + 1))
 				b.WriteByte('H')
 
