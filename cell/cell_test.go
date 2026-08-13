@@ -87,6 +87,9 @@ func TestParse(t *testing.T) {
 				Fg:   "95",
 				Bg:   "101",
 				Args: cell.Blink | cell.Underline | cell.Reverse,
+			}, cell.Style{
+				Bg:   "101",
+				Args: cell.Blink | cell.Underline | cell.Reverse,
 			}),
 		},
 		{
@@ -94,6 +97,14 @@ func TestParse(t *testing.T) {
 			Expected: cells("12", cell.Style{
 				Args: cell.Blink | cell.Underline | cell.Reverse | cell.Bold | cell.Italic,
 			}, cell.Style{}),
+		},
+		{
+			Input:    "\033[m123",
+			Expected: cells("123"),
+		},
+		{
+			Input:    "\033[41m1\033[49m23",
+			Expected: cells("123", cell.Style{Bg: "41"}, cell.Style{}),
 		},
 	}
 	buf := make([]cell.Cell, 0, 256)
@@ -267,6 +278,34 @@ func TestStyleANSI(t *testing.T) {
 			last:     cell.Style{Fg: "90"},
 			new:      cell.Style{Fg: "90"},
 			expected: "",
+		},
+
+		{
+			name:     "reverse - set",
+			last:     cell.Style{Fg: "31", Args: cell.Reverse},
+			new:      cell.Style{Fg: "31"},
+			expected: "\033[27m",
+		},
+
+		{
+			name:     "reverse - reset",
+			last:     cell.Style{},
+			new:      cell.Style{Args: cell.Reverse},
+			expected: "\033[7m",
+		},
+
+		{
+			name:     "reverse - set",
+			last:     cell.Style{Fg: "31", Args: cell.Blink},
+			new:      cell.Style{Fg: "31"},
+			expected: "\033[25m",
+		},
+
+		{
+			name:     "reverse - reset",
+			last:     cell.Style{},
+			new:      cell.Style{Args: cell.Blink},
+			expected: "\033[5m",
 		},
 	}
 

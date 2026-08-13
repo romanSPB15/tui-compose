@@ -24,6 +24,9 @@ const (
 	Reverse
 	Blink
 	Reset
+
+	resetFg
+	resetBg
 )
 
 // Cell представляет одну ячейку экрана.
@@ -161,9 +164,9 @@ func parseANSI(seq string) (Style, uint16) {
 		case 100, 101, 102, 103, 104, 105, 106, 107:
 			s.Bg = fmt.Sprintf("%d", v)
 		case 39:
-			s.Fg = ""
+			clearMask |= resetFg
 		case 49:
-			s.Bg = ""
+			clearMask |= resetBg
 		case 38:
 			if i+1 < len(params) {
 				if params[i+1] == "2" && i+3 < len(params) {
@@ -225,9 +228,17 @@ func ParseFromTo(s string, buf *[]Cell, currentStyle Style) ([]Cell, Style) {
 		if mi < len(matches) && matches[mi].Index == i {
 			seq := matches[mi].Seq
 			newStyle, clearMask := parseANSI(seq)
-			// Сначала сбрасываем биты
+
 			currentStyle.Args &^= uint32(clearMask)
-			// Затем применяем новый стиль (Merge добавит биты, установит цвета)
+
+			if clearMask&resetFg != 0 {
+				currentStyle.Fg = ""
+			}
+
+			if clearMask&resetBg != 0 {
+				currentStyle.Bg = ""
+			}
+
 			currentStyle = currentStyle.Merge(newStyle)
 			i += len(seq)
 			mi++
@@ -262,9 +273,7 @@ func ParseMultiline(s string) [][]Cell {
 
 		result[i] = append([]Cell(nil), cells...) // копируем
 	}
-	if len(result) == 0 {
-		return result
-	}
+
 	maxW := 0
 	for _, row := range result {
 		if len(row) > maxW {
