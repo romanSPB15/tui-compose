@@ -5,7 +5,8 @@ package tui
 import (
 	"image"
 	"strconv"
-	"strings"
+
+	"github.com/romanSPB15/tui-compose/v3/builder"
 )
 
 type PixelSize int
@@ -65,7 +66,7 @@ func (c *Canvas) InnerText() string {
 		return c.cached
 	}
 
-	var b strings.Builder
+	var b builder.Builder
 	b.Grow(c.width * c.height * 6)
 
 	if c.PixelSize == PixelTwoSymbol {
@@ -218,7 +219,7 @@ func (c *CanvasRGB) InnerText() string {
 		return c.cached
 	}
 
-	var b strings.Builder
+	var b builder.Builder
 
 	b.Grow(c.width * c.height * 10)
 

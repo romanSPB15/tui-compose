@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v3/builder"
 )
 
 type Tree struct {
@@ -31,14 +32,14 @@ func NewTree(nodes []TreeNode) *Tree {
 }
 
 func (t *Tree) InnerText() string {
-	var sbRes strings.Builder
+	var sbRes builder.Builder
 	lastDepth := 0
 	lines := make(map[int]bool)
 	for i, node := range t.nodes {
 		d := (node.Depth)*t.Offset - t.Offset
 		d = max(d, 0)
 
-		var sb strings.Builder
+		var sb builder.Builder
 
 		indent := strings.Repeat(" ", d)
 		style := node.Style.String()

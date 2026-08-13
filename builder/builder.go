@@ -48,11 +48,6 @@ func (b *Builder) WriteByte(c byte) error {
 	return nil
 }
 
-func (b *Builder) WriteBytes(c []byte) error {
-	b.buf = append(b.buf, c...)
-	return nil
-}
-
 func (b *Builder) WriteRune(r rune) (int, error) {
 	n := len(b.buf)
 	b.buf = utf8.AppendRune(b.buf, r)

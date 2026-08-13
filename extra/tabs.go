@@ -1,9 +1,8 @@
 package extra
 
 import (
-	"strings"
-
 	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v3/builder"
 	"github.com/romanSPB15/tui-compose/v3/input"
 )
 
@@ -65,7 +64,7 @@ func (tp *tabsTopPanel) OnKeyPress(ev *input.KeyboardEvent) {
 }
 
 func (acc *tabsTopPanel) InnerText() string {
-	var sb strings.Builder
+	var sb builder.Builder
 	for i, v := range acc.t.tabs {
 		if acc.t.current == i {
 			sb.WriteString(acc.t.selected.String())

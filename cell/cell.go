@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/romanSPB15/tui-compose/v3/ansi"
+	"github.com/romanSPB15/tui-compose/v3/builder"
 )
 
 // BIURBlRe - Bold Italic Underline Reverse Blink
@@ -296,7 +297,7 @@ func ToString(cells [][]Cell) string {
 	if len(cells) == 0 {
 		return ""
 	}
-	var builder strings.Builder
+	var builder builder.Builder
 	for rowIdx, row := range cells {
 		if rowIdx > 0 {
 			builder.WriteString("\n")

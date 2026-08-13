@@ -1,9 +1,8 @@
 package extra
 
 import (
-	"strings"
-
 	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v3/builder"
 )
 
 type PageIndicator struct {
@@ -63,7 +62,7 @@ func (p *PageIndicator) MaxHeight() int {
 }
 
 func (p *PageIndicator) InnerText() string {
-	var builder strings.Builder
+	var builder builder.Builder
 	for i := 0; i < p.total; i++ {
 		var ch rune
 		if i == p.current {

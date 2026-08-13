@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v3/builder"
 )
 
 type TableCellAlign int
@@ -146,7 +147,7 @@ func (pc *Table) InnerText() string {
 		return ""
 	}
 
-	var b strings.Builder
+	var b builder.Builder
 
 	// разделитель сверху
 	if pc.hor == EverywhereHorSeparator {
