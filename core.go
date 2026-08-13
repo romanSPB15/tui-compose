@@ -107,6 +107,7 @@ type window struct {
 	cellBuf          []cell.Cell
 	last             cell.Style
 	worker           atomic.Int32
+	builderPool      sync.Pool
 }
 
 func (wnd *window) indexClickable(wgt Widget, offset Pos) {
@@ -308,7 +309,8 @@ func (wnd *window) Redraw() {
 	}
 	oldBuf := wnd.buf
 
-	b := builder.Builder{}
+	b := wnd.builderPool.Get().(*builder.Builder)
+	b.Reset()
 
 	for y := 0; y < h; y++ {
 		if len(newBuf[y]) < w {
@@ -335,7 +337,9 @@ func (wnd *window) Redraw() {
 		}
 	}
 
-	b.Copy(os.Stdout)
+	b.Copy(wnd.f)
+
+	wnd.builderPool.Put(b)
 
 	wnd.releaseBuffer(newBuf)
 }
@@ -440,7 +444,11 @@ const taskBufSize = 32
 func NewWindow() Window {
 	wnd := &window{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: []KeyboardEventHandler{},
 		work: make(chan *task, taskBufSize), focusIndex: -1, focusChange: true, cellBuf: make([]cell.Cell, 0, 256),
-		initCell: cell.Cell{Char: ' '},
+		initCell: cell.Cell{Char: ' '}, builderPool: sync.Pool{
+			New: func() any {
+				return &builder.Builder{}
+			},
+		},
 	}
 	if DEBUG {
 		f, err := os.Create(fmt.Sprintf("debug_log_%d", time.Now().UnixMilli()))
