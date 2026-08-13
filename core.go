@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/romanSPB15/tui-compose/v3/builder"
 	"github.com/romanSPB15/tui-compose/v3/cell"
 	"github.com/romanSPB15/tui-compose/v3/input"
 	termL "github.com/romanSPB15/tui-compose/v3/term"
@@ -307,27 +308,34 @@ func (wnd *window) Redraw() {
 	}
 	oldBuf := wnd.buf
 
+	b := builder.Builder{}
+
 	for y := 0; y < h; y++ {
 		if len(newBuf[y]) < w {
 			continue
 		}
 		for x := 0; x < w; x++ {
 			if newBuf[y][x] != oldBuf[y][x] {
-
-				fmt.Fprintf(wnd.f, "\033[%d;%dH", y+1, x+1)
+				b.WriteString("\033[")
+				b.WriteString(strconv.Itoa(y + 1))
+				b.WriteByte(' ')
+				b.WriteString(strconv.Itoa(x + 1))
+				b.WriteByte('H')
 
 				ansi := newBuf[y][x].Style.ANSI(wnd.last)
 				if ansi != "" {
-					fmt.Fprint(wnd.f, ansi)
+					b.WriteString(ansi)
 					wnd.last = newBuf[y][x].Style
 				}
 
-				fmt.Fprint(wnd.f, string(newBuf[y][x].Char))
+				b.WriteRune(newBuf[y][x].Char)
 
 				oldBuf[y][x] = newBuf[y][x]
 			}
 		}
 	}
+
+	b.Copy(os.Stdout)
 
 	wnd.releaseBuffer(newBuf)
 }
