@@ -5,15 +5,17 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
+	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/romanSPB15/tui-compose/v3/cell"
 	"github.com/romanSPB15/tui-compose/v3/input"
 	termL "github.com/romanSPB15/tui-compose/v3/term"
-	"github.com/romanSPB15/x/gorid"
 	"golang.org/x/term"
 )
 
@@ -103,6 +105,7 @@ type window struct {
 	bufferPool       *sync.Pool
 	cellBuf          []cell.Cell
 	last             cell.Style
+	worker           atomic.Int32
 }
 
 func (wnd *window) indexClickable(wgt Widget, offset Pos) {
@@ -281,7 +284,7 @@ func (wnd *window) releaseBuffer(buf [][]cell.Cell) {
 }
 
 func (wnd *window) Redraw() {
-	if DEBUG && !gorid.Is("worker") {
+	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("Redraw called outside worker goroutine: data race")
 	}
 	if wnd.content == nil || !wnd.runned {
@@ -418,7 +421,7 @@ func (wnd *window) OnQuit() <-chan struct{} {
 }
 
 func (wnd *window) IsRunned() bool {
-	if DEBUG && !gorid.Is("worker") {
+	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("IsRunned called outside worker goroutine: data race")
 	}
 	return wnd.runned
@@ -439,15 +442,19 @@ func NewWindow() Window {
 		wnd.log = f
 	}
 	termL.EnableANSIWindows()
-	currentWindow = wnd
 	if DEBUG {
-		gorid.Register("worker")
+		wnd.worker.Store(getGorID())
 	}
+	currentWindow = wnd
 	return wnd
 }
 
+func (wnd *window) isWorker() bool {
+	return wnd.worker.Load() == getGorID()
+}
+
 func (wnd *window) RegisterKeyHandler(keh KeyboardEventHandler) {
-	if DEBUG && !gorid.Is("worker") {
+	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("RegisterKeyHandler called outside worker goroutine: data race")
 	}
 	wnd.keyHandlers = append(wnd.keyHandlers, keh)
@@ -508,7 +515,24 @@ func (wnd *window) doWithMessageAndWait(f func(), msg string) {
 	}
 }
 
+func getGorID() int32 {
+	var buf [128]byte
+	n := runtime.Stack(buf[:], false)
+	line := string(buf[:n])
+
+	parts := strings.SplitN(line, " ", 3)
+	if len(parts) < 2 {
+		return -1
+	}
+	id, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil {
+		return -1
+	}
+	return int32(id)
+}
+
 func (wnd *window) runWorker() {
+	wnd.worker.Store(getGorID())
 	wnd.LogInfo("Воркер запущен...")
 	for {
 		select {
@@ -598,7 +622,7 @@ func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
 }
 
 func (wnd *window) RegisterClickHandler(h func(ev *input.MouseEvent)) {
-	if DEBUG && !gorid.Is("worker") {
+	if DEBUG && wnd.isWorker() {
 		wnd.LogFatal("RegisterClickHandler called outside worker goroutine: data race")
 	}
 	wnd.mouseHandlers = append(wnd.mouseHandlers, h)
@@ -651,7 +675,7 @@ func (wnd *window) startInputCatcher() {
 }
 
 func (wnd *window) SetContent(w Widget) {
-	if DEBUG && !gorid.Is("worker") {
+	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("SetContent called outside worker goroutine: data race")
 	}
 	wnd.content = w
@@ -681,7 +705,7 @@ func CurrentWindow() Window {
 // SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
 // Обычно используется для установки фона.
 func (wnd *window) SetInitCell(c cell.Cell) {
-	if DEBUG && !gorid.Is("worker") {
+	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("SetInitCell called outside worker goroutine: data race")
 	}
 	wnd.initCell = c
@@ -689,7 +713,7 @@ func (wnd *window) SetInitCell(c cell.Cell) {
 
 // SetInitCell устанавливает фон пустых позиций окна.
 func (wnd *window) SetBackground(s Style) {
-	if DEBUG && !gorid.Is("worker") {
+	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("SetBackground called outside worker goroutine: data race")
 	}
 	wnd.SetInitCell(cell.Cell{Char: ' ', Style: ConvertToCellStyle(s)})
