@@ -83,6 +83,8 @@ func NewTextView(h int) *TextView {
 	}
 }
 
+var tagRegex = regexp.MustCompile(`\[([a-z_-]+)\]`)
+
 func (tv *TextView) MaxWidth() int {
 	m := 0
 	for _, line := range tv.lines {
@@ -113,18 +115,4 @@ func (tv *TextView) WithLines(s []string) *TextView {
 func (tv *TextView) Append(s string) *TextView {
 	tv.lines = append(tv.lines, s)
 	return tv
-}
-
-var tagRegex = regexp.MustCompile(`\[([a-z_-]+)\]`)
-
-func (tv *TextView) MaxWidth() int {
-	m := 0
-	for _, line := range tv.lines {
-		l := len(tagRegex.ReplaceAllString(line, ""))
-		if m < l {
-			m = l
-		}
-	}
-
-	return m
 }
