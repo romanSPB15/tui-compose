@@ -98,3 +98,9 @@ func (bc *BarChart) InnerText() string {
 
 	return cell.ToString(cells)
 }
+
+// WithBarWidth устанавливает ширину столбцов.
+func (bc *BarChart) WithBarWidth(w int) *BarChart {
+	bc.BarWidth = w
+	return bc
+}
