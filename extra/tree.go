@@ -45,7 +45,7 @@ func (t *Tree) InnerText() string {
 
 		// чтобы выбрать └ или ├
 		lastWithThisDepth := func() bool {
-			for j := i + 1; j < len(t.nodes)-1; j++ {
+			for j := i + 1; j < len(t.nodes); j++ {
 				if t.nodes[j].Depth == node.Depth {
 					return false
 				}
