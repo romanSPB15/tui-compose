@@ -233,9 +233,13 @@ func (bc *LineChart) InnerText() string {
 		lineStyle := convertToCellStyle(s.LineStyle)
 		for i := 0; i < len(s.Values)-1; i++ {
 			x1 := offsetX + i*bc.PointDistance
-			y1 := h - 2 - int(float64(s.Values[i])/bc.div)
+			y1 := h - 1 - int(float64(s.Values[i])/bc.div)
 			x2 := offsetX + (i+1)*bc.PointDistance
-			y2 := h - 2 - int(float64(s.Values[i+1])/bc.div)
+			y2 := h - 1 - int(float64(s.Values[i+1])/bc.div)
+			if len(bc.XLabels) > 0 {
+				y1 -= 2
+				y2 -= 2
+			}
 			if y1 < 0 {
 				y1 = 0
 			}
