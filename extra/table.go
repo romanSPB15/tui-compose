@@ -114,6 +114,9 @@ func (pc *Table) MaxHeight() int {
 	if pc.hor == NoHorSeparator {
 		return len(pc.data)
 	}
+	if pc.hor == BetweenHorSeparator {
+		return len(pc.data)*2 - 1
+	}
 	return len(pc.data)*2 + 1
 }
 
