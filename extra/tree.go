@@ -42,10 +42,6 @@ func (t *Tree) InnerText() string {
 		var sb builder.Builder
 
 		indent := strings.Repeat(" ", d)
-		style := node.Style.String()
-		if style != "" {
-			sb.WriteString(style)
-		}
 		sb.WriteString(indent)
 
 		// чтобы выбрать └ или ├
@@ -95,7 +91,7 @@ func (t *Tree) InnerText() string {
 			}
 		}
 
-		style = node.LabelStyle.String()
+		style := node.LabelStyle.String()
 		if style != "" {
 			sb.WriteString("\033[0m")
 			sb.WriteString(style)
