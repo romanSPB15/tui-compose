@@ -16,7 +16,12 @@ func NewSpinner(style int) *Spinner {
 }
 
 func (bc *Spinner) MaxWidth() int {
-	return 1
+	switch bc.style {
+	case 2:
+		return 3
+	default:
+		return 1
+	}
 }
 
 func (bc *Spinner) MaxHeight() int {
