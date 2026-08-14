@@ -104,3 +104,33 @@ func (bc *BarChart) WithBarWidth(w int) *BarChart {
 	bc.BarWidth = w
 	return bc
 }
+
+// WithSpace устанавливает пропуски между столбцами.
+func (bc *BarChart) WithSpace(s int) *BarChart {
+	bc.Space = s
+	return bc
+}
+
+// WithHeight устанавливает высоту графика в символах(примерно).
+func (bc *BarChart) WithHeight(h int) *BarChart {
+	bc.Height = h
+	return bc
+}
+
+// WithBarStyle устанавливает стиль столбцов.
+func (bc *BarChart) WithBarStyle(fn func(i, v int) tui.Style) *BarChart {
+	bc.BarStyle = fn
+	return bc
+}
+
+// WithTextStyle устанавливает стиль подписей.
+func (bc *BarChart) WithTextStyle(fn func(i, v int) tui.Style) *BarChart {
+	bc.TextStyle = fn
+	return bc
+}
+
+// WithFillRune устанавливает символ-заполнитель столбцов.
+func (bc *BarChart) WithFillRune(r rune) *BarChart {
+	bc.FillRune = r
+	return bc
+}
