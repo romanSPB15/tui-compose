@@ -101,7 +101,7 @@ func (tv *TextView) InnerText() string {
 }
 
 func (tv *TextView) MaxHeight() int {
-	return len(tv.lines)
+	return tv.height
 }
 
 func (tv *TextView) WithLines(s []string) *TextView {
