@@ -14,8 +14,6 @@ type AxisRunes struct {
 
 type Series struct {
 	Values     []int
-	LineRune   rune                     // если 0 → используется глобальный
-	PointRune  rune                     // если 0 → используется глобальный
 	LineStyle  tui.Style                // если 0 → используется глобальный
 	PointStyle func(i, v int) tui.Style // если nil → используется глобальный
 }
@@ -152,7 +150,14 @@ func (bc *LineChart) InnerText() string {
 
 	offsetX := 0
 	if len(bc.YLabels) > 0 {
-		offsetX = lenNumber(maxVal) + 1
+		maxLabelLen := 0
+		for _, v := range bc.YLabels {
+			l := lenNumber(v)
+			if l > maxLabelLen {
+				maxLabelLen = l
+			}
+		}
+		offsetX = maxLabelLen + 1
 	}
 
 	w := bc.MaxWidth()
