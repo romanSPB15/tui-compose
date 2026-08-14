@@ -14,10 +14,9 @@ type Tree struct {
 }
 
 type TreeNode struct {
-	Label      string
-	Depth      int // уровень вложенности (0, 1, 2...)
-	Style      tui.Style
-	LabelStyle tui.Style
+	Label string
+	Depth int // уровень вложенности (0, 1, 2...)
+	Style tui.Style
 }
 
 func NewTree(nodes []TreeNode) *Tree {
@@ -91,9 +90,8 @@ func (t *Tree) InnerText() string {
 			}
 		}
 
-		style := node.LabelStyle.String()
+		style := node.Style.String()
 		if style != "" {
-			sb.WriteString("\033[0m")
 			sb.WriteString(style)
 		}
 
