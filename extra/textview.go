@@ -2,7 +2,6 @@ package extra
 
 import (
 	"regexp"
-	"strings"
 )
 
 type TextView struct {
@@ -84,20 +83,22 @@ func NewTextView(h int) *TextView {
 	}
 }
 
-func (tv *TextView) InnerText() string {
-	linesANSI := []string{}
+func (tv *TextView) MaxWidth() int {
+	m := 0
 	for _, line := range tv.lines {
-		for k, v := range replaceList {
-			line = strings.ReplaceAll(line, "["+k+"]", "\033["+v+"m")
+		cleaned := tagRegex.ReplaceAllStringFunc(line, func(match string) string {
+			key := match[1 : len(match)-1]
+			if _, ok := replaceList[key]; ok {
+				return ""
+			}
+			return match
+		})
+		l := len([]rune(cleaned))
+		if l > m {
+			m = l
 		}
-		linesANSI = append(linesANSI, line)
 	}
-
-	end := tv.offset + tv.height
-	if end > len(tv.lines) {
-		end = len(tv.lines)
-	}
-	return strings.Join(linesANSI[tv.offset:end], "\n")
+	return m
 }
 
 func (tv *TextView) MaxHeight() int {
