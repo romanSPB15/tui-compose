@@ -109,6 +109,11 @@ func (tv *TextView) WithLines(s []string) *TextView {
 	return tv
 }
 
+func (tv *TextView) WithFixedWidth(w int) *TextView {
+	tv.width = w
+	return tv
+}
+
 func (tv *TextView) Append(s string) *TextView {
 	tv.lines = append(tv.lines, s)
 	return tv
@@ -117,6 +122,9 @@ func (tv *TextView) Append(s string) *TextView {
 var tagRegex = regexp.MustCompile(`\[([a-z_-]+)\]`)
 
 func (tv *TextView) MaxWidth() int {
+	if tv.width != 0 {
+		return tv.width
+	}
 	m := 0
 	for _, line := range tv.lines {
 		cleaned := tagRegex.ReplaceAllStringFunc(line, func(match string) string {
