@@ -1,0 +1,28 @@
+package main
+
+import (
+	"github.com/romanSPB15/tui-compose/v3"
+)
+
+func main() {
+	wnd := tui.NewWindow()
+
+	name := tui.NewInputField(30).WithPlaceholder("Введите имя...")
+	com := tui.NewInputField(30).WithPlaceholder("Введите комментарий...")
+
+	pro := tui.NewCheck("Pro").WithStyle(tui.FrMagenta)
+
+	ok, cancel := tui.NewButton("ОК", func() {
+		nameValue := name.Text
+		comValue := com.Text
+		proValue := pro.State()
+		// ...
+	}).WithStyle(tui.BgBrightCyan), tui.NewButton("Отмена", func() {
+		// ...
+	}).WithStyle(tui.BgBrightRed)
+
+	fr := tui.NewFrame((tui.NewVBox(name, com, pro, tui.NewHBox(ok, cancel)))).WithTitle(tui.Title{Text: "Регистрация", Pos: tui.TitleTopCenter}).Rounded()
+
+	wnd.SetContent(fr)
+	wnd.Run()
+}
