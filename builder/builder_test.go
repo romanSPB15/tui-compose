@@ -3,6 +3,7 @@ package builder
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 )
@@ -195,7 +196,15 @@ func TestBuilder_LenCap(t *testing.T) {
 	}
 }
 
-func BenchmarkBuilder_WriteString(b *testing.B) {
+func BenchmarkStringsBuilder_WriteString(b *testing.B) {
+	bb := &strings.Builder{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bb.WriteString("hello")
+	}
+}
+
+func BenchmarkTuiBuilder_WriteString(b *testing.B) {
 	bb := &Builder{}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -203,7 +212,7 @@ func BenchmarkBuilder_WriteString(b *testing.B) {
 	}
 }
 
-func BenchmarkBuilder_WriteFormat(b *testing.B) {
+func BenchmarkTuiBuilder_WriteFormat(b *testing.B) {
 	bb := &Builder{}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -211,10 +220,62 @@ func BenchmarkBuilder_WriteFormat(b *testing.B) {
 	}
 }
 
-func BenchmarkFmtStrings_Fprintf_Builder(b *testing.B) {
+func BenchmarkStringsBuilder_WriteFmtSprintf(b *testing.B) {
 	bb := &strings.Builder{}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		fmt.Fprintf(bb, "%s %d %f", "test", 42, 1.23)
+		bb.WriteString(fmt.Sprintf("%s %d %f", "test", 42, 1.23))
+	}
+}
+
+func makeData() []byte {
+	b := make([]byte, 1024)
+	for i := range b {
+		b[i] = byte(i)
+	}
+	return b
+}
+
+func BenchmarkStringsBuilderStringToBytes(b *testing.B) {
+	bb := &strings.Builder{}
+	bb.Write(makeData())
+	var d []byte
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		d = []byte(bb.String())
+	}
+	b.StopTimer()
+	d[0] = 1
+}
+
+func BenchmarkTuiBuilderBytes(b *testing.B) {
+	bb := &Builder{}
+	bb.Write(makeData())
+	var d []byte
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		d = bb.Bytes()
+	}
+	b.StopTimer()
+	d[0] = 1
+}
+
+func BenchmarkStringsBuilderStringToBytesToWriter(b *testing.B) {
+	wr := io.Discard
+	bb := &strings.Builder{}
+	bb.Write(makeData())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		wr.Write([]byte(bb.String()))
+	}
+}
+
+func BenchmarkTuiBuilderCopy(b *testing.B) {
+	wr := io.Discard
+	bb := &Builder{}
+	bb.Write(makeData())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bb.Copy(wr)
 	}
 }
