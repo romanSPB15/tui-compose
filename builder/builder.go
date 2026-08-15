@@ -9,8 +9,8 @@ import (
 
 type noCopy struct{}
 
-func (*noCopy) Lock()
-func (*noCopy) Unlock()
+func (*noCopy) Lock()   {}
+func (*noCopy) Unlock() {}
 
 type Builder struct {
 	_   noCopy
