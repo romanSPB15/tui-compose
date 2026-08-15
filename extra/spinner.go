@@ -4,19 +4,29 @@ import (
 	"time"
 
 	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v3/builder"
+)
+
+const (
+	SpinnerUnderscore = iota
+	SpinnerBraille
+	SpinnerDots
+	SpinnerLine
+	SpinnerBrailleReverse
 )
 
 type Spinner struct {
-	style int
+	typ   int
 	i     int
+	style tui.Style
 }
 
-func NewSpinner(style int) *Spinner {
-	return &Spinner{style: style}
+func NewSpinner(typ int) *Spinner {
+	return &Spinner{typ: typ}
 }
 
 func (bc *Spinner) MaxWidth() int {
-	switch bc.style {
+	switch bc.typ {
 	case 2:
 		return 3
 	default:
@@ -29,58 +39,86 @@ func (bc *Spinner) MaxHeight() int {
 }
 
 func (bc *Spinner) InnerText() string {
-	switch bc.style {
+	b := builder.New(10)
+
+	if bc.style != 0 {
+		b.WriteString(bc.style.String())
+	}
+	switch bc.typ {
 	case 0:
 		switch bc.i {
 		case 0:
-			return "_"
+			b.WriteByte('_')
 		case 1:
-			return " "
+			b.WriteByte(' ')
 		}
 	case 1:
 		switch bc.i {
 		case 0:
-			return "⣾"
+			b.WriteRune('⣾')
 		case 1:
-			return "⣽"
+			b.WriteRune('⣽')
 		case 2:
-			return "⣻"
+			b.WriteRune('⣻')
 		case 3:
-			return "⢿"
+			b.WriteRune('⢿')
 		case 4:
-			return "⡿"
+			b.WriteRune('⡿')
 		case 5:
-			return "⣟"
+			b.WriteRune('⣟')
 		case 6:
-			return "⣯"
+			b.WriteRune('⣯')
 		case 7:
-			return "⣷"
+			b.WriteRune('⣷')
 		}
 	case 2:
 		switch bc.i {
 		case 0:
-			return "∙∙∙"
+			b.WriteString("∙∙∙")
 		case 1:
-			return "●∙∙"
+			b.WriteString("●∙∙")
 		case 2:
-			return "∙●∙"
+			b.WriteString("∙●∙")
 		case 3:
-			return "∙∙●"
+			b.WriteString("∙∙●")
 		}
 	case 3:
 		switch bc.i {
 		case 0:
-			return "|"
+			b.WriteByte('|')
 		case 1:
-			return "/"
+			b.WriteByte('/')
 		case 2:
-			return "-"
+			b.WriteByte('-')
 		case 3:
-			return "\\"
+			b.WriteByte('\\')
+		}
+	case 4:
+		switch bc.i {
+		case 7:
+			b.WriteRune('⣾')
+		case 6:
+			b.WriteRune('⣽')
+		case 5:
+			b.WriteRune('⣻')
+		case 4:
+			b.WriteRune('⢿')
+		case 3:
+			b.WriteRune('⡿')
+		case 2:
+			b.WriteRune('⣟')
+		case 1:
+			b.WriteRune('⣯')
+		case 0:
+			b.WriteRune('⣷')
 		}
 	}
 
-	return ""
+	if bc.style != 0 {
+		b.WriteString(tui.Reset.String())
+	}
+
+	return b.String()
 }
 
 func (bc *Spinner) Start(f time.Duration) *Spinner {
@@ -93,12 +131,12 @@ func (bc *Spinner) Start(f time.Duration) *Spinner {
 				return
 			case <-ticker.C:
 				bc.i++
-				switch bc.style {
+				switch bc.typ {
 				case 0:
 					if bc.i > 1 {
 						bc.i = 0
 					}
-				case 1:
+				case 1, 4:
 					if bc.i > 7 {
 						bc.i = 0
 					}
@@ -115,5 +153,10 @@ func (bc *Spinner) Start(f time.Duration) *Spinner {
 			}
 		}
 	}()
+	return bc
+}
+
+func (bc *Spinner) WithStyle(s tui.Style) *Spinner {
+	bc.style = s
 	return bc
 }
