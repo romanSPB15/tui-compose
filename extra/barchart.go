@@ -14,7 +14,7 @@ type BarChart struct {
 	Space     int
 	BarStyle  func(i, v int) tui.Style
 	TextStyle func(i, v int) tui.Style
-	div       int
+	div       float32
 	Height    int
 }
 
@@ -36,7 +36,7 @@ func (bc *BarChart) WithValues(v []int) *BarChart {
 			mx = v
 		}
 	}
-	bc.div = mx / (bc.Height - bc.Height/5)
+	bc.div = float32(mx) / float32(bc.Height) * 1.15
 	if bc.div == 0 {
 		bc.div = 1
 	}
@@ -67,8 +67,9 @@ func (bc *BarChart) InnerText() string {
 		if bc.BarStyle != nil {
 			s = convertToCellStyle(bc.BarStyle(i, v))
 		}
-		for z := v / bc.div; z >= 0; z-- {
-			if z > bc.Height {
+		vDivided := int(float32(v) / bc.div)
+		for z := vDivided; z >= 0; z-- {
+			if z >= bc.Height {
 				continue
 			}
 			for j := range bc.BarWidth {
@@ -80,7 +81,7 @@ func (bc *BarChart) InnerText() string {
 
 		x := i*(bc.BarWidth+bc.Space) + (bc.BarWidth/2 - (len(txt) / 2))
 
-		y := h - (v / bc.div) - 2
+		y := h - vDivided - 2
 		if y < 0 {
 			y = 0
 		}
