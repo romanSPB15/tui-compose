@@ -174,9 +174,9 @@ func (pc *PieChart) InnerText() string {
 		before := 0.0
 
 		for i, a := range angles {
-			textRadius := pc.radius / 2
+			textRadius := pc.radius / 3 * 2
 
-			am := (before + a) / 2 // середина
+			am := (before+a)/2 - 0.1 // середина
 
 			x := cx + int(math.Cos(am)*float64(textRadius))
 			y := cy + int(math.Sin(am)*float64(textRadius)/2.2) // коррекция соотношения сторон
