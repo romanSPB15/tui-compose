@@ -412,3 +412,21 @@ func roundToNice(x int) int {
 	}
 	return (x / 1000) * 1000
 }
+
+// WithHeight устанавливает высоту графика (количество строк), без учёта горизонтальной оси.
+func (lc *LineChart) WithHeight(h int) *LineChart {
+	lc.Height = h
+	return lc
+}
+
+// WithPointDistance устанавливает расстояние между точками по горизонтали.
+func (lc *LineChart) WithPointDistance(d int) *LineChart {
+	lc.PointDistance = d
+	return lc
+}
+
+// WithDisplayPoints включает/отключает отображение точек значений.
+func (lc *LineChart) WithDisplayPoints(b bool) *LineChart {
+	lc.DisplayPoints = b
+	return lc
+}
