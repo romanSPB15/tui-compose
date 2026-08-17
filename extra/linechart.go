@@ -252,7 +252,7 @@ func (bc *LineChart) InnerText() string {
 		if bc.DisplayPoints {
 			for i, v := range s.Values {
 				x := offsetX + i*bc.PointDistance
-				y := h - 2 - int(float64(v)/bc.div)
+				y := h - 3 - int(float64(v)/bc.div)
 				if y < 0 {
 					y = 0
 				}
@@ -337,7 +337,7 @@ func (lc *LineChart) AutoScale() *LineChart {
 	if maxVal == 0 {
 		maxVal = 1
 	}
-	lc.div = float64(maxVal) / float64(lc.Height) * 1.20
+	lc.div = float64(maxVal) / (float64(lc.Height) * 0.8)
 	return lc
 }
 

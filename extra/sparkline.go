@@ -8,11 +8,10 @@ import (
 type Sparkline struct {
 	Fill8, Fill7, Fill6, Fill5, Fill4, Fill3, Fill2, Fill1 rune
 
-	values    []int
-	BarStyle  func(i, v int) tui.Style
-	TextStyle func(i, v int) tui.Style
-	div       float64
-	Height    int
+	values   []int
+	BarStyle func(i, v int) tui.Style
+	div      float64
+	Height   int
 }
 
 func NewSparkline() *Sparkline {
@@ -29,19 +28,9 @@ func NewSparkline() *Sparkline {
 		div:    1,
 	}
 }
-
 func (bc *Sparkline) WithValues(v []int) *Sparkline {
 	bc.values = v
-	mx := -1 << 31
-	for _, v := range bc.values {
-		if mx < v {
-			mx = v
-		}
-	}
-	bc.div = float64(mx) / float64(bc.Height-bc.Height/8) / 8
-	if bc.div == 0 {
-		bc.div = 1
-	}
+	bc.recalcDiv()
 	return bc
 }
 
@@ -120,4 +109,40 @@ func (s *Sparkline) ASCII() *Sparkline {
 
 	s.Height = 3
 	return s
+}
+
+// WithHeight устанавливает высоту спарклайна (количество строк).
+// Автоматически пересчитывает масштаб, если значения уже установлены.
+func (s *Sparkline) WithHeight(h int) *Sparkline {
+	s.Height = h
+	if len(s.values) > 0 {
+		s.recalcDiv()
+	}
+	return s
+}
+
+// WithBarStyle устанавливает функцию стилизации столбцов.
+func (s *Sparkline) WithBarStyle(fn func(i, v int) tui.Style) *Sparkline {
+	s.BarStyle = fn
+	return s
+}
+
+func (s *Sparkline) recalcDiv() {
+	if len(s.values) == 0 {
+		s.div = 1
+		return
+	}
+	mx := 0
+	for _, v := range s.values {
+		if v > mx {
+			mx = v
+		}
+	}
+	if mx == 0 {
+		mx = 1
+	}
+	s.div = float64(mx) / float64(s.Height-s.Height/8) / 8
+	if s.div < 1 {
+		s.div = 1
+	}
 }
