@@ -83,7 +83,7 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 			return 0, KeyEnter
 		case v == 9:
 			return 0, KeyTab
-		case v < 27:
+		case v < 27 && v != 0:
 			return 0, KeyCtrlA + Key(v-1)
 		case v == 32:
 			return ' ', KeySpace
@@ -142,7 +142,7 @@ func parseKeyboardInput(data []byte) *KeyboardEvent {
 
 	r, k = parseAnsiKeyboardInput(data)
 
-	if r == 0 && k == KeyUnknown && len(data) > 2 && data[0] == 27 {
+	if r == 0 && k == KeyUnknown && len(data) >= 2 && data[0] == 27 {
 		alt = true
 		r, k = parseAnsiKeyboardInput(data[1:])
 	}

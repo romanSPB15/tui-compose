@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/romanSPB15/tui-compose/v3/builder"
 	"github.com/romanSPB15/tui-compose/v3/input"
 )
 
@@ -589,7 +590,7 @@ func (f *InputField) InnerText() string {
 	cursor = max(cursor, 0)
 	cursor = min(cursor, len(runes))
 
-	var builder strings.Builder
+	var builder builder.Builder
 
 	if !f.focused {
 		if f.Text == "" && f.placeholder != "" {
