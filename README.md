@@ -1,3 +1,4 @@
+![demo/demo.gif](demo/demo.gif)
 # TUI Compose
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/releases)
@@ -15,7 +16,6 @@
         * Canvas(16-цветов), CanvasRGB(True Color)
     - **`extra`**:
         * LineChart, BarChart, PieChart, Sparkline, Tree, Table, Tabs, Accordion, Spinner, BlinkLabel, PageIndicator, TextView.
-
 * 👓 Diff-рендер, low-allocation — без мерцаний и аллокаций
 * ✨ Автоматическое фокус по Tab/Shift+Tab
 * 💎 Минимальный размер: 8500 строк кода, только `x/sys` + `x/term`
