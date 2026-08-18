@@ -4,7 +4,7 @@
 [![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/releases)
 [![Test](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml/badge.svg)](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml)
 [![Documentation](https://img.shields.io/badge/GitHub-Wiki-red?logo=github)](https://github.com/romanSPB15/tui-compose/wiki)
-![Lightweight](https://img.shields.io/badge/Lightweight-8500_lines-brightgreen)
+![Lightweight](https://img.shields.io/badge/Lightweight-~8500_lines-brightgreen)
 [![Examples](https://img.shields.io/badge/Examples-20-blue?logo=github)](https://github.com/romanSPB15/tui-compose/tree/main/examples)
 
 **Лёгкий путь для создания приложений в терминале на Go.**
