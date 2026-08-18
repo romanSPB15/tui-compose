@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"strconv"
-
 	"github.com/romanSPB15/tui-compose/v3/cell"
 )
 
@@ -37,6 +35,8 @@ type border struct {
 
 	borderStyle Style
 	titles      []Title
+
+	bg cell.Cell
 }
 
 // NewFrame создаёт рамку.
@@ -48,6 +48,7 @@ func NewFrame(content Widget) *Frame {
 			h: '─', v: '│',
 			ph: 1,
 			pv: 0,
+			bg: cell.Cell{Char: ' '},
 		},
 	}
 }
@@ -138,46 +139,6 @@ func (b *Frame) MaxHeight() int {
 	return b.border.MaxHeight()
 }
 
-func convertToCellStyle(s Style) cell.Style {
-	var cs cell.Style
-	fg := int(s & 0x1F)
-	if fg != 0 {
-		if fg <= 8 {
-			cs.Fg = strconv.Itoa(fg + 29)
-		} else {
-			cs.Fg = strconv.Itoa(fg + 81)
-		}
-	}
-	bg := int((s >> 5) & 0x1F)
-	if bg != 0 {
-		if bg <= 8 {
-			cs.Bg = strconv.Itoa(bg + 39)
-		} else {
-			cs.Bg = strconv.Itoa(bg + 91)
-		}
-	}
-
-	if s&Bold != 0 {
-		cs.Args |= cell.Bold
-	}
-	if s&Italic != 0 {
-		cs.Args |= cell.Italic
-	}
-	if s&Underline != 0 {
-		cs.Args |= cell.Underline
-	}
-	if s&Blink != 0 {
-		cs.Args |= cell.Blink
-	}
-	if s&Reverse != 0 {
-		cs.Args |= cell.Reverse
-	}
-	if s&Reset != 0 {
-		cs.Args |= cell.Reset
-	}
-	return cs
-}
-
 func (b *border) InnerText() string {
 	w := b.MaxWidth()
 	h := b.MaxHeight()
@@ -186,11 +147,11 @@ func (b *border) InnerText() string {
 	for i := range cells {
 		cells[i] = make([]cell.Cell, w)
 		for j := range cells[i] {
-			cells[i][j] = cell.Cell{Char: ' '}
+			cells[i][j] = b.bg
 		}
 	}
 
-	borderStyle := convertToCellStyle(b.borderStyle)
+	borderStyle := ConvertToCellStyle(b.borderStyle)
 
 	// углы
 	cells[0][0] = cell.Cell{b.tl, borderStyle}     // верхний левый
@@ -210,7 +171,7 @@ func (b *border) InnerText() string {
 	}
 
 	for _, t := range b.titles {
-		titleStyle := convertToCellStyle(t.Style)
+		titleStyle := ConvertToCellStyle(t.Style)
 
 		titleRunes := []rune(t.Text)
 
@@ -259,4 +220,16 @@ func (b *Frame) Pos(i int) Pos {
 		return Pos{0, 0}
 	}
 	return Pos{b.border.pv + 1, b.border.ph + 1}
+}
+
+// WithInitCell задаёт ячейку фона рамки.
+func (b *Frame) WithInitCell(c cell.Cell) *Frame {
+	b.border.bg = c
+	return b
+}
+
+// WithBackground задаёт фон рамки.
+func (b *Frame) WithBackground(s Style) *Frame {
+	b.border.bg = cell.Cell{Char: ' ', Style: ConvertToCellStyle(s)}
+	return b
 }
