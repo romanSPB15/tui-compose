@@ -274,6 +274,17 @@ func (wnd *window) newBuffer(h, w int) [][]cell.Cell {
 	return buf
 }
 
+func (wnd *window) newEmptyBuffer(h, w int) [][]cell.Cell {
+	buf := make([][]cell.Cell, h)
+	for i := range buf {
+		buf[i] = make([]cell.Cell, w)
+		for x := 0; x < w; x++ {
+			buf[i][x] = cell.Cell{Char: ' '}
+		}
+	}
+	return buf
+}
+
 func (wnd *window) releaseBuffer(buf [][]cell.Cell) {
 	if wnd.bufferPool != nil && buf != nil {
 		for y := range buf {
@@ -305,7 +316,7 @@ func (wnd *window) Redraw() {
 		if wnd.buf != nil {
 			wnd.releaseBuffer(wnd.buf)
 		}
-		wnd.buf = wnd.newBuffer(h, w)
+		wnd.buf = wnd.newEmptyBuffer(h, w)
 	}
 	oldBuf := wnd.buf
 
@@ -725,6 +736,7 @@ func (wnd *window) SetInitCell(c cell.Cell) {
 		wnd.LogFatal("SetInitCell called outside worker goroutine: data race")
 	}
 	wnd.initCell = c
+	wnd.buf = nil
 }
 
 // SetInitCell устанавливает фон пустых позиций окна.
