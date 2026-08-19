@@ -26,22 +26,40 @@ func (d *DisableState) IsDisabled() bool {
 
 // Label — это виджет текстовой метки.
 type Label struct {
-	ANSI  string // Приставка ANSI escape последовательности
-	Text  string // Текст виджета.
-	len   int
-	Block bool // Отображение в блочном режиме.
+	ANSI      string // Приставка ANSI escape последовательности
+	Text      string // Текст виджета.
+	len       int
+	hyperlink string
 }
 
 func (l *Label) InnerText() string {
-	if l.ANSI == "" {
-		return l.Text + strings.Repeat(" ", l.len-len([]rune(l.Text)))
-	}
 	r := []rune(l.Text)
 	if len(r) > l.len {
 		r = r[:l.len]
 	}
-	l.Text = string(r)
-	return fmt.Sprintf("%s%s\033[0m", l.ANSI, l.Text+strings.Repeat(" ", l.len-len([]rune(l.Text))))
+	text := string(r) + strings.Repeat(" ", l.len-len(r))
+
+	var b builder.Builder
+
+	if l.hyperlink != "" {
+		b.WriteString(fmt.Sprintf("\033]8;;%s\033\\", l.hyperlink))
+	}
+
+	if l.ANSI != "" {
+		b.WriteString(l.ANSI)
+	}
+
+	b.WriteString(text)
+
+	if l.ANSI != "" {
+		b.WriteString("\033[0m")
+	}
+
+	if l.hyperlink != "" {
+		b.WriteString("\033]8;;\033\\")
+	}
+
+	return b.String()
 }
 
 // NewStaticLabel() создаёт виджет текста.
@@ -165,6 +183,13 @@ func (l *Label) MaxHeight() int {
 // Добавлено в TUI v3.0.0
 func (l *Label) SetText(new string) {
 	l.Text = new
+}
+
+// WithHyperlink делает текст кликабельной ссылкой.
+// Поддерживается терминалами с OSC 8 (Windows Terminal, iTerm2, Kitty, etc.)
+func (l *Label) WithHyperlink(url string) *Label {
+	l.hyperlink = url
+	return l
 }
 
 // Button это виджет кнопки.
