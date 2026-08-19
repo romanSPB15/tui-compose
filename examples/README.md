@@ -21,3 +21,4 @@
 | [`tree`](https://github.com/romanSPB15/tui-compose/tree/main/examples/tree)           | Пример использования Tree                                       |
 | [`linechart`](https://github.com/romanSPB15/tui-compose/tree/main/examples/linechart) | Пример использования LineChart - линейного графика              |
 | [`sparkline`](https://github.com/romanSPB15/tui-compose/tree/main/examples/sparkline) | Пример использования спарклайна                                 |
+| [`hyperlink`](https://github.com/romanSPB15/tui-compose/tree/main/examples/hyperlink) | Пример использования гиперссылок                                |

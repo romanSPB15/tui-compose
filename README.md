@@ -5,15 +5,15 @@
 [![Test](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml/badge.svg)](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml)
 [![Documentation](https://img.shields.io/badge/GitHub-Wiki-red?logo=github)](https://github.com/romanSPB15/tui-compose/wiki)
 ![Lightweight](https://img.shields.io/badge/Lightweight-~8500_lines-brightgreen)
-[![Examples](https://img.shields.io/badge/Examples-20-blue?logo=github)](https://github.com/romanSPB15/tui-compose/tree/main/examples)
+[![Examples](https://img.shields.io/badge/Examples-21-blue?logo=github)](https://github.com/romanSPB15/tui-compose/tree/main/examples)
 
 **Лёгкий путь для создания приложений в терминале на Go.**
 
-* 🍬 21 готовый виджет — полноценный набор.
+* 🍬 22 готовых виджетов — полноценный набор.
     - **Базовые:**
-        * Label, Button, InputField, Check, Frame(рамка)
+        * Label, Button, Hyperlink, ColorProgress, TextProgress, InputField, Check, Frame(рамка)
     - **Изображения:**
-        * Canvas(16-цветов), CanvasRGB(True Color)
+        * Canvas(16 цветов), CanvasRGB(True Color)
     - **`extra`**:
         * LineChart, BarChart, PieChart, Sparkline, Tree, Table, Tabs, Accordion, Spinner, BlinkLabel, PageIndicator, TextView.
 * 👓 Diff-рендер, low-allocation — без мерцаний и аллокаций
