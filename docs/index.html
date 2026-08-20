@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>TUI Compose</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-body: #f8f9fa;
+            --bg-content: #ffffff;
+            --text-color: #212529;
+            --border-color: #dee2e6;
+            --code-bg: #e9ecef;
+            --table-border: #dee2e6;
+            --link-color: #0366d6;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-body: #0d1117;
+                --bg-content: #161b22;
+                --text-color: #c9d1d9;
+                --border-color: #30363d;
+                --code-bg: #2d333b;
+                --table-border: #30363d;
+                --link-color: #58a6ff;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 20px;
+            background: var(--bg-body);
+            color: var(--text-color);
+            transition: background 0.2s, color 0.2s;
+        }
+
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 12px 0 8px 0;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        #header h1 {
+            font-size: 26px;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        #header .version {
+            font-size: 16px;
+            color: var(--text-color);
+            opacity: 0.7;
+            font-weight: 400;
+        }
+
+        #content {
+            background: var(--bg-content);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+        }
+
+        img { max-width: 100%; }
+
+        pre {
+            background: var(--code-bg);
+            padding: 10px;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        code {
+            background: var(--code-bg);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border: 1px solid var(--table-border);
+            padding: 8px;
+        }
+
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        <h1>TUI Compose</h1>
+        <span class="version" id="version">vX.X</span>
+    </div>
+
+    <div id="content"></div>
+
+    <script>
+        function fixRelativeLinks(md) {
+            return md.replace(/\]\(([^)]+)\)/g, function(match, p1) {
+                if (p1.startsWith('http://') || p1.startsWith('https://')) {
+                    return match;
+                }
+                if (!p1.startsWith('/') && !p1.startsWith('#')) {
+                    return '](https://raw.githubusercontent.com/romanSPB15/tui-compose/main/' + p1 + ')';
+                }
+                return match;
+            });
+        }
+
+        fetch('https://api.github.com/repos/romanSPB15/tui-compose/releases/latest')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('version').textContent = data.tag_name || 'v3.4';
+            })
+            .catch(() => {
+                document.getElementById('version').textContent = 'v3.4';
+            });
+
+        fetch('https://raw.githubusercontent.com/romanSPB15/tui-compose/main/README.md')
+            .then(res => res.text())
+            .then(md => {
+                const fixedMd = fixRelativeLinks(md);
+                document.getElementById('content').innerHTML = marked.parse(fixedMd);
+            })
+            .catch(() => {
+                document.getElementById('content').innerHTML = '<p style="color:red;">Не удалось загрузить README.md</p>';
+            });
+    </script>
+
+</body>
+</html>
