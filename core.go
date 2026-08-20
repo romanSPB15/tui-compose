@@ -341,7 +341,12 @@ func (wnd *window) Redraw() {
 					wnd.last = newBuf[y][x].Style
 				}
 
-				b.WriteRune(newBuf[y][x].Char)
+				if newBuf[y][x].Char == 0 {
+					wnd.LogInfo("null rune detected at [%d, %d]", x, y)
+					b.WriteRune(' ')
+				} else {
+					b.WriteRune(newBuf[y][x].Char)
+				}
 
 				oldBuf[y][x] = newBuf[y][x]
 			}
@@ -350,9 +355,8 @@ func (wnd *window) Redraw() {
 
 	b.Copy(wnd.f)
 
-	wnd.builderPool.Put(b)
-
 	wnd.releaseBuffer(newBuf)
+	wnd.builderPool.Put(b)
 }
 
 func (wnd *window) SetOverlay(wgt Widget) {

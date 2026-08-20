@@ -151,7 +151,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 	// RGB(True Color)
 
 	case PaletteTrueColor | HalfSymbol:
-		iw = make(Image, img.Bounds().Dy())
+		iw = make(Image, img.Bounds().Dy()/2)
 		for i := range iw {
 			iw[i] = make([]cell.Cell, img.Bounds().Dx())
 		}
