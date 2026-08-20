@@ -5,6 +5,7 @@
     <title>TUI Compose</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --bg-body: #f8f9fa;
@@ -100,6 +101,27 @@
         a:hover {
             text-decoration: underline;
         }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer i {
+            margin-right: 6px;
+        }
     </style>
 </head>
 <body>
@@ -110,6 +132,12 @@
     </div>
 
     <div id="content"></div>
+
+    <div class="footer">
+        <a href="https://github.com/romanSPB15/tui-compose" target="_blank">
+            <i class="fab fa-github"></i> Репозиторий на GitHub
+        </a>
+    </div>
 
     <script>
         function fixRelativeLinks(md) {
