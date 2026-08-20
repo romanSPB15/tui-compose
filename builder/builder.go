@@ -21,6 +21,10 @@ func (b *Builder) String() string {
 	return unsafe.String(unsafe.SliceData(b.buf), len(b.buf))
 }
 
+func (b *Builder) StringCopy() string {
+	return string(b.buf)
+}
+
 func (b *Builder) Len() int { return len(b.buf) }
 
 func (b *Builder) Cap() int { return cap(b.buf) }
