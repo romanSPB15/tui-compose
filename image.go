@@ -259,7 +259,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 	// 16 цветов
 
 	case Palette16Color | HalfSymbol:
-		iw = make(Image, img.Bounds().Dy())
+		iw = make(Image, img.Bounds().Dy()/2)
 		for i := range iw {
 			iw[i] = make([]cell.Cell, img.Bounds().Dx())
 		}
