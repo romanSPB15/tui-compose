@@ -4,12 +4,23 @@ package tui
 type VBox struct {
 	children  []Widget
 	positions []Pos
+	gap       int
 }
 
 func NewVBox(children ...Widget) *VBox {
 	v := &VBox{}
 	v.children = append(v.children, children...)
 	v.layout()
+	return v
+}
+
+func (v *VBox) SetGap(gap int) {
+	v.gap = gap
+	v.layout()
+}
+
+func (v *VBox) WithGap(gap int) *VBox {
+	v.SetGap(gap)
 	return v
 }
 
@@ -23,7 +34,7 @@ func (v *VBox) layout() {
 	line := 0
 	for i := range v.children {
 		v.positions[i] = Pos{Line: line, Col: 0}
-		line += v.children[i].MaxHeight()
+		line += v.children[i].MaxHeight() + v.gap
 	}
 }
 
@@ -41,9 +52,9 @@ func (v *VBox) MaxWidth() int {
 func (v *VBox) MaxHeight() int {
 	total := 0
 	for _, child := range v.children {
-		total += child.MaxHeight()
+		total += child.MaxHeight() + v.gap
 	}
-	return total
+	return total - v.gap
 }
 
 func (v *VBox) Child() []Widget {
