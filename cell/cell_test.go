@@ -354,6 +354,13 @@ func TestToString(t *testing.T) {
 			input:    [][]cell.Cell{},
 			expected: "",
 		},
+		{
+			input: [][]cell.Cell{cells("123", cell.Style{
+				Fg: "38;2;200;100;50",
+				Bg: "48;2;200;100;50",
+			})},
+			expected: "\033[38;2;200;100;50;48;2;200;100;50m123\033[0m",
+		},
 	}
 
 	for i, tc := range tt {

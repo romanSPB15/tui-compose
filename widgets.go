@@ -4,10 +4,12 @@ package tui
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/romanSPB15/tui-compose/v3/builder"
+	"github.com/romanSPB15/tui-compose/v3/cell"
 	"github.com/romanSPB15/tui-compose/v3/input"
 	"github.com/romanSPB15/tui-compose/v3/term"
 )
@@ -266,6 +268,9 @@ func (btn *Button) OnKeyPress(ev *input.KeyboardEvent) {
 	}
 }
 
+// Deprecated: используйте Gauge.
+// Будет удалён в версии v4.0.0.
+//
 // ColorProgress — это виджет шкалы прогресса.
 // Добавлено в TUI v1.2.0
 type ColorProgress struct {
@@ -274,6 +279,9 @@ type ColorProgress struct {
 	clrOn, clrOff Color
 }
 
+// Deprecated: используйте Gauge.
+// Будет удалён в версии v4.0.0.
+//
 // NewColorProgress() cоздаёт виджет шкалы прогресса в виде цветных пикселей.
 // len — максимальная длина в пикселях.
 // on — цвет "включенных" пикселей.
@@ -313,6 +321,9 @@ func (p *ColorProgress) InnerText() string {
 	return p.text
 }
 
+// Deprecated: используйте Gauge.
+// Будет удалён в версии v4.0.0.
+//
 // TextProgress — это виджет шкалы прогресса.
 // Добавлено в TUI v2.0.0
 type TextProgress struct {
@@ -321,6 +332,9 @@ type TextProgress struct {
 	sOn, sOff rune
 }
 
+// Deprecated: используйте Gauge.
+// Будет удалён в версии v4.0.0.
+//
 // NewTextProgress() cоздаёт виджет шкалы прогресса в виде текста.
 // len — максимальная длина в пикселях.
 // on — символ "включенных" пикселей.
@@ -729,4 +743,169 @@ func NewHyperlink(text string, url string) *Button {
 	return NewButton(text, func() {
 		term.OpenURL(url)
 	})
+}
+
+// Gauge — это виджет шкалы прогресса.
+// Добавлено в TUI v3.4.0
+type Gauge struct {
+	value           float64
+	size            int
+	cellOn, cellOff cell.Cell
+	LabelFunc       func(float64) string
+	labelStyle      cell.Style
+}
+
+// NewGauge() cоздаёт Gauge.
+func NewGauge(size int) *Gauge {
+	if size < 4 {
+		size = 4
+	}
+	return &Gauge{
+		size:    size,
+		value:   0.0,
+		cellOn:  cell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBlue)},
+		cellOff: cell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBrightBlack)},
+	}
+}
+
+// WithValue() устанавливает значение Gauge в диапазоне от 0 до 1.
+func (p *Gauge) WithValue(f float64) *Gauge {
+	if f < 0 {
+		f = 0
+	}
+	if f > 1 {
+		f = 1
+	}
+	p.value = f
+	return p
+}
+
+func (p *Gauge) MaxWidth() int {
+	return p.size
+}
+
+func (l *Gauge) MaxHeight() int {
+	return 1
+}
+
+func (p *Gauge) InnerText() string {
+	cells := make([]cell.Cell, p.size)
+	var i int
+	for ; i < int(math.Round(float64(p.value)*float64(p.size))); i++ {
+		cells[i] = p.cellOn
+	}
+	for ; i < p.size; i++ {
+		cells[i] = p.cellOff
+	}
+	var b builder.Builder
+	if p.LabelFunc == nil {
+		b.WriteFormat("%d%%", int(math.Round(p.value*100)))
+	} else {
+		b.WriteString(p.LabelFunc(p.value))
+	}
+
+	i = p.size/2 - len([]rune(b.String()))/2
+	for j, r := range b.String() {
+		x := i + j
+		if x < 0 || x >= p.size {
+			continue
+		}
+		cells[x] = cell.Cell{Char: r, Style: p.labelStyle}
+	}
+
+	return cell.ToString([][]cell.Cell{
+		cells,
+	})
+}
+
+func (p *Gauge) WithOnCell(c cell.Cell) *Gauge {
+	p.cellOn = c
+	return p
+}
+
+func (p *Gauge) WithOffCell(c cell.Cell) *Gauge {
+	p.cellOff = c
+	return p
+}
+
+func (p *Gauge) WithOnStyle(c Style) *Gauge {
+	p.cellOn.Style = ConvertToCellStyle(c)
+	return p
+}
+
+func (p *Gauge) WithOffStyle(c Style) *Gauge {
+	p.cellOff.Style = ConvertToCellStyle(c)
+	return p
+}
+
+func (p *Gauge) WithOnChar(r rune) *Gauge {
+	p.cellOn.Char = r
+	return p
+}
+
+func (p *Gauge) WithOffChar(r rune) *Gauge {
+	p.cellOff.Char = r
+	return p
+}
+
+// ASCII устанавливает ASCII-стиль. ######----
+func (p *Gauge) ASCII() *Gauge {
+	p.WithOnChar('#')
+	p.WithOffChar('-')
+	return p
+}
+
+// Default устанавливает стиль по умолчанию. ∎∎∎∎∎∎∎∎∎∎
+func (p *Gauge) Default() *Gauge {
+	p.WithOnChar('∎')
+	p.WithOffChar('∎')
+	return p
+}
+
+// EmptySquares устанавливает стиль ∎∎∎∎∎∎□□□□
+func (p *Gauge) EmptySquares() *Gauge {
+	p.WithOnChar('■')
+	p.WithOffChar('□')
+	return p
+}
+
+// Blocks устанавливает стиль ██████░░░░
+func (p *Gauge) Blocks() *Gauge {
+	p.WithOnChar('█')
+	p.WithOffChar('░')
+	return p
+}
+
+// BlocksFull устанавливает стиль ██████████
+func (p *Gauge) BlocksFull() *Gauge {
+	p.WithOnChar('█')
+	p.WithOffChar('█')
+	return p
+}
+
+// BlocksGrid устанавливает стиль ▓▓▓▓▓▓▒▒▒▒
+func (p *Gauge) BlocksGrid() *Gauge {
+	p.WithOnChar('▓')
+	p.WithOffChar('▒')
+	return p
+}
+
+// WithLabelFunc устанавливает функцию метки.
+func (p *Gauge) WithLabelFunc(fn func(float64) string) *Gauge {
+	p.LabelFunc = fn
+	return p
+}
+
+// WithLabel устанавливает текст метки.
+func (p *Gauge) WithLabel(lbl string) *Gauge {
+	p.LabelFunc = func(f float64) string {
+		return lbl
+	}
+	return p
+}
+
+// WithLabel устанавливает стиль метки.
+func (p *Gauge) WithLabelStyle(s Style) *Gauge {
+	p.labelStyle = ConvertToCellStyle(s)
+	return p
 }
