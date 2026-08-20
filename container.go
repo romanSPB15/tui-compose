@@ -10,13 +10,11 @@ type VBox struct {
 func NewVBox(children ...Widget) *VBox {
 	v := &VBox{}
 	v.children = append(v.children, children...)
-	v.layout()
 	return v
 }
 
 func (v *VBox) SetGap(gap int) {
 	v.gap = gap
-	v.layout()
 }
 
 func (v *VBox) WithGap(gap int) *VBox {
@@ -26,7 +24,6 @@ func (v *VBox) WithGap(gap int) *VBox {
 
 func (v *VBox) Add(widgets ...Widget) {
 	v.children = append(v.children, widgets...)
-	v.layout()
 }
 
 func (v *VBox) layout() {
@@ -38,7 +35,9 @@ func (v *VBox) layout() {
 	}
 }
 
-func (v *VBox) InnerText() string { return "" }
+func (v *VBox) InnerText() string {
+	return ""
+}
 
 func (v *VBox) MaxWidth() int {
 	max := 0
@@ -58,6 +57,7 @@ func (v *VBox) MaxHeight() int {
 }
 
 func (v *VBox) Child() []Widget {
+	v.layout()
 	return v.children
 }
 
@@ -78,13 +78,11 @@ type HBox struct {
 func NewHBox(children ...Widget) *HBox {
 	v := &HBox{gap: 1}
 	v.children = append(v.children, children...)
-	v.layout()
 	return v
 }
 
 func (v *HBox) Add(widgets ...Widget) {
 	v.children = append(v.children, widgets...)
-	v.layout()
 }
 
 func (v *HBox) layout() {
@@ -98,7 +96,6 @@ func (v *HBox) layout() {
 
 func (v *HBox) SetGap(gap int) {
 	v.gap = gap
-	v.layout()
 }
 
 func (v *HBox) WithGap(gap int) *HBox {
@@ -106,7 +103,9 @@ func (v *HBox) WithGap(gap int) *HBox {
 	return v
 }
 
-func (v *HBox) InnerText() string { return "" }
+func (v *HBox) InnerText() string {
+	return ""
+}
 
 func (v *HBox) MaxWidth() int {
 	if len(v.children) == 0 {
@@ -133,6 +132,7 @@ func (v *HBox) MaxHeight() int {
 }
 
 func (v *HBox) Child() []Widget {
+	v.layout()
 	return v.children
 }
 
