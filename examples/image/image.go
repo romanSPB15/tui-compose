@@ -6,7 +6,39 @@ import (
 	"os"
 
 	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v3/extra"
 )
+
+func makeBraile() [][]bool {
+	w := 80
+	h := 80
+	res := make([][]bool, h)
+	for i := range res {
+		res[i] = make([]bool, w)
+	}
+
+	for y := range h {
+		y2 := y
+		if y2 > h/2 {
+			y2 = h - y2
+		}
+		for x := w/2 - y2; x < w/2+y2; x++ {
+			res[y][x] = true
+		}
+	}
+
+	for y := range h {
+		y2 := y
+		if y2 > h/2 {
+			y2 = h - y2
+		}
+		y2 /= 2
+		for x := w/2 - y2; x < w/2+y2; x++ {
+			res[y][x] = false
+		}
+	}
+	return res
+}
 
 func main() {
 	wnd := tui.NewWindow()
@@ -37,25 +69,26 @@ func main() {
 		{"16Color + TwoSymbol", tui.Palette16Color | tui.TwoSymbol},
 	}
 
-	var rows []tui.Widget
-	for i := 0; i < len(modes); i += 3 {
-		rowWidgets := make([]tui.Widget, 0, 3)
-		for j := 0; j < 3 && i+j < len(modes); j++ {
-			m := modes[i+j]
-			imageWidget := tui.NewImage().LoadImage(img, m.mode)
-			frame := tui.NewFrame(imageWidget).
-				Rounded().
-				WithTitle(tui.Title{
-					Text:  m.name,
-					Pos:   tui.TitleTopCenter,
-					Style: tui.FrYellow,
-				})
-			rowWidgets = append(rowWidgets, frame)
-		}
-		rows = append(rows, tui.NewHBox(rowWidgets...).WithGap(2))
+	var tabs []extra.Tab
+	for i := 0; i < len(modes); i++ {
+		m := modes[i]
+		imageWidget := tui.NewImage().LoadImage(img, m.mode)
+
+		tabs = append(tabs, extra.Tab{
+			Title: "  " + m.name + "  ",
+			Content: tui.NewVBox(
+				tui.NewStaticLabel("——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————"),
+				imageWidget),
+			TitleStyle: tui.BgBlue,
+		})
 	}
 
-	content := tui.NewVBox(rows...).WithGap(1)
-	wnd.SetContent(content)
+	tabs = append(tabs, extra.Tab{
+		Title:      "  Braile  ",
+		TitleStyle: tui.BgBlue,
+		Content:    tui.NewVBox(tui.NewImage().LoadBraille(makeBraile(), 0)),
+	})
+
+	wnd.SetContent(tui.NewFrame(extra.NewTabs(tabs)))
 	wnd.Run()
 }
