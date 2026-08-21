@@ -337,7 +337,6 @@ func (wnd *window) Redraw() {
 
 	if capture {
 		json.NewEncoder(b).Encode(newBuf)
-		b.WriteByte('\n')
 		return
 	}
 
