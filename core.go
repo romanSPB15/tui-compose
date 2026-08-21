@@ -408,22 +408,26 @@ func (wnd *window) Run() {
 			wnd.LogFatal("Произошла паника: %v", err)
 		}
 	}()
-	if !term.IsTerminal(int(wnd.f.Fd())) {
-		wnd.LogFatal("tui: stdout is not terminal")
-	}
-	if err := termL.MakeRaw(); err != nil {
-		wnd.LogInfo("Cannot make raw: %s", err)
+	if !capture {
+		if !term.IsTerminal(int(wnd.f.Fd())) {
+			wnd.LogFatal("tui: stdout is not terminal")
+		}
+		if err := termL.MakeRaw(); err != nil {
+			wnd.LogInfo("Cannot make raw: %s", err)
+		}
 	}
 
 	wnd.stdout = os.Stdout
 	wnd.stderr = os.Stderr
 	os.Stdout, os.Stderr = wnd.log, wnd.log
 
-	fmt.Fprint(wnd.f, "\033[2J")
+	if !capture {
+		fmt.Fprint(wnd.f, "\033[2J")
 
-	fmt.Fprint(wnd.f, "\033[?25l")
+		fmt.Fprint(wnd.f, "\033[?25l")
 
-	fmt.Fprint(wnd.f, "\033[?1006h\033[?1000h")
+		fmt.Fprint(wnd.f, "\033[?1006h\033[?1000h")
+	}
 
 	go wnd.startStopSignalCatcher()
 	go wnd.startScreenResizeChecker()
@@ -437,13 +441,17 @@ func (wnd *window) Run() {
 
 	wnd.runned = false
 
-	wnd.restoreOut()
-	termL.Restore()
-	if wnd.last != (cell.Style{}) {
-		fmt.Fprint(wnd.f, "\033[0m")
+	if !capture {
+		wnd.restoreOut()
+		termL.Restore()
+
+		if wnd.last != (cell.Style{}) {
+			fmt.Fprint(wnd.f, "\033[0m")
+		}
+		fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
+		fmt.Fprint(wnd.f, "\033[?1006l\033[?1000l")
 	}
-	fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
-	fmt.Fprint(wnd.f, "\033[?1006l\033[?1000l")
+
 }
 
 func (wnd *window) restoreOut() {
@@ -727,7 +735,9 @@ func (wnd *window) SetContent(w Widget) {
 }
 
 func (wnd *window) SetTitle(title string) {
-	fmt.Fprintf(wnd.f, "\033]0;%s\033\\", title)
+	if !capture {
+		fmt.Fprintf(wnd.f, "\033]0;%s\033\\", title)
+	}
 }
 
 func (wnd *window) Focus() FocusManager {
