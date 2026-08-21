@@ -30,7 +30,19 @@ func NewSparkline() *Sparkline {
 }
 func (bc *Sparkline) WithValues(v []int) *Sparkline {
 	bc.values = v
+	if bc.div == 0 {
+		bc.recalcDiv()
+	}
+	return bc
+}
+
+func (bc *Sparkline) AutoScale() *Sparkline {
 	bc.recalcDiv()
+	return bc
+}
+
+func (bc *Sparkline) WithScale(div float64) *Sparkline {
+	bc.div = div
 	return bc
 }
 
