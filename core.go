@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -299,6 +300,8 @@ func (wnd *window) releaseBuffer(buf [][]cell.Cell) {
 	}
 }
 
+var capture bool
+
 func (wnd *window) Redraw() {
 	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("Redraw called outside worker goroutine: data race")
@@ -325,6 +328,17 @@ func (wnd *window) Redraw() {
 
 	b := wnd.builderPool.Get().(*builder.Builder)
 	b.Reset()
+
+	defer func() {
+		wnd.releaseBuffer(newBuf)
+		wnd.builderPool.Put(b)
+		b.Copy(wnd.f)
+	}()
+
+	if capture {
+		json.NewEncoder(b).Encode(newBuf)
+		return
+	}
 
 	for y := 0; y < h; y++ {
 		if len(newBuf[y]) < w {
@@ -355,11 +369,6 @@ func (wnd *window) Redraw() {
 			}
 		}
 	}
-
-	b.Copy(wnd.f)
-
-	wnd.releaseBuffer(newBuf)
-	wnd.builderPool.Put(b)
 }
 
 func (wnd *window) SetOverlay(wgt Widget) {
