@@ -623,11 +623,27 @@ func (wnd *window) runWorker() {
 }
 
 func (wnd *window) Width() int {
+	if capture {
+		if w := os.Getenv("TUI_WIDTH"); w != "" {
+			if val, err := strconv.Atoi(w); err == nil && val > 0 {
+				return val
+			}
+		}
+		return 80
+	}
 	w, _ := termL.SizeFd(wnd.stdout.Fd())
 	return w
 }
 
 func (wnd *window) Height() int {
+	if capture {
+		if h := os.Getenv("TUI_HEIGHT"); h != "" {
+			if val, err := strconv.Atoi(h); err == nil && val > 0 {
+				return val
+			}
+		}
+		return 24
+	}
 	_, h := termL.SizeFd(wnd.stdout.Fd())
 	return h
 }
