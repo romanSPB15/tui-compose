@@ -173,6 +173,7 @@ type Button struct {
 	OnClicked             func()
 	style, styleF, styleD Style
 	focused               bool
+	paddingH, paddingV    int
 	DisableState
 }
 
@@ -183,6 +184,8 @@ func NewButton(text string, h func()) *Button {
 		OnClicked: h,
 		styleF:    BgWhite | FrBlack,
 		styleD:    FrBrightBlack,
+		paddingH:  2,
+		paddingV:  0,
 	}
 	return btn
 }
@@ -212,7 +215,19 @@ func (btn *Button) InnerText() string {
 	} else {
 		s = btn.style
 	}
-	return s.String() + btn.text + Reset.String()
+
+	leftPad := strings.Repeat(" ", btn.paddingH)
+	rightPad := strings.Repeat(" ", btn.paddingH)
+	content := leftPad + btn.text + rightPad
+
+	if btn.paddingV > 0 {
+		emptyLine := strings.Repeat(" ", len(content))
+		top := strings.Repeat(emptyLine+"\n", btn.paddingV)
+		bottom := strings.Repeat("\n"+emptyLine, btn.paddingV)
+		return top + s.String() + content + Reset.String() + bottom
+	}
+
+	return s.String() + content + Reset.String()
 }
 
 func (btn *Button) MaxWidth() int {
@@ -221,6 +236,14 @@ func (btn *Button) MaxWidth() int {
 
 func (*Button) MaxHeight() int {
 	return 1
+}
+
+// WithPaddings устанавливает внутренние отступы.
+// Добавлено в TUI v3.3.1
+func (btn *Button) WithPaddings(h, v int) *Button {
+	btn.paddingH = h
+	btn.paddingV = v
+	return btn
 }
 
 // WithStyle устанавливает стиль кнопки когда не в фокусе.
