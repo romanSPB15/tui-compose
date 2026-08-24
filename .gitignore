@@ -8,3 +8,4 @@ game-linux
 coverage
 stats.json
 debug_log_*
+temp-frames/

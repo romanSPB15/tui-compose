@@ -17,7 +17,7 @@
     - **`extra`**:
         * LineChart, BarChart, PieChart, Sparkline, Tree, Table, Tabs, Accordion, Spinner, BlinkLabel, PageIndicator, TextView.
 * 👓 Diff-рендер, low-allocation — без мерцаний и аллокаций
-* ✨ Автоматическое фокус по Tab/Shift+Tab
+* ✨ Автоматический фокус по Tab/Shift+Tab
 * 💎 Минимальный размер: 8500 строк кода, только `x/sys` + `x/term`
 * 🎁 Полная поддержка Windows — без WSL
 * 🛠 Детекция data race при вызове методов окна — `-tags debug`
