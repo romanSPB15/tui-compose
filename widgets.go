@@ -580,9 +580,25 @@ func (f *InputField) InnerText() string {
 		style = f.styleF
 	}
 
-	if f.Text == "" && f.placeholder != "" && !f.focused {
-		ps := f.placeholderStyle
-		return ps.String() + f.placeholder + Reset.String()
+	if !f.focused {
+		if f.Text == "" && f.placeholder != "" {
+			ps := f.placeholderStyle
+			runes := []rune(f.placeholder)
+			if len(runes) > f.width {
+				runes = runes[:f.width]
+			}
+			text := string(runes)
+			padding := strings.Repeat(" ", f.width-len(runes))
+			return ps.String() + text + padding + Reset.String()
+		}
+
+		runes := []rune(f.Text)
+		if len(runes) > f.width {
+			runes = runes[:f.width]
+		}
+		text := string(runes)
+		padding := strings.Repeat(" ", f.width-len(runes))
+		return style.String() + text + padding + Reset.String()
 	}
 
 	runes := []rune(f.Text)
