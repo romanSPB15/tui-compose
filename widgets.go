@@ -598,55 +598,57 @@ func (f *InputField) WithOnEnter(h func(string)) *InputField {
 }
 
 func (f *InputField) InnerText() string {
-	style := f.style
+	fieldStyle := f.style
 	if f.focused {
-		style = f.styleF
+		fieldStyle = f.styleF
 	}
 
 	if !f.focused {
+		var displayText string
+		var textStyle Style
 		if f.Text == "" && f.placeholder != "" {
-			ps := f.placeholderStyle
-			runes := []rune(f.placeholder)
-			if len(runes) > f.width {
-				runes = runes[:f.width]
-			}
-			text := string(runes)
-			padding := strings.Repeat(" ", f.width-len(runes))
-			return ps.String() + text + padding + Reset.String()
+			displayText = f.placeholder
+			textStyle = f.placeholderStyle
+		} else {
+			displayText = f.Text
+			textStyle = fieldStyle
 		}
 
-		runes := []rune(f.Text)
+		runes := []rune(displayText)
 		if len(runes) > f.width {
 			runes = runes[:f.width]
 		}
-		text := string(runes)
+		displayText = string(runes)
 		padding := strings.Repeat(" ", f.width-len(runes))
-		return style.String() + text + padding + Reset.String()
+
+		return fieldStyle.String() + textStyle.String() + displayText + Reset.String() +
+			fieldStyle.String() + padding + Reset.String()
 	}
 
 	runes := []rune(f.Text)
 	cursor := f.CursorPos
-	cursor = max(cursor, 0)
-	cursor = min(cursor, len(runes))
+	if cursor < 0 {
+		cursor = 0
+	}
+	if cursor > len(runes) {
+		cursor = len(runes)
+	}
 
 	var builder builder.Builder
-
-	if !f.focused {
-		if f.Text == "" && f.placeholder != "" {
-			ps := f.placeholderStyle
-			return ps.String() + f.placeholder + Reset.String()
-		}
-		return style.String() + f.Text + Reset.String()
-	}
 
 	if len(runes) == 0 {
 		cursorDisplay := f.cursorStyle.String() + " " + Reset.String()
 		padding := strings.Repeat(" ", f.width-1)
-		return style.String() + cursorDisplay + padding + Reset.String()
+		builder.WriteString(fieldStyle.String())
+		builder.WriteString(cursorDisplay)
+		builder.WriteString(fieldStyle.String())
+		builder.WriteString(padding)
+		builder.WriteString(Reset.String())
+		return builder.String()
 	}
 
 	if cursor > 0 {
-		builder.WriteString(style.String())
+		builder.WriteString(fieldStyle.String())
 		builder.WriteString(string(runes[:cursor]))
 	}
 
@@ -654,7 +656,7 @@ func (f *InputField) InnerText() string {
 		cursorDisplay := f.cursorStyle.String() + string(runes[cursor]) + Reset.String()
 		builder.WriteString(cursorDisplay)
 		if cursor+1 < len(runes) {
-			builder.WriteString(style.String())
+			builder.WriteString(fieldStyle.String())
 			builder.WriteString(string(runes[cursor+1:]))
 			builder.WriteString(Reset.String())
 		}
@@ -665,10 +667,7 @@ func (f *InputField) InnerText() string {
 
 	currentLen := len([]rune(builder.String()))
 	if currentLen < f.width {
-		if f.focused {
-			builder.WriteString(f.styleF.String())
-		}
-
+		builder.WriteString(fieldStyle.String())
 		builder.WriteString(strings.Repeat(" ", f.width-currentLen))
 		builder.WriteString(Reset.String())
 	}
