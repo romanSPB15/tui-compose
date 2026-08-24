@@ -231,11 +231,11 @@ func (btn *Button) InnerText() string {
 }
 
 func (btn *Button) MaxWidth() int {
-	return len([]rune(btn.text))
+	return len([]rune(btn.text)) + 2*btn.paddingH
 }
 
-func (*Button) MaxHeight() int {
-	return 1
+func (btn *Button) MaxHeight() int {
+	return 1 + 2*btn.paddingV
 }
 
 // WithPaddings устанавливает внутренние отступы.
