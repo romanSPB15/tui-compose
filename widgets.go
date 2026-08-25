@@ -34,14 +34,14 @@ type Label struct {
 
 func (l *Label) InnerText() string {
 	if l.ANSI == "" {
-		return l.Text + strings.Repeat(" ", l.len-len([]rune(l.Text)))
+		return l.Text + strings.Repeat(" ", l.len-utf8.RuneCountInString(l.Text))
 	}
 	r := []rune(l.Text)
 	if len(r) > l.len {
 		r = r[:l.len]
 	}
 	l.Text = string(r)
-	return fmt.Sprintf("%s%s\033[0m", l.ANSI, l.Text+strings.Repeat(" ", l.len-len([]rune(l.Text))))
+	return fmt.Sprintf("%s%s\033[0m", l.ANSI, l.Text+strings.Repeat(" ", l.len-utf8.RuneCountInString(l.Text)))
 }
 
 // NewStaticLabel() создаёт виджет текста.
@@ -564,8 +564,13 @@ func (f *InputField) WithCursorStyle(s Style) *InputField {
 // WithText устанавливает текст поля.
 // Добавлено в TUI v3.1.0
 func (f *InputField) WithText(text string) *InputField {
+	l := utf8.RuneCountInString(text)
+	if l > f.width {
+		l = f.width
+		text = string([]rune(text)[:f.width])
+	}
 	f.Text = text
-	f.CursorPos = len([]rune(text))
+	f.CursorPos = l
 	return f
 }
 
@@ -738,7 +743,10 @@ func (f *InputField) OnKeyPress(ev *input.KeyboardEvent) {
 		}
 	default:
 		if ev.Rune != 0 {
-			runes = append(runes[:f.CursorPos], append([]rune{ev.Rune}, runes[f.CursorPos:]...)...)
+			if f.width > 0 && utf8.RuneCountInString(f.Text) >= f.width {
+				return
+			}
+			runes := append(runes[:f.CursorPos], append([]rune{ev.Rune}, runes[f.CursorPos:]...)...)
 			f.Text = string(runes)
 			f.CursorPos++
 			currentWindow.Redraw()
