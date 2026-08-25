@@ -221,17 +221,17 @@ func (btn *Button) InnerText() string {
 	content := leftPad + btn.text + rightPad
 
 	if btn.paddingV > 0 {
-		emptyLine := strings.Repeat(" ", len(content))
+		emptyLine := strings.Repeat(" ", utf8.RuneCountInString(content))
 		top := strings.Repeat(emptyLine+"\n", btn.paddingV)
 		bottom := strings.Repeat("\n"+emptyLine, btn.paddingV)
-		return top + s.String() + content + Reset.String() + bottom
+		return s.String() + top + content + bottom + Reset.String()
 	}
 
 	return s.String() + content + Reset.String()
 }
 
 func (btn *Button) MaxWidth() int {
-	return len([]rune(btn.text)) + 2*btn.paddingH
+	return utf8.RuneCountInString(btn.text) + 2*btn.paddingH
 }
 
 func (btn *Button) MaxHeight() int {

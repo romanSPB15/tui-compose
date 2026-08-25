@@ -20,11 +20,11 @@ func main() {
 		_ = comValue
 		_ = proValue
 		// ...
-	}).WithStyle(tui.BgBrightCyan), tui.NewButton("Отмена", func() {
+	}).WithStyle(tui.BgBrightCyan).WithPaddings(2, 1), tui.NewButton("Отмена", func() {
 		// ...
-	}).WithStyle(tui.BgBrightRed)
+	}).WithStyle(tui.BgBrightRed).WithPaddings(2, 1)
 
-	fr := tui.NewFrame((tui.NewVBox(name, com, pro, tui.NewHBox(ok, cancel)))).WithTitle(tui.Title{Text: "Регистрация", Pos: tui.TitleTopCenter}).Rounded()
+	fr := tui.NewFrame(tui.NewVBox(name, com, pro, tui.NewHBox(ok, cancel)).WithGap(1)).WithTitle(tui.Title{Text: "Регистрация", Pos: tui.TitleTopCenter}).Rounded()
 
 	wnd.SetContent(fr)
 	wnd.Run()
