@@ -154,10 +154,27 @@
 * `tui.Style`:
   - Покрытие тестами поднято с ~50% до **100%**.
   - Добавлен тест для `ConvertToCellStyle`.
-* Размер кода(с тестами): ~4500 -> 7000 строк за счёт новых виджетов.
+* Размер кода(с тестами и примерами): ~4500 -> 8500 строк.
 
 ### Removed
 * Зависимость от `github.com/romanSPB15/x/gorid` (встроена в `tui`).
 
 ### Dependencies
 - Удалена [`github.com/romanSPB15/x/gorid`](https://github.com/romanSPB15/x/tree/master/gorid).
+
+## [3.3.1] - 2026-08-25
+
+## Fixed
+* `InputField`
+  - Исправлен расчёт видимой длины в фокусе
+  - Исправлено ограничение длины текста в InputField
+  - Исправлено применение стилей в InputField к тексту и плейсхолдеру
+* `cell.ParseFromTo`
+  - Исправлены стили в строках без ANSI
+  - Исправлены тесты
+
+## Added
+* `Button`
+  - Добавлены отступы через WithPaddings
+* `VBox`
+  - Добавлен WithGap
