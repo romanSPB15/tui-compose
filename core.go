@@ -210,6 +210,14 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 			c, s := cell.ParseFromTo(line, &wnd.cellBuf, current)
 			current = s
 
+			if len(c) == 0 {
+				c = make([]cell.Cell, wgt.MaxWidth())
+				for i := range c {
+					c[i] = cell.Cell{Char: ' ', Style: current}
+				}
+
+			}
+
 			copy(buf[pos.Line+i][pos.Col:], c)
 
 			wgtWidth := wgt.MaxWidth()

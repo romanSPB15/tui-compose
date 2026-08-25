@@ -141,7 +141,7 @@ func TestParseFromTo(t *testing.T) {
 			To:       cell.Style{Args: cell.Underline, Fg: "90"},
 		},
 		{Input: "Hello",
-			Expected: cells("Hello"),
+			Expected: cells("Hello", cell.Style{Args: cell.Underline, Fg: "90"}),
 			From:     cell.Style{Args: cell.Underline, Fg: "90"},
 			To:       cell.Style{Args: cell.Underline, Fg: "90"},
 		},
