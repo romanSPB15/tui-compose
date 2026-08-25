@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/romanSPB15/tui-compose/v3/ansi"
 	"github.com/romanSPB15/tui-compose/v3/builder"
 	"github.com/romanSPB15/tui-compose/v3/input"
 	"github.com/romanSPB15/tui-compose/v3/term"
@@ -670,7 +671,8 @@ func (f *InputField) InnerText() string {
 		builder.WriteString(cursorDisplay)
 	}
 
-	currentLen := len([]rune(builder.String()))
+	visible := ansi.Strip(builder.String())
+	currentLen := utf8.RuneCountInString(visible)
 	if currentLen < f.width {
 		builder.WriteString(fieldStyle.String())
 		builder.WriteString(strings.Repeat(" ", f.width-currentLen))

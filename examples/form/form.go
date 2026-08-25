@@ -7,8 +7,8 @@ import (
 func main() {
 	wnd := tui.NewWindow()
 
-	name := tui.NewInputField(30).WithPlaceholder("Введите имя...").WithStyle(tui.BgBrightBlue)
-	com := tui.NewInputField(30).WithPlaceholder("Введите комментарий...").WithStyle(tui.BgBrightBlue)
+	name := tui.NewInputField(30).WithPlaceholder("Введите имя...").WithStyle(tui.BgBlue).WithFocusedStyle(tui.BgBrightBlue)
+	com := tui.NewInputField(30).WithPlaceholder("Введите комментарий...").WithStyle(tui.BgBlue).WithFocusedStyle(tui.BgBrightBlue)
 
 	pro := tui.NewCheck("Pro").WithStyle(tui.FrMagenta)
 
@@ -20,9 +20,9 @@ func main() {
 		_ = comValue
 		_ = proValue
 		// ...
-	}).WithStyle(tui.BgBrightCyan).WithPaddings(2, 1), tui.NewButton("Отмена", func() {
+	}).WithStyle(tui.BgCyan).WithPaddings(2, 1).WithFocusedStyle(tui.BgBrightCyan), tui.NewButton("Отмена", func() {
 		// ...
-	}).WithStyle(tui.BgBrightRed).WithPaddings(2, 1)
+	}).WithStyle(tui.BgRed).WithPaddings(2, 1).WithFocusedStyle(tui.BgBrightRed)
 
 	fr := tui.NewFrame(tui.NewVBox(name, com, pro, tui.NewHBox(ok, cancel)).WithGap(1)).WithTitle(tui.Title{Text: "Регистрация", Pos: tui.TitleTopCenter}).Rounded()
 
