@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -172,13 +173,16 @@ func (wnd *window) Index() {
 	wnd.indexFocusable(wnd.content, Pos{0, 0})
 }
 
-func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
+func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
 	if wgt == nil {
 		return
 	}
 	if c, ok := wgt.(Container); ok {
 		for i, ch := range c.Child() {
-			wnd.draw(ch, Pos{Line: pos.Line + c.Pos(i).Line, Col: pos.Col + c.Pos(i).Col}, buf)
+			wnd.draw(ch, [2]Pos{
+				{Line: rect[0].Line + c.Pos(i).Line, Col: rect[0].Col + c.Pos(i).Col},
+				{Line: rect[1].Line + c.Pos(i).Line, Col: rect[1].Col + c.Pos(i).Col},
+			}, buf)
 		}
 
 	} else {
@@ -198,10 +202,10 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 			if i >= wgt.MaxHeight() {
 				return
 			}
-			if pos.Line+i >= wnd.Height() {
+			if rect[0].Line+i >= wnd.Height() || rect[0].Line+i > rect[1].Line {
 				return
 			}
-			w := wnd.Width() - pos.Col
+			w := wnd.Width() - rect[0].Col
 
 			if w < 0 {
 				continue
@@ -210,20 +214,12 @@ func (wnd *window) draw(wgt Widget, pos Pos, buf [][]cell.Cell) {
 			c, s := cell.ParseFromTo(line, &wnd.cellBuf, current)
 			current = s
 
-			if len(c) == 0 {
-				c = make([]cell.Cell, wgt.MaxWidth())
-				for i := range c {
-					c[i] = cell.Cell{Char: ' ', Style: current}
-				}
-
-			}
-
-			copy(buf[pos.Line+i][pos.Col:], c)
+			copy(buf[rect[0].Line+i][rect[0].Col:], c)
 
 			wgtWidth := wgt.MaxWidth()
 			if len(c) < wgtWidth {
 				for j := range wgtWidth - len(c) {
-					buf[pos.Line+i][pos.Col+j+len(c)] = wnd.initCell
+					buf[rect[0].Line+i][rect[0].Col+j+len(c)] = wnd.initCell
 				}
 			}
 		}
@@ -240,10 +236,10 @@ func (wnd *window) render() [][]cell.Cell {
 		return buf
 	}
 
-	wnd.draw(wnd.content, Pos{Line: 0, Col: 0}, buf)
+	wnd.draw(wnd.content, [2]Pos{{Line: 0, Col: 0}, {Line: h, Col: w}}, buf)
 
 	if wnd.displayOverlay && wnd.overlay != nil {
-		wnd.draw(wnd.overlay, Pos{Line: 0, Col: 0}, buf)
+		wnd.draw(wnd.overlay, [2]Pos{{Line: 0, Col: 0}, {Line: h, Col: w}}, buf)
 	}
 
 	return buf
@@ -304,6 +300,8 @@ func (wnd *window) releaseBuffer(buf [][]cell.Cell) {
 	}
 }
 
+var capture bool
+
 func (wnd *window) Redraw() {
 	renderStart := time.Now()
 	if DEBUG && !wnd.isWorker() {
@@ -332,6 +330,17 @@ func (wnd *window) Redraw() {
 	b := wnd.builderPool.Get().(*builder.Builder)
 	b.Reset()
 
+	defer func() {
+		wnd.releaseBuffer(newBuf)
+		wnd.builderPool.Put(b)
+		b.Copy(wnd.f)
+	}()
+
+	if capture {
+		json.NewEncoder(b).Encode(newBuf)
+		return
+	}
+
 	for y := 0; y < h; y++ {
 		if len(newBuf[y]) < w {
 			continue
@@ -350,7 +359,12 @@ func (wnd *window) Redraw() {
 					wnd.last = newBuf[y][x].Style
 				}
 
-				b.WriteRune(newBuf[y][x].Char)
+				if newBuf[y][x].Char == 0 {
+					wnd.LogInfo("null rune detected at [%d, %d]", x, y)
+					b.WriteRune(' ')
+				} else {
+					b.WriteRune(newBuf[y][x].Char)
+				}
 
 				oldBuf[y][x] = newBuf[y][x]
 			}
@@ -409,22 +423,26 @@ func (wnd *window) Run() {
 			wnd.LogFatal("Произошла паника: %v", err)
 		}
 	}()
-	if !term.IsTerminal(int(wnd.f.Fd())) {
-		wnd.LogFatal("tui: stdout is not terminal")
-	}
-	if err := termL.MakeRaw(); err != nil {
-		wnd.LogInfo("Cannot make raw: %s", err)
+	if !capture {
+		if !term.IsTerminal(int(wnd.f.Fd())) {
+			wnd.LogFatal("tui: stdout is not terminal")
+		}
+		if err := termL.MakeRaw(); err != nil {
+			wnd.LogInfo("Cannot make raw: %s", err)
+		}
 	}
 
 	wnd.stdout = os.Stdout
 	wnd.stderr = os.Stderr
 	os.Stdout, os.Stderr = wnd.log, wnd.log
 
-	fmt.Fprint(wnd.f, "\033[2J")
+	if !capture {
+		fmt.Fprint(wnd.f, "\033[2J")
 
-	fmt.Fprint(wnd.f, "\033[?25l")
+		fmt.Fprint(wnd.f, "\033[?25l")
 
-	fmt.Fprint(wnd.f, "\033[?1006h\033[?1000h")
+		fmt.Fprint(wnd.f, "\033[?1006h\033[?1000h")
+	}
 
 	go wnd.startStopSignalCatcher()
 	go wnd.startScreenResizeChecker()
@@ -438,13 +456,17 @@ func (wnd *window) Run() {
 
 	wnd.runned = false
 
-	wnd.restoreOut()
-	termL.Restore()
-	if wnd.last != (cell.Style{}) {
-		fmt.Fprint(wnd.f, "\033[0m")
+	if !capture {
+		wnd.restoreOut()
+		termL.Restore()
+
+		if wnd.last != (cell.Style{}) {
+			fmt.Fprint(wnd.f, "\033[0m")
+		}
+		fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
+		fmt.Fprint(wnd.f, "\033[?1006l\033[?1000l")
 	}
-	fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
-	fmt.Fprint(wnd.f, "\033[?1006l\033[?1000l")
+
 }
 
 func (wnd *window) restoreOut() {
@@ -615,11 +637,27 @@ func (wnd *window) runWorker() {
 }
 
 func (wnd *window) Width() int {
+	if capture {
+		if w := os.Getenv("TUI_WIDTH"); w != "" {
+			if val, err := strconv.Atoi(w); err == nil && val > 0 {
+				return val
+			}
+		}
+		return 80
+	}
 	w, _ := termL.SizeFd(wnd.stdout.Fd())
 	return w
 }
 
 func (wnd *window) Height() int {
+	if capture {
+		if h := os.Getenv("TUI_HEIGHT"); h != "" {
+			if val, err := strconv.Atoi(h); err == nil && val > 0 {
+				return val
+			}
+		}
+		return 24
+	}
 	_, h := termL.SizeFd(wnd.stdout.Fd())
 	return h
 }
@@ -728,7 +766,9 @@ func (wnd *window) SetContent(w Widget) {
 }
 
 func (wnd *window) SetTitle(title string) {
-	fmt.Fprintf(wnd.f, "\033]0;%s\033\\", title)
+	if !capture {
+		fmt.Fprintf(wnd.f, "\033]0;%s\033\\", title)
+	}
 }
 
 func (wnd *window) Focus() FocusManager {

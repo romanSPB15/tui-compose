@@ -16,6 +16,9 @@ const (
 	PixelOneSymbol                  // "▀"
 )
 
+// Deprecated: используйте Image.
+// Будет удалён в версии v4.0.0.
+//
 // Canvas — это многострочный виджет, на котором можно "рисовать" цветные пиксели.
 type Canvas struct {
 	width, height int
@@ -26,6 +29,9 @@ type Canvas struct {
 	cached        string
 }
 
+// Deprecated: используйте Image.
+// Будет удалён в версии v4.0.0.
+//
 // NewCanvas() создаёт виждет Canvas.
 func NewCanvas(width, height int) *Canvas {
 	p := make([][]Color, height)
@@ -169,7 +175,10 @@ func (cnv *Canvas) Get(x, y int) Color {
 	return cnv.pole[y][x]
 }
 
-// Canvas — это многострочный виджет, на котором можно "рисовать" RGB-пиксели. Требуется терминал с True Color.
+// Deprecated: используйте Image.
+// Будет удалён в версии v4.0.0.
+//
+// CanvasRGB — это многострочный виджет, на котором можно "рисовать" RGB-пиксели. Требуется терминал с True Color.
 type CanvasRGB struct {
 	width, height int
 	pole          [][]ColorRGB
@@ -178,6 +187,9 @@ type CanvasRGB struct {
 	cached        string
 }
 
+// Deprecated: используйте Image.
+// Будет удалён в версии v4.0.0.
+//
 // NewCanvas() создаёт виждет Canvas.
 func NewCanvasRGB(width, height int) *CanvasRGB {
 	p := make([][]ColorRGB, height)

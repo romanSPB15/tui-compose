@@ -220,11 +220,11 @@ func BenchmarkTuiBuilder_WriteFormat(b *testing.B) {
 	}
 }
 
-func BenchmarkStringsBuilder_WriteFmtSprintf(b *testing.B) {
+func BenchmarkStringsBuilder_Fprintf(b *testing.B) {
 	bb := &strings.Builder{}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		bb.WriteString(fmt.Sprintf("%s %d %f", "test", 42, 1.23))
+		fmt.Fprintf(bb, "%s %d %f", "test", 42, 1.23)
 	}
 }
 

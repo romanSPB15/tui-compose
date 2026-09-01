@@ -9,7 +9,7 @@ import (
 
 func main() {
 	wnd := tui.NewWindow()
-	wnd.SetTitle("TUI Compose v3.3 Demo")
+	wnd.SetTitle("TUI Compose v3.4 Demo")
 
 	// данные
 	data := []int{
@@ -42,20 +42,23 @@ func main() {
 
 	chart.AxisStyle = tui.FrBrightBlack
 
-	pr := tui.NewTextProgress(10, '#', '-')
-	pr.SetValue(0.25)
-
-	wnd.SetContent(tui.NewHBox(tui.NewVBox(
-		tui.NewFrame(chart).Rounded().WithTitle(tui.Title{Text: "Memory, %", Style: tui.FrRed}).WithTitle(tui.Title{Text: "CPU, %", Style: tui.FrYellow, Pos: tui.TitleTopRight}),
+	wnd.SetContent(tui.NewFrame(tui.NewHBox(tui.NewVBox(
+		tui.NewFrame(chart).Rounded().WithTitle(tui.Title{Text: "Memory, MB", Style: tui.FrRed}).WithTitle(tui.Title{Text: "CPU, %", Style: tui.FrYellow, Pos: tui.TitleTopRight}),
 		tui.NewHBox(
 			tui.NewFrame(extra.NewBlinkLabel(6).WithText("Ошибка").WithStyle(tui.FrRed).Start(time.Second/2)).Heavy(),
-			tui.NewFrame(tui.NewHBox(tui.NewStaticLabel("Загрузка"), extra.NewSpinner(extra.SpinnerBrailleReverse).Start(time.Second/10))).Double(),
-			tui.NewFrame(tui.NewHBox(tui.NewStaticLabel("Прогресс: 25%").WithStyle(tui.FrCyan|tui.Italic), pr, extra.NewSpinner(2).Start(time.Second/2)).WithGap(3)).Double(),
+			tui.NewFrame(tui.NewHBox(tui.NewStaticLabel("Загрузка page.html..."),
+				extra.NewSpinner(extra.SpinnerBrailleReverse).WithStyle(tui.FrBrightMagenta).Start(time.Second/10),
+			)).Double(),
+			tui.NewFrame(tui.NewHBox(
+				tui.NewGauge(20).EmptySquares().WithValue(0.25),
+				extra.NewSpinner(extra.SpinnerLine).Start(time.Second/3)).WithGap(2),
+			).BevelASCII(),
 		),
 	), tui.NewFrame(extra.NewTree([]extra.TreeNode{
 		{
 			Label: "users-db",
 			Depth: 0,
+			Style: tui.Bold | tui.FrCyan,
 		},
 		{
 			Label: "users",
@@ -68,12 +71,11 @@ func main() {
 		{
 			Label: "Tom",
 			Depth: 2,
-			Style: tui.Italic | tui.BgBrightCyan | tui.FrBlack,
+			Style: tui.Italic,
 		},
 		{
 			Label: "products",
 			Depth: 1,
-			Style: tui.FrBlue,
 		},
 		{
 			Label: "comments",
@@ -86,9 +88,10 @@ func main() {
 		{
 			Label: "bar",
 			Depth: 2,
+			Style: tui.FrBlue,
 		},
 	})), tui.NewFrame(extra.NewTabs([]extra.Tab{
-		{Title: "Accordion", Content: extra.NewAccordion("Open Me!", extra.NewTable([][]extra.TableCell{
+		{Title: "  Accordion  ", TitleStyle: tui.BgYellow, Content: tui.NewVBox(extra.NewAccordion("Service List", extra.NewTable([][]extra.TableCell{
 			{
 				{
 					Text:  "Service",
@@ -167,8 +170,9 @@ func main() {
 					Style: tui.FrBrightGreen,
 				},
 			},
-		}).Rounded().WithHorSeparator(extra.EverywhereHorSeparator))},
-		{Title: "PieChart", Content: extra.NewPieChart([]extra.PieData{
+		}).Rounded().WithHorSeparator(extra.EverywhereHorSeparator)),
+			extra.NewAccordion("TUI Compose", tui.NewHyperlink("Visit tui-compose on GitHub", "https://github.com/romanSPB15/tui-compose").WithStyle(tui.FrBlue|tui.Underline)))},
+		{Title: "  PieChart  ", TitleStyle: tui.BgBrightMagenta, Content: extra.NewPieChart([]extra.PieData{
 			{
 				Label: "10%",
 				Value: 10,
@@ -190,7 +194,11 @@ func main() {
 				Color: tui.FrBrightCyan,
 			},
 		}).WithRadius(15)},
-	})).WithTitle(tui.Title{Text: "Tabs & Accordion"}).WithTitle(tui.Title{Text: "PieChart", Pos: tui.TitleBottomCenter})))
+	})).WithTitle(tui.Title{Text: "Tabs & Accordion"}).WithTitle(tui.Title{Text: "PieChart", Pos: tui.TitleBottomCenter}))).Rounded().
+		WithTitle(tui.Title{Text: "TUI Compose Dashboard", Pos: tui.TitleTopCenter, Style: tui.FrBlue | tui.Bold}).
+		WithTitle(tui.Title{Text: "v3.4", Pos: tui.TitleBottomRight, Style: tui.FrBrightBlack | tui.Italic}).
+		WithBorderStyle(tui.FrBrightBlack),
+	)
 
 	go func() {
 		i := 0
@@ -199,7 +207,7 @@ func main() {
 			select {
 			case <-wnd.OnQuit():
 				return
-			case <-time.Tick(time.Second / 5):
+			case <-time.Tick(time.Second / 200):
 				wnd.Commit(func() {
 					if i == len(data)-7 {
 						i = 0
