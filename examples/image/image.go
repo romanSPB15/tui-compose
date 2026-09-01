@@ -42,7 +42,7 @@ func makeBraile() [][]bool {
 
 func main() {
 	wnd := tui.NewWindow()
-	wnd.SetTitle("TUI Compose v3.4 - Image Modes")
+	wnd.SetTitle("TUI Compose v3.4 - Image")
 
 	file, err := os.Open("examples/image/image.png")
 	if err != nil {
