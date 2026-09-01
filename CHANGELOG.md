@@ -194,4 +194,4 @@
 * `Canvas`, `CanvasRGB`, `ColorProgress`, `TextProgress` теперь deprecated. Они будут удалены в v4.
 
 ### Changed
-* Размер: 8500—10000 строк.
+* Размер: 10000 строк.

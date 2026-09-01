@@ -4,7 +4,7 @@
 [![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/releases)
 [![Test](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml/badge.svg)](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml)
 [![Documentation](https://img.shields.io/badge/GitHub-Wiki-red?logo=github)](https://github.com/romanSPB15/tui-compose/wiki)
-![Lightweight](https://img.shields.io/badge/Lightweight-~8500_lines-brightgreen)
+![Lightweight](https://img.shields.io/badge/Lightweight-~10000_lines-brightgreen)
 [![Examples](https://img.shields.io/badge/Examples-21-blue?logo=github)](https://github.com/romanSPB15/tui-compose/tree/main/examples)
 
 **Лёгкий путь для создания приложений в терминале на Go.**
@@ -18,7 +18,7 @@
         * LineChart, BarChart, PieChart, Sparkline, Tree, Table, Tabs, Accordion, Spinner, BlinkLabel, PageIndicator, TextView.
 * 🏆 Высокоэффективный low-alloc diff-рендер — 200 FPS с I/O без мерцания
 * ✨ Автоматическое фокус по Tab/Shift+Tab
-* 💎 Минимальный размер: ~9650 строк кода, только `x/sys` + `x/term`
+* 💎 Минимальный размер: ~10000 строк кода, только `x/sys` + `x/term`
 * 🎁 Полная поддержка Windows — без WSL
 * 🛠 Детекция data race при вызове методов окна — `-tags debug`
 * 🎨 Удобная стилизация через битовые маски — быстро и удобно
