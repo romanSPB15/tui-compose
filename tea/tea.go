@@ -26,7 +26,7 @@ func Batch(cmds ...Cmd) Cmd {
 	}
 }
 
-func Tick(d time.Duration, fn func(time.Time) Msg) Cmd {
+func After(d time.Duration, fn func(time.Time) Msg) Cmd {
 	return func() Msg {
 		<-time.After(d)
 		return fn(time.Now())
@@ -100,18 +100,24 @@ func (p *Program) eventLoop() {
 			}(cmd)
 		}
 
-		p.window.Commit(func() {
-			idx := p.window.Focus().FocusedIndex()
-
-			p.window.SetContent(p.model.View()) // так как SetContent сбрасывает фокус, нужно его сохранить
-
-			p.window.Focus().SetIndex(idx)
-		})
-
-		if _, ok := msg.(quitMsg); ok {
-			p.window.Quit()
+		select {
+		case <-p.window.OnQuit():
 			close(p.msgCh)
 			return
+		default:
+			p.window.Commit(func() {
+				idx := p.window.Focus().FocusedIndex()
+
+				p.window.SetContent(p.model.View()) // так как SetContent сбрасывает фокус, нужно его сохранить
+
+				p.window.Focus().SetIndex(idx)
+			})
+
+			if _, ok := msg.(quitMsg); ok {
+				p.window.Quit()
+				close(p.msgCh)
+				return
+			}
 		}
 	}
 }
