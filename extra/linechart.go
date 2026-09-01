@@ -171,7 +171,7 @@ func (bc *LineChart) InnerText() string {
 		}
 	}
 
-	axisStyle := convertToCellStyle(bc.AxisStyle)
+	axisStyle := tui.ConvertToCellStyle(bc.AxisStyle)
 	var axisLabelStyle cell.Style
 	if bc.AxisLabelStyle != 0 {
 		axisLabelStyle = tui.ConvertToCellStyle(bc.AxisLabelStyle)
@@ -230,7 +230,7 @@ func (bc *LineChart) InnerText() string {
 	}
 
 	for _, s := range bc.Data {
-		lineStyle := convertToCellStyle(s.LineStyle)
+		lineStyle := tui.ConvertToCellStyle(s.LineStyle)
 		for i := 0; i < len(s.Values)-1; i++ {
 			x1 := offsetX + i*bc.PointDistance
 			y1 := h - 1 - int(float64(s.Values[i])/bc.div)

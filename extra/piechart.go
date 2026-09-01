@@ -145,7 +145,7 @@ func (pc *PieChart) InnerText() string {
 
 		for i, v := range angles {
 			if angle <= v { // если угол попадает в сектор
-				return convertToCellStyle(pc.data[i].Color)
+				return tui.ConvertToCellStyle(pc.data[i].Color)
 			}
 		}
 		return cell.Style{}
@@ -167,7 +167,7 @@ func (pc *PieChart) InnerText() string {
 			l := len(str)
 			sx := cx - l/2 // начало текста
 			for i, v := range []rune(str) {
-				cells[cy][sx+i] = cell.Cell{Char: v, Style: convertToCellStyle(pc.valueStyle)}
+				cells[cy][sx+i] = cell.Cell{Char: v, Style: tui.ConvertToCellStyle(pc.valueStyle)}
 			}
 		}
 
@@ -197,9 +197,9 @@ func (pc *PieChart) InnerText() string {
 
 			for i, v := range []rune(str) {
 				if i == 0 {
-					cells[j][i+legendStartX] = cell.Cell{Char: v, Style: convertToCellStyle(pc.data[j].Color)}
+					cells[j][i+legendStartX] = cell.Cell{Char: v, Style: tui.ConvertToCellStyle(pc.data[j].Color)}
 				} else {
-					cells[j][i+legendStartX] = cell.Cell{Char: v, Style: convertToCellStyle(pc.legendStyle)}
+					cells[j][i+legendStartX] = cell.Cell{Char: v, Style: tui.ConvertToCellStyle(pc.legendStyle)}
 				}
 
 			}

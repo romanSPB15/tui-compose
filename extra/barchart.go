@@ -65,7 +65,7 @@ func (bc *BarChart) InnerText() string {
 	for i, v := range bc.values {
 		var s cell.Style
 		if bc.BarStyle != nil {
-			s = convertToCellStyle(bc.BarStyle(i, v))
+			s = tui.ConvertToCellStyle(bc.BarStyle(i, v))
 		}
 		vDivided := int(float32(v) / bc.div)
 		for z := vDivided; z >= 0; z-- {
@@ -87,7 +87,7 @@ func (bc *BarChart) InnerText() string {
 		}
 
 		if bc.TextStyle != nil {
-			s = convertToCellStyle(bc.TextStyle(i, v))
+			s = tui.ConvertToCellStyle(bc.TextStyle(i, v))
 		} else {
 			s = cell.Style{}
 		}

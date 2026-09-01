@@ -68,7 +68,7 @@ func (bc *Sparkline) InnerText() string {
 	for i, v := range bc.values {
 		var s cell.Style
 		if bc.BarStyle != nil {
-			s = convertToCellStyle(bc.BarStyle(i, v))
+			s = tui.ConvertToCellStyle(bc.BarStyle(i, v))
 		}
 
 		vDivided := int(float64(v) / bc.div)

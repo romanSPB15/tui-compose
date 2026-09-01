@@ -303,6 +303,7 @@ func (wnd *window) releaseBuffer(buf [][]cell.Cell) {
 var capture bool
 
 func (wnd *window) Redraw() {
+	renderStart := time.Now()
 	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("Redraw called outside worker goroutine: data race")
 	}
@@ -369,6 +370,20 @@ func (wnd *window) Redraw() {
 			}
 		}
 	}
+
+	renderDur := time.Since(renderStart)
+
+	writeStart := time.Now()
+
+	b.Copy(wnd.f)
+
+	writeDur := time.Since(writeStart)
+
+	wnd.LogInfo("Redraw time: %s %s", renderDur, writeDur)
+
+	wnd.builderPool.Put(b)
+
+	wnd.releaseBuffer(newBuf)
 }
 
 func (wnd *window) SetOverlay(wgt Widget) {

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/romanSPB15/tui-compose/v3/ansi"
 	"github.com/romanSPB15/tui-compose/v3/builder"
 	"github.com/romanSPB15/tui-compose/v3/cell"
 	"github.com/romanSPB15/tui-compose/v3/input"
@@ -36,14 +37,14 @@ type Label struct {
 
 func (l *Label) InnerText() string {
 	if l.ANSI == "" {
-		return l.Text + strings.Repeat(" ", l.len-len([]rune(l.Text)))
+		return l.Text + strings.Repeat(" ", l.len-utf8.RuneCountInString(l.Text))
 	}
 	r := []rune(l.Text)
 	if len(r) > l.len {
 		r = r[:l.len]
 	}
 	l.Text = string(r)
-	return fmt.Sprintf("%s%s\033[0m", l.ANSI, l.Text+strings.Repeat(" ", l.len-len([]rune(l.Text))))
+	return fmt.Sprintf("%s%s\033[0m", l.ANSI, l.Text+strings.Repeat(" ", l.len-utf8.RuneCountInString(l.Text)))
 }
 
 // NewStaticLabel() создаёт виджет текста.
@@ -175,6 +176,7 @@ type Button struct {
 	OnClicked             func()
 	style, styleF, styleD Style
 	focused               bool
+	paddingH, paddingV    int
 	DisableState
 }
 
@@ -185,6 +187,8 @@ func NewButton(text string, h func()) *Button {
 		OnClicked: h,
 		styleF:    BgWhite | FrBlack,
 		styleD:    FrBrightBlack,
+		paddingH:  2,
+		paddingV:  0,
 	}
 	return btn
 }
@@ -214,15 +218,35 @@ func (btn *Button) InnerText() string {
 	} else {
 		s = btn.style
 	}
-	return s.String() + btn.text + Reset.String()
+
+	leftPad := strings.Repeat(" ", btn.paddingH)
+	rightPad := strings.Repeat(" ", btn.paddingH)
+	content := leftPad + btn.text + rightPad
+
+	if btn.paddingV > 0 {
+		emptyLine := strings.Repeat(" ", utf8.RuneCountInString(content))
+		top := strings.Repeat(emptyLine+"\n", btn.paddingV)
+		bottom := strings.Repeat("\n"+emptyLine, btn.paddingV)
+		return s.String() + top + content + bottom + Reset.String()
+	}
+
+	return s.String() + content + Reset.String()
 }
 
 func (btn *Button) MaxWidth() int {
-	return len([]rune(btn.text))
+	return utf8.RuneCountInString(btn.text) + 2*btn.paddingH
 }
 
-func (*Button) MaxHeight() int {
-	return 1
+func (btn *Button) MaxHeight() int {
+	return 1 + 2*btn.paddingV
+}
+
+// WithPaddings устанавливает внутренние отступы.
+// Добавлено в TUI v3.3.1
+func (btn *Button) WithPaddings(h, v int) *Button {
+	btn.paddingH = h
+	btn.paddingV = v
+	return btn
 }
 
 // WithStyle устанавливает стиль кнопки когда не в фокусе.
@@ -555,8 +579,13 @@ func (f *InputField) WithCursorStyle(s Style) *InputField {
 // WithText устанавливает текст поля.
 // Добавлено в TUI v3.1.0
 func (f *InputField) WithText(text string) *InputField {
+	l := utf8.RuneCountInString(text)
+	if l > f.width {
+		l = f.width
+		text = string([]rune(text)[:f.width])
+	}
 	f.Text = text
-	f.CursorPos = len([]rune(text))
+	f.CursorPos = l
 	return f
 }
 
@@ -589,39 +618,57 @@ func (f *InputField) WithOnEnter(h func(string)) *InputField {
 }
 
 func (f *InputField) InnerText() string {
-	style := f.style
+	fieldStyle := f.style
 	if f.focused {
-		style = f.styleF
+		fieldStyle = f.styleF
 	}
 
-	if f.Text == "" && f.placeholder != "" && !f.focused {
-		ps := f.placeholderStyle
-		return ps.String() + f.placeholder + Reset.String()
+	if !f.focused {
+		var displayText string
+		var textStyle Style
+		if f.Text == "" && f.placeholder != "" {
+			displayText = f.placeholder
+			textStyle = f.placeholderStyle
+		} else {
+			displayText = f.Text
+			textStyle = fieldStyle
+		}
+
+		runes := []rune(displayText)
+		if len(runes) > f.width {
+			runes = runes[:f.width]
+		}
+		displayText = string(runes)
+		padding := strings.Repeat(" ", f.width-len(runes))
+
+		return fieldStyle.String() + textStyle.String() + displayText + Reset.String() +
+			fieldStyle.String() + padding + Reset.String()
 	}
 
 	runes := []rune(f.Text)
 	cursor := f.CursorPos
-	cursor = max(cursor, 0)
-	cursor = min(cursor, len(runes))
+	if cursor < 0 {
+		cursor = 0
+	}
+	if cursor > len(runes) {
+		cursor = len(runes)
+	}
 
 	var builder builder.Builder
-
-	if !f.focused {
-		if f.Text == "" && f.placeholder != "" {
-			ps := f.placeholderStyle
-			return ps.String() + f.placeholder + Reset.String()
-		}
-		return style.String() + f.Text + Reset.String()
-	}
 
 	if len(runes) == 0 {
 		cursorDisplay := f.cursorStyle.String() + " " + Reset.String()
 		padding := strings.Repeat(" ", f.width-1)
-		return style.String() + cursorDisplay + padding + Reset.String()
+		builder.WriteString(fieldStyle.String())
+		builder.WriteString(cursorDisplay)
+		builder.WriteString(fieldStyle.String())
+		builder.WriteString(padding)
+		builder.WriteString(Reset.String())
+		return builder.String()
 	}
 
 	if cursor > 0 {
-		builder.WriteString(style.String())
+		builder.WriteString(fieldStyle.String())
 		builder.WriteString(string(runes[:cursor]))
 	}
 
@@ -629,7 +676,7 @@ func (f *InputField) InnerText() string {
 		cursorDisplay := f.cursorStyle.String() + string(runes[cursor]) + Reset.String()
 		builder.WriteString(cursorDisplay)
 		if cursor+1 < len(runes) {
-			builder.WriteString(style.String())
+			builder.WriteString(fieldStyle.String())
 			builder.WriteString(string(runes[cursor+1:]))
 			builder.WriteString(Reset.String())
 		}
@@ -638,12 +685,10 @@ func (f *InputField) InnerText() string {
 		builder.WriteString(cursorDisplay)
 	}
 
-	currentLen := len([]rune(builder.String()))
+	visible := ansi.Strip(builder.String())
+	currentLen := utf8.RuneCountInString(visible)
 	if currentLen < f.width {
-		if f.focused {
-			builder.WriteString(f.styleF.String())
-		}
-
+		builder.WriteString(fieldStyle.String())
 		builder.WriteString(strings.Repeat(" ", f.width-currentLen))
 		builder.WriteString(Reset.String())
 	}
@@ -714,7 +759,10 @@ func (f *InputField) OnKeyPress(ev *input.KeyboardEvent) {
 		}
 	default:
 		if ev.Rune != 0 {
-			runes = append(runes[:f.CursorPos], append([]rune{ev.Rune}, runes[f.CursorPos:]...)...)
+			if f.width > 0 && utf8.RuneCountInString(f.Text) >= f.width {
+				return
+			}
+			runes := append(runes[:f.CursorPos], append([]rune{ev.Rune}, runes[f.CursorPos:]...)...)
 			f.Text = string(runes)
 			f.CursorPos++
 			currentWindow.Redraw()

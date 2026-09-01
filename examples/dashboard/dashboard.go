@@ -207,7 +207,7 @@ func main() {
 			select {
 			case <-wnd.OnQuit():
 				return
-			case <-time.Tick(time.Second / 5):
+			case <-time.Tick(time.Second / 200):
 				wnd.Commit(func() {
 					if i == len(data)-7 {
 						i = 0

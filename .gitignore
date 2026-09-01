@@ -7,5 +7,9 @@ log
 game-linux
 coverage
 stats.json
+<<<<<<< HEAD
 debug_log_*
 temp-frames/
+=======
+debug_log_*
+>>>>>>> main

@@ -216,7 +216,7 @@ func ParseFromTo(s string, buf *[]Cell, currentStyle Style) ([]Cell, Style) {
 	if len(matches) == 0 {
 		for i := 0; i < len(s); {
 			r, size := utf8.DecodeRuneInString(s[i:])
-			cells = append(cells, Cell{Char: r, Style: Style{}})
+			cells = append(cells, Cell{Char: r, Style: currentStyle})
 			i += size
 		}
 		return cells, currentStyle
