@@ -15,18 +15,18 @@ func NewImage() Image {
 	return nil
 }
 
-func (iw Image) InnerText() string {
-	return cell.ToString(iw)
+func (iw Image) Render(buf [][]cell.Cell) {
+	copy(buf, iw)
 }
 
-func (iw Image) MaxWidth() int {
+func (iw Image) Width() int {
 	if len(iw) == 0 {
 		return 0
 	}
 	return len(iw[0])
 }
 
-func (iw Image) MaxHeight() int {
+func (iw Image) Height() int {
 	return len(iw)
 }
 

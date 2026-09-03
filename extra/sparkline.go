@@ -46,17 +46,17 @@ func (bc *Sparkline) WithScale(div float64) *Sparkline {
 	return bc
 }
 
-func (bc *Sparkline) MaxWidth() int {
+func (bc *Sparkline) Width() int {
 	return len(bc.values)
 }
 
-func (bc *Sparkline) MaxHeight() int {
+func (bc *Sparkline) Height() int {
 	return bc.Height
 }
 
 func (bc *Sparkline) InnerText() string {
-	w := bc.MaxWidth()
-	h := bc.MaxHeight()
+	w := bc.Width()
+	h := bc.Height()
 	cells := make([][]cell.Cell, h)
 	for y := range cells {
 		cells[y] = make([]cell.Cell, w)

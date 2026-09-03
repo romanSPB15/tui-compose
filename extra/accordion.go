@@ -55,19 +55,19 @@ func (acc *Accordion) Child() []tui.Widget {
 
 func (acc *Accordion) Pos(i int) tui.Pos {
 	if i == 1 {
-		return tui.Pos{Line: acc.label.MaxHeight(), Col: 0}
+		return tui.Pos{Line: acc.label.Height(), Col: 0}
 	}
 	return tui.Pos{Line: 0, Col: 0}
 }
 
-func (acc *Accordion) MaxWidth() int {
-	return max(acc.content.MaxWidth(), acc.label.MaxWidth())
+func (acc *Accordion) Width() int {
+	return max(acc.content.Width(), acc.label.Width())
 }
 
-func (acc *Accordion) MaxHeight() int {
-	h := acc.label.MaxHeight()
+func (acc *Accordion) Height() int {
+	h := acc.label.Height()
 	if acc.opened {
-		h += acc.content.MaxHeight()
+		h += acc.content.Height()
 	}
 	return h
 }

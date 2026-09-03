@@ -102,7 +102,7 @@ func (tbl *Table) ASCII() *Table {
 	return tbl
 }
 
-func (pc *Table) MaxWidth() int {
+func (pc *Table) Width() int {
 	res := 1
 	for _, v := range pc.widths {
 		res += v + 3
@@ -110,7 +110,7 @@ func (pc *Table) MaxWidth() int {
 	return res
 }
 
-func (pc *Table) MaxHeight() int {
+func (pc *Table) Height() int {
 	if pc.hor == NoHorSeparator {
 		return len(pc.data)
 	}

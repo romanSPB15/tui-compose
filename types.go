@@ -7,10 +7,10 @@ import (
 
 // Widget — это интерфейс для TUI-виджетов.
 type Widget interface {
-	InnerText() string // InnerText возращает текст виджета.
+	Render(buf [][]cell.Cell)
 
-	MaxWidth() int  // MaxWidth возращает ширину виджета.
-	MaxHeight() int // MaxHeight возращает высоту виджета.
+	Width() int
+	Height() int
 }
 
 // Focusable это интерфейс виджетов, которые могут получить фокус.

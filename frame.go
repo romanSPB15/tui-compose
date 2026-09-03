@@ -117,39 +117,31 @@ func (b *Frame) WithBorderStyle(s Style) *Frame {
 	return b
 }
 
-func (b *border) MaxWidth() int {
+func (b *border) Width() int {
 	if b.content == nil {
 		return b.ph*2 + 2
 	}
-	return b.content.MaxWidth() + b.ph*2 + 2
+	return b.content.Width() + b.ph*2 + 2
 }
 
-func (b *border) MaxHeight() int {
+func (b *border) Height() int {
 	if b.content == nil {
 		return b.pv*2 + 2
 	}
-	return b.content.MaxHeight() + b.pv*2 + 2
+	return b.content.Height() + b.pv*2 + 2
 }
 
-func (b *Frame) MaxWidth() int {
-	return b.border.MaxWidth()
+func (b *Frame) Width() int {
+	return b.border.Width()
 }
 
-func (b *Frame) MaxHeight() int {
-	return b.border.MaxHeight()
+func (b *Frame) Height() int {
+	return b.border.Height()
 }
 
-func (b *border) InnerText() string {
-	w := b.MaxWidth()
-	h := b.MaxHeight()
-
-	cells := make([][]cell.Cell, h)
-	for i := range cells {
-		cells[i] = make([]cell.Cell, w)
-		for j := range cells[i] {
-			cells[i][j] = b.bg
-		}
-	}
+func (b *border) Render(cells [][]cell.Cell) {
+	w := b.Width()
+	h := b.Height()
 
 	borderStyle := ConvertToCellStyle(b.borderStyle)
 
@@ -196,8 +188,6 @@ func (b *border) InnerText() string {
 			drawTitle(w/2-len(titleRunes)/2, h-1)
 		}
 	}
-
-	return cell.ToString(cells)
 }
 
 // WithPaddings задаёт отступы внутри рамки.

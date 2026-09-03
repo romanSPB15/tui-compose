@@ -5,10 +5,8 @@ package tui
 import (
 	"fmt"
 	"math"
-	"strings"
 	"unicode/utf8"
 
-	"github.com/romanSPB15/tui-compose/v3/ansi"
 	"github.com/romanSPB15/tui-compose/v3/builder"
 	"github.com/romanSPB15/tui-compose/v3/cell"
 	"github.com/romanSPB15/tui-compose/v3/input"
@@ -30,137 +28,57 @@ func (d *DisableState) IsDisabled() bool {
 
 // Label — это виджет текстовой метки.
 type Label struct {
-	ANSI string // Приставка ANSI escape последовательности
-	Text string // Текст виджета.
-	len  int
+	style cell.Style
+	Text  string // Текст виджета.
+	len   int
 }
 
-func (l *Label) InnerText() string {
-	if l.ANSI == "" {
-		return l.Text + strings.Repeat(" ", l.len-utf8.RuneCountInString(l.Text))
+func (l *Label) Render(buf [][]cell.Cell) {
+	runes := []rune(l.Text)
+	for i := range utf8.RuneCountInString(l.Text) {
+		buf[0][i] = cell.Cell{Char: runes[i], Style: l.style}
 	}
-	r := []rune(l.Text)
-	if len(r) > l.len {
-		r = r[:l.len]
-	}
-	l.Text = string(r)
-	return fmt.Sprintf("%s%s\033[0m", l.ANSI, l.Text+strings.Repeat(" ", l.len-utf8.RuneCountInString(l.Text)))
 }
 
 // NewStaticLabel() создаёт виджет текста.
 func NewStaticLabel(txt string) *Label { return &Label{Text: txt, len: utf8.RuneCountInString(txt)} }
 
 // NewDynamicLabel() создаёт виджет текста с возможностью изменения содержимого в будущем.
-// MaxWidth это место, зарезервированное под метку в символах.
+// Width это место, зарезервированное под метку в символах.
 func NewDynamicLabel(txt string, len int) *Label {
 	return &Label{Text: txt, len: len}
 }
 
-// Deprecated: используйте WithStyle(tui.Fr*) вместо этого метода.
-// Будет удалён в версии v4.0.0.
-//
-// ColorizeForeground() окрашивает текст в один из стандартных цветов.
-// Добавлено в TUI v1.1.0
-func (lbl *Label) ColorizeForeground(clr Color) *Label {
-	lbl.ANSI += fmt.Sprintf("\033[%dm", clr)
-	return lbl
-}
-
-// Deprecated: используйте WithStyle(tui.Bg*) вместо этого метода.
-// Будет удалён в версии v4.0.0.
-//
-// ColorizeBackground() окрашивает фон текста в один из стандартных цветов.
-// Добавлено в TUI v1.1.0
-func (lbl *Label) ColorizeBackground(clr Color) *Label {
-	lbl.ANSI += fmt.Sprintf("\033[%dm", clr+10)
-	return lbl
-}
-
-// ColorizeForegroundRGB() окрашивает текст в RGB.
-// Добавлено в TUI v1.1.0
-func (lbl *Label) ColorizeForegroundRGB(clr ColorRGB) *Label {
-	lbl.ANSI += fmt.Sprintf("\033[38;2;%d;%d;%dm", clr.R, clr.G, clr.B)
-	return lbl
-}
-
-// ColorizeBackgroundRGB() окрашивает фон текста в RGB.
-// Добавлено в TUI v1.1.0
-func (lbl *Label) ColorizeBackgroundRGB(clr ColorRGB) *Label {
-	lbl.ANSI += fmt.Sprintf("\033[48;2;%d;%d;%dm", clr.R, clr.G, clr.B)
-	return lbl
-}
-
-// Deprecated: используйте WithStyle(tui.Bold) вместо этого метода.
-// Будет удалён в версии v4.0.0.
-//
-// Bold() делает текст жирным.
-func (lbl *Label) Bold() *Label {
-	lbl.ANSI += "\033[1m"
-	return lbl
-}
-
-// Deprecated: используйте WithStyle(tui.Italic) вместо этого метода.
-// Будет удалён в версии v4.0.0.
-//
-// Italic() делает текст курсивом.
-func (lbl *Label) Italic() *Label {
-	lbl.ANSI += "\033[3m"
-	return lbl
-}
-
-// Deprecated: используйте WithStyle(tui.Underline) вместо этого метода.
-// Будет удалён в версии v4.0.0.
-//
-// Underline() подчеркивает текст.
-func (lbl *Label) Underline() *Label {
-	lbl.ANSI += "\033[4m"
-	return lbl
-}
-
-// Deprecated: используйте WithStyle(tui.Reverse) вместо этого метода.
-// Будет удалён в версии v4.0.0.
-//
-// Reverse() реверсирует цвет текста.
-func (lbl *Label) Reverse() *Label {
-	lbl.ANSI += "\033[7m"
-	return lbl
-}
-
-// Deprecated: используйте WithStyle(0) вместо этого метода.
-// Будет удалён в версии v4.0.0.
-//
-// Reset() убирает все декорации текста.
-// Добавлено в TUI v1.5.0
-func (lbl *Label) Reset() *Label {
-	lbl.ANSI = ""
-	return lbl
-}
-
-// WithStyle() применяет стиль к тексту.
-// Добавлено в TUI v3.1.0
+// WithStyle применяет стиль к тексту.
+// Добавлено в TUI v3.1.0.
 func (lbl *Label) WithStyle(s Style) *Label {
-	lbl.ANSI = s.String()
+	lbl.style = ConvertToCellStyle(s)
 	return lbl
 }
 
-// Deprecated: используйте WithStyle(tui.Blink) вместо этого метода.
-// Будет удалён в версии v4.0.0.
-//
-// Blink() делает текст мигающим(работает не во всем терминалах).
-// Добавлено в TUI v1.1.0
-func (lbl *Label) Blink() *Label {
-	lbl.ANSI += "\033[5m"
+// ColorizeBackgroundRGB устанавливает цвет фона текста в RGB.
+// Добавлено в TUI v1.1.0.
+func (lbl *Label) ColorizeBackgroundRGB(clr ColorRGB) *Label {
+	lbl.style.Bg = fmt.Sprintf("48;2;%d;%d;%d", clr.R, clr.G, clr.B)
 	return lbl
 }
 
-// MaxWidth() реализует интерфейс Widget
-func (lbl *Label) MaxWidth() int {
+// ColorizeForegroundRGB устанавливает цвет текста в RGB.
+// Добавлено в TUI v1.1.0.
+func (lbl *Label) ColorizeForegroundRGB(clr ColorRGB) *Label {
+	lbl.style.Fg = fmt.Sprintf("38;2;%d;%d;%d", clr.R, clr.G, clr.B)
+	return lbl
+}
+
+// Width() реализует интерфейс Widget
+// Добавлено в TUI v4.0.0
+func (lbl *Label) Width() int {
 	return lbl.len
 }
 
-// MaxHeight() реализует интерфейс Widget
-// Добавлено в TUI v3.0.0
-func (l *Label) MaxHeight() int {
+// Height() реализует интерфейс Widget
+// Добавлено в TUI v4.0.0
+func (l *Label) Height() int {
 	return 1
 }
 
@@ -170,11 +88,18 @@ func (l *Label) SetText(new string) {
 	l.Text = new
 }
 
+// WithText() устанавливает текст метки.
+// Добавлено в TUI v4.0.0
+func (l *Label) WithText(new string) *Label {
+	l.Text = new
+	return l
+}
+
 // Button это виджет кнопки.
 type Button struct {
 	text                  string
 	OnClicked             func()
-	style, styleF, styleD Style
+	style, styleF, styleD cell.Style
 	focused               bool
 	paddingH, paddingV    int
 	DisableState
@@ -185,8 +110,8 @@ func NewButton(text string, h func()) *Button {
 	btn := &Button{
 		text:      text,
 		OnClicked: h,
-		styleF:    BgWhite | FrBlack,
-		styleD:    FrBrightBlack,
+		styleF:    cell.Style{Fg: "30", Bg: "47"},
+		styleD:    cell.Style{Fg: "90"},
 		paddingH:  2,
 		paddingV:  0,
 	}
@@ -209,8 +134,8 @@ func (btn *Button) OnClick() {
 	}
 }
 
-func (btn *Button) InnerText() string {
-	var s Style
+func (btn *Button) Render(buf [][]cell.Cell) {
+	var s cell.Style
 	if btn.IsDisabled() {
 		s = btn.styleD
 	} else if btn.focused {
@@ -219,25 +144,17 @@ func (btn *Button) InnerText() string {
 		s = btn.style
 	}
 
-	leftPad := strings.Repeat(" ", btn.paddingH)
-	rightPad := strings.Repeat(" ", btn.paddingH)
-	content := leftPad + btn.text + rightPad
-
-	if btn.paddingV > 0 {
-		emptyLine := strings.Repeat(" ", utf8.RuneCountInString(content))
-		top := strings.Repeat(emptyLine+"\n", btn.paddingV)
-		bottom := strings.Repeat("\n"+emptyLine, btn.paddingV)
-		return s.String() + top + content + bottom + Reset.String()
+	runes := []rune(btn.text)
+	for i := range utf8.RuneCountInString(btn.text) {
+		buf[0][i] = cell.Cell{Char: runes[i], Style: s}
 	}
-
-	return s.String() + content + Reset.String()
 }
 
-func (btn *Button) MaxWidth() int {
+func (btn *Button) Width() int {
 	return utf8.RuneCountInString(btn.text) + 2*btn.paddingH
 }
 
-func (btn *Button) MaxHeight() int {
+func (btn *Button) Height() int {
 	return 1 + 2*btn.paddingV
 }
 
@@ -252,21 +169,21 @@ func (btn *Button) WithPaddings(h, v int) *Button {
 // WithStyle устанавливает стиль кнопки когда не в фокусе.
 // Добавлено в TUI v3.1.0
 func (btn *Button) WithStyle(s Style) *Button {
-	btn.style = s
+	btn.style = ConvertToCellStyle(s)
 	return btn
 }
 
 // WithFocusedStyle устанавливает стиль кнопки в фокусе.
 // Добавлено в TUI v3.1.0
 func (btn *Button) WithFocusedStyle(s Style) *Button {
-	btn.styleF = s
+	btn.styleF = ConvertToCellStyle(s)
 	return btn
 }
 
 // WithDisabledStyle устанавливает стиль кнопки в фокусе.
 // Добавлено в TUI v3.1.0
 func (btn *Button) WithDisabledStyle(s Style) *Button {
-	btn.styleD = s
+	btn.styleD = ConvertToCellStyle(s)
 	return btn
 }
 
@@ -292,112 +209,6 @@ func (btn *Button) OnKeyPress(ev *input.KeyboardEvent) {
 	}
 }
 
-// Deprecated: используйте Gauge.
-// Будет удалён в версии v4.0.0.
-//
-// ColorProgress — это виджет шкалы прогресса.
-// Добавлено в TUI v1.2.0
-type ColorProgress struct {
-	text          string
-	size          int
-	clrOn, clrOff Color
-}
-
-// Deprecated: используйте Gauge.
-// Будет удалён в версии v4.0.0.
-//
-// NewColorProgress() cоздаёт виджет шкалы прогресса в виде цветных пикселей.
-// len — максимальная длина в пикселях.
-// on — цвет "включенных" пикселей.
-// off — цвет "выключенных" пикселей.
-// Добавлено в TUI v1.2.0
-func NewColorProgress(len int, on, off Color) *ColorProgress {
-	return &ColorProgress{
-		text:   strings.Repeat(" ", len),
-		size:   len,
-		clrOn:  on,
-		clrOff: off,
-	}
-}
-
-// SetValue() устанавливает значение прогресса. Диапазон 0-1.
-// Добавлено в TUI v1.2.0
-func (p *ColorProgress) SetValue(f float64) {
-	if f < 0 {
-		f = 0
-	}
-	if f > 1 {
-		f = 1
-	}
-	on := int(float64(p.size) * f)
-	p.text = fmt.Sprintf("\033[%dm%s\033[%dm%s\033[0m", p.clrOn+10, strings.Repeat(" ", on), p.clrOff+10, strings.Repeat(" ", p.size-on))
-}
-
-func (p *ColorProgress) MaxWidth() int {
-	return p.size
-}
-
-func (l *ColorProgress) MaxHeight() int {
-	return 1
-}
-
-func (p *ColorProgress) InnerText() string {
-	return p.text
-}
-
-// Deprecated: используйте Gauge.
-// Будет удалён в версии v4.0.0.
-//
-// TextProgress — это виджет шкалы прогресса.
-// Добавлено в TUI v2.0.0
-type TextProgress struct {
-	text      string
-	size      int
-	sOn, sOff rune
-}
-
-// Deprecated: используйте Gauge.
-// Будет удалён в версии v4.0.0.
-//
-// NewTextProgress() cоздаёт виджет шкалы прогресса в виде текста.
-// len — максимальная длина в пикселях.
-// on — символ "включенных" пикселей.
-// off — символ "выключенных" пикселей.
-// Добавлено в TUI v2.0.0
-func NewTextProgress(len int, on, off rune) *TextProgress {
-	return &TextProgress{
-		text: strings.Repeat(" ", len),
-		size: len,
-		sOn:  on,
-		sOff: off,
-	}
-}
-
-// SetValue() устанавливает значение прогресса. Диапазон 0-1.
-// Добавлено в TUI v2.0.0
-func (p *TextProgress) SetValue(f float64) {
-	if f < 0 {
-		f = 0
-	}
-	if f > 1 {
-		f = 1
-	}
-	on := int(float64(p.size) * f)
-	p.text = fmt.Sprintf("%s%s", strings.Repeat(string(p.sOn), on), strings.Repeat(string(p.sOff), p.size-on))
-}
-
-func (p *TextProgress) MaxWidth() int {
-	return p.size
-}
-
-func (l *TextProgress) MaxHeight() int {
-	return 1
-}
-
-func (p *TextProgress) InnerText() string {
-	return p.text
-}
-
 // Check — виджет чекбокса.
 // Вызов OnChanged происходит при изменении состояния (после переключения).
 // Добавлено в TUI v1.0.0
@@ -407,35 +218,36 @@ type Check struct {
 	focused      bool
 	OnChanged    func(bool)
 
-	style  Style // обычное состояние
-	styleF Style // состояние фокуса
-	styleC Style // состояние "включён"
+	style  cell.Style // обычное состояние
+	styleF cell.Style // состояние фокуса
+	styleC cell.Style // состояние "включён"
 }
 
-// NewCheck создаёт чекбокс с указанным текстом.
 func NewCheck(text string) *Check {
 	return &Check{
 		text:   text,
-		styleF: BgWhite | FrBlack, // Добавлено в TUI v3.1.0
-		styleC: FrGreen,           // Добавлено в TUI v3.1.0
+		styleF: cell.Style{Fg: "30", Bg: "47"},
+		styleC: cell.Style{Fg: "32"},
 	}
 }
 
-// InnerText реализует интерфейс Widget.
-func (c *Check) InnerText() string {
-	if c.checkedState && c.focused {
-		return c.styleF.String() + "[x] " + c.text + Reset.String()
-	}
+// Render реализует интерфейс Widget.
+func (c *Check) Render(buf [][]cell.Cell) {
+	s := c.style
 	if c.focused {
-		return c.styleF.String() + "[ ] " + c.text + Reset.String()
+		s = c.styleF
+	} else if c.checkedState {
+		s = c.styleC
 	}
+	buf[0][0] = cell.Cell{Char: '[', Style: s}
 	if c.checkedState {
-		return c.styleC.String() + "[x] " + c.text + Reset.String()
+		buf[0][1] = cell.Cell{Char: 'x', Style: s}
 	}
-	if c.style != 0 {
-		return c.style.String() + "[ ] " + c.text + Reset.String()
+
+	runes := []rune(c.text)
+	for i := range utf8.RuneCountInString(c.text) {
+		buf[0][i+4] = cell.Cell{Char: runes[i], Style: s}
 	}
-	return "[ ] " + c.text
 }
 
 // OnFocus реализует интерфейс Focusable.
@@ -463,21 +275,21 @@ func (c *Check) OnClick() {
 // WithStyle устанавливает стиль чекбокса (не в фокусе).
 // Добавлено в TUI v3.1.0
 func (c *Check) WithStyle(s Style) *Check {
-	c.style = s
+	c.style = ConvertToCellStyle(s)
 	return c
 }
 
 // WithFocusedStyle устанавливает стиль чекбокса в фокусе.
 // Добавлено в TUI v3.1.0
 func (c *Check) WithFocusedStyle(s Style) *Check {
-	c.styleF = s
+	c.styleF = ConvertToCellStyle(s)
 	return c
 }
 
 // WithCheckedStyle устанавливает стиль включенного чекбокса.
 // Добавлено в TUI v3.1.0
 func (c *Check) WithCheckedStyle(s Style) *Check {
-	c.styleC = s
+	c.styleC = ConvertToCellStyle(s)
 	return c
 }
 
@@ -495,8 +307,8 @@ func (c *Check) WithOnChanged(h func(bool)) *Check {
 	return c
 }
 
-// MaxWidth реализует интерфейс Widget.
-func (c *Check) MaxWidth() int {
+// Width реализует интерфейс Widget.
+func (c *Check) Width() int {
 	return len([]rune("[x] " + c.text))
 }
 
@@ -506,9 +318,9 @@ func (c *Check) OnKeyPress(ev *input.KeyboardEvent) {
 	}
 }
 
-// MaxHeight реализует интерфейс Widget.
+// Height реализует интерфейс Widget.
 // Добавлено в TUI v3.0.0
-func (c *Check) MaxHeight() int {
+func (c *Check) Height() int {
 	return 1
 }
 
@@ -537,11 +349,11 @@ type InputField struct {
 	width     int
 	focused   bool
 
-	style            Style // обычное состояние
-	styleF           Style // состояние фокуса
-	cursorStyle      Style // стиль курсора
+	style            cell.Style // обычное состояние
+	styleF           cell.Style // состояние фокуса
+	cursorStyle      cell.Style // стиль курсора
 	placeholder      string
-	placeholderStyle Style
+	placeholderStyle cell.Style
 
 	OnChanged func(string)
 	OnEnter   func(string)
@@ -550,29 +362,29 @@ type InputField struct {
 func NewInputField(width int) *InputField {
 	return &InputField{
 		width:            width,
-		cursorStyle:      Reverse,       // инверсия по умолчанию
-		placeholderStyle: FrBrightBlack, // серый текст для плейсхолдера
+		cursorStyle:      cell.Style{Args: cell.Reverse}, // инверсия по умолчанию
+		placeholderStyle: cell.Style{Fg: "90"},           // серый текст для плейсхолдера
 	}
 }
 
 // WithStyle устанавливает стиль поля (не в фокусе).
 // Добавлено в TUI v3.1.0
 func (f *InputField) WithStyle(s Style) *InputField {
-	f.style = s
+	f.style = ConvertToCellStyle(s)
 	return f
 }
 
 // WithFocusedStyle устанавливает стиль поля в фокусе.
 // Добавлено в TUI v3.1.0
 func (f *InputField) WithFocusedStyle(s Style) *InputField {
-	f.styleF = s
+	f.styleF = ConvertToCellStyle(s)
 	return f
 }
 
 // WithCursorStyle устанавливает стиль курсора.
 // Добавлено в TUI v3.1.0
 func (f *InputField) WithCursorStyle(s Style) *InputField {
-	f.cursorStyle = s
+	f.cursorStyle = ConvertToCellStyle(s)
 	return f
 }
 
@@ -599,7 +411,7 @@ func (f *InputField) WithPlaceholder(text string) *InputField {
 // WithPlaceholderStyle устанавливает стиль плейсхолдера.
 // Добавлено в TUI v3.1.0
 func (f *InputField) WithPlaceholderStyle(s Style) *InputField {
-	f.placeholderStyle = s
+	f.placeholderStyle = ConvertToCellStyle(s)
 	return f
 }
 
@@ -617,90 +429,65 @@ func (f *InputField) WithOnEnter(h func(string)) *InputField {
 	return f
 }
 
-func (f *InputField) InnerText() string {
+func (f *InputField) Render(buf [][]cell.Cell) {
 	fieldStyle := f.style
 	if f.focused {
 		fieldStyle = f.styleF
 	}
 
-	if !f.focused {
-		var displayText string
-		var textStyle Style
-		if f.Text == "" && f.placeholder != "" {
-			displayText = f.placeholder
-			textStyle = f.placeholderStyle
-		} else {
-			displayText = f.Text
-			textStyle = fieldStyle
-		}
-
-		runes := []rune(displayText)
-		if len(runes) > f.width {
-			runes = runes[:f.width]
-		}
-		displayText = string(runes)
-		padding := strings.Repeat(" ", f.width-len(runes))
-
-		return fieldStyle.String() + textStyle.String() + displayText + Reset.String() +
-			fieldStyle.String() + padding + Reset.String()
-	}
-
-	runes := []rune(f.Text)
-	cursor := f.CursorPos
-	if cursor < 0 {
-		cursor = 0
-	}
-	if cursor > len(runes) {
-		cursor = len(runes)
-	}
-
-	var builder builder.Builder
-
-	if len(runes) == 0 {
-		cursorDisplay := f.cursorStyle.String() + " " + Reset.String()
-		padding := strings.Repeat(" ", f.width-1)
-		builder.WriteString(fieldStyle.String())
-		builder.WriteString(cursorDisplay)
-		builder.WriteString(fieldStyle.String())
-		builder.WriteString(padding)
-		builder.WriteString(Reset.String())
-		return builder.String()
-	}
-
-	if cursor > 0 {
-		builder.WriteString(fieldStyle.String())
-		builder.WriteString(string(runes[:cursor]))
-	}
-
-	if cursor < len(runes) {
-		cursorDisplay := f.cursorStyle.String() + string(runes[cursor]) + Reset.String()
-		builder.WriteString(cursorDisplay)
-		if cursor+1 < len(runes) {
-			builder.WriteString(fieldStyle.String())
-			builder.WriteString(string(runes[cursor+1:]))
-			builder.WriteString(Reset.String())
-		}
+	var displayText string
+	var textStyle cell.Style
+	if !f.focused && f.Text == "" && f.placeholder != "" {
+		displayText = f.placeholder
+		textStyle = f.placeholderStyle
 	} else {
-		cursorDisplay := f.cursorStyle.String() + " " + Reset.String()
-		builder.WriteString(cursorDisplay)
+		displayText = f.Text
+		textStyle = fieldStyle
 	}
 
-	visible := ansi.Strip(builder.String())
-	currentLen := utf8.RuneCountInString(visible)
-	if currentLen < f.width {
-		builder.WriteString(fieldStyle.String())
-		builder.WriteString(strings.Repeat(" ", f.width-currentLen))
-		builder.WriteString(Reset.String())
+	runes := []rune(displayText)
+	if len(runes) > f.width {
+		runes = runes[:f.width]
+	}
+	displayText = string(runes)
+
+	for i := 0; i < f.width; i++ {
+		var ch rune
+		var st cell.Style
+		if i < len(runes) {
+			ch = runes[i]
+			st = textStyle
+		} else {
+			ch = ' '
+			st = fieldStyle
+		}
+		buf[0][i] = cell.Cell{Char: ch, Style: st}
 	}
 
-	return builder.String()
+	if f.focused {
+		cursorPos := f.CursorPos
+
+		if cursorPos > len(runes) {
+			cursorPos = len(runes)
+		}
+
+		if cursorPos < f.width {
+			var cursorChar rune
+			if cursorPos < len(runes) {
+				cursorChar = runes[cursorPos]
+			} else {
+				cursorChar = ' '
+			}
+			buf[0][cursorPos] = cell.Cell{Char: cursorChar, Style: f.cursorStyle}
+		}
+	}
 }
 
-func (f *InputField) MaxWidth() int {
+func (f *InputField) Width() int {
 	return f.width
 }
 
-func (f *InputField) MaxHeight() int {
+func (f *InputField) Height() int {
 	return 1
 }
 
@@ -778,8 +565,6 @@ func init() {
 	var _ Widget = (*Button)(nil)
 	var _ Focusable = (*Button)(nil)
 	var _ Clickable = (*Button)(nil)
-	var _ Widget = (*ColorProgress)(nil)
-	var _ Widget = (*TextProgress)(nil)
 	var _ Widget = (*Check)(nil)
 	var _ Focusable = (*Check)(nil)
 	var _ Clickable = (*Check)(nil)
@@ -828,22 +613,21 @@ func (p *Gauge) WithValue(f float64) *Gauge {
 	return p
 }
 
-func (p *Gauge) MaxWidth() int {
+func (p *Gauge) Width() int {
 	return p.size
 }
 
-func (l *Gauge) MaxHeight() int {
+func (l *Gauge) Height() int {
 	return 1
 }
 
-func (p *Gauge) InnerText() string {
-	cells := make([]cell.Cell, p.size)
+func (p *Gauge) Render(cells [][]cell.Cell) {
 	var i int
 	for ; i < int(math.Round(float64(p.value)*float64(p.size))); i++ {
-		cells[i] = p.cellOn
+		cells[0][i] = p.cellOn
 	}
 	for ; i < p.size; i++ {
-		cells[i] = p.cellOff
+		cells[0][i] = p.cellOff
 	}
 	var b builder.Builder
 	if p.LabelFunc == nil {
@@ -858,12 +642,8 @@ func (p *Gauge) InnerText() string {
 		if x < 0 || x >= p.size {
 			continue
 		}
-		cells[x] = cell.Cell{Char: r, Style: p.labelStyle}
+		cells[0][x] = cell.Cell{Char: r, Style: p.labelStyle}
 	}
-
-	return cell.ToString([][]cell.Cell{
-		cells,
-	})
 }
 
 func (p *Gauge) WithOnCell(c cell.Cell) *Gauge {

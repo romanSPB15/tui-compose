@@ -24,7 +24,7 @@ type LineChart struct {
 	Data          []Series
 	PointDistance int // расстояние между точками
 	div           float64
-	Height        int // высота поля графика
+	DataHeight    int // высота поля графика
 
 	DisplayPoints bool // отображение точек значений
 
@@ -39,7 +39,7 @@ func NewLineChart() *LineChart {
 	return &LineChart{
 		PointRune:     '●',
 		LineRune:      '·',
-		Height:        20,
+		DataHeight:    20,
 		div:           1,
 		PointDistance: 5,
 		AxisRunes: AxisRunes{
@@ -50,7 +50,7 @@ func NewLineChart() *LineChart {
 	}
 }
 
-func (bc *LineChart) MaxWidth() int {
+func (bc *LineChart) Width() int {
 	mx := 0
 	for _, v := range bc.Data {
 		dataWidth := (len(v.Values)-1)*bc.PointDistance + 1
@@ -64,11 +64,11 @@ func (bc *LineChart) MaxWidth() int {
 	return mx
 }
 
-func (bc *LineChart) MaxHeight() int {
+func (bc *LineChart) Height() int {
 	if len(bc.YLabels) > 0 {
-		return bc.Height + 1
+		return bc.DataHeight + 1
 	}
-	return bc.Height
+	return bc.DataHeight
 }
 
 // алгоритм Брезенхема
@@ -160,8 +160,8 @@ func (bc *LineChart) InnerText() string {
 		offsetX = maxLabelLen + 1
 	}
 
-	w := bc.MaxWidth()
-	h := bc.MaxHeight()
+	w := bc.Width()
+	h := bc.Height()
 
 	cells := make([][]cell.Cell, h)
 	for y := range cells {
@@ -337,7 +337,7 @@ func (lc *LineChart) AutoScale() *LineChart {
 	if maxVal == 0 {
 		maxVal = 1
 	}
-	lc.div = float64(maxVal) / (float64(lc.Height) * 0.8)
+	lc.div = float64(maxVal) / (float64(lc.DataHeight) * 0.8)
 	return lc
 }
 
@@ -415,7 +415,7 @@ func roundToNice(x int) int {
 
 // WithHeight устанавливает высоту графика (количество строк), без учёта горизонтальной оси.
 func (lc *LineChart) WithHeight(h int) *LineChart {
-	lc.Height = h
+	lc.DataHeight = h
 	return lc
 }
 

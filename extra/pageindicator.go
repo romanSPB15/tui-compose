@@ -53,11 +53,11 @@ func (p *PageIndicator) SetCurrent(i int) *PageIndicator {
 	return p
 }
 
-func (p *PageIndicator) MaxWidth() int {
+func (p *PageIndicator) Width() int {
 	return p.total
 }
 
-func (p *PageIndicator) MaxHeight() int {
+func (p *PageIndicator) Height() int {
 	return 1
 }
 

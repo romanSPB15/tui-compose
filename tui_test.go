@@ -77,15 +77,16 @@ type widget struct {
 	text          string
 }
 
-func (w *widget) InnerText() string {
-	return w.text
+func (w *widget) Render(buf [][]cell.Cell) {
+	c := cell.ParseMultiline(w.text)
+	copy(buf, c)
 }
 
-func (w *widget) MaxWidth() int {
+func (w *widget) Width() int {
 	return w.width
 }
 
-func (w *widget) MaxHeight() int {
+func (w *widget) Height() int {
 	return w.height
 }
 

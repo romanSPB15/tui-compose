@@ -61,11 +61,11 @@ func (b *BlinkLabel) InnerText() string {
 	if b.visible {
 		return b.label.InnerText()
 	}
-	return strings.Repeat(" ", b.MaxWidth())
+	return strings.Repeat(" ", b.Width())
 }
 
-func (b *BlinkLabel) MaxWidth() int  { return b.label.MaxWidth() }
-func (b *BlinkLabel) MaxHeight() int { return b.label.MaxHeight() }
+func (b *BlinkLabel) Width() int  { return b.label.Width() }
+func (b *BlinkLabel) Height() int { return b.label.Height() }
 
 func (b *BlinkLabel) SetText(text string) {
 	b.label.Text = text

@@ -43,17 +43,17 @@ func (bc *BarChart) WithValues(v []int) *BarChart {
 	return bc
 }
 
-func (bc *BarChart) MaxWidth() int {
+func (bc *BarChart) Width() int {
 	return (len(bc.values) * (bc.BarWidth + bc.Space)) - bc.Space
 }
 
-func (bc *BarChart) MaxHeight() int {
+func (bc *BarChart) Height() int {
 	return bc.Height
 }
 
 func (bc *BarChart) InnerText() string {
-	w := bc.MaxWidth()
-	h := bc.MaxHeight()
+	w := bc.Width()
+	h := bc.Height()
 	cells := make([][]cell.Cell, h)
 	for y := range cells {
 		cells[y] = make([]cell.Cell, w)

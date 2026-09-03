@@ -25,7 +25,7 @@ func NewSpinner(typ int) *Spinner {
 	return &Spinner{typ: typ}
 }
 
-func (bc *Spinner) MaxWidth() int {
+func (bc *Spinner) Width() int {
 	switch bc.typ {
 	case 2:
 		return 3
@@ -34,7 +34,7 @@ func (bc *Spinner) MaxWidth() int {
 	}
 }
 
-func (bc *Spinner) MaxHeight() int {
+func (bc *Spinner) Height() int {
 	return 1
 }
 

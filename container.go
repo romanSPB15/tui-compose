@@ -1,5 +1,7 @@
 package tui
 
+import "github.com/romanSPB15/tui-compose/v3/cell"
+
 // Добавлено в TUI 3.0.0.
 type VBox struct {
 	children  []Widget
@@ -32,31 +34,31 @@ func (v *VBox) layout() {
 	for i := range v.children {
 		v.positions[i] = Pos{Line: line, Col: 0}
 		if v.children[i] != nil {
-			line += v.children[i].MaxHeight() + v.gap
+			line += v.children[i].Height() + v.gap
 		}
 	}
 }
 
-func (v *VBox) InnerText() string {
-	return ""
+func (v *VBox) Render([][]cell.Cell) {
 }
 
-func (v *VBox) MaxWidth() int {
+func (v *VBox) Width() int {
 	max := 0
 	for _, child := range v.children {
 		if child != nil {
-			if child.MaxWidth() > max {
-				max = child.MaxWidth()
+			if child.Width() > max {
+				max = child.Width()
 			}
 		}
 	}
 	return max
 }
-func (v *VBox) MaxHeight() int {
+
+func (v *VBox) Height() int {
 	total := 0
 	for _, child := range v.children {
 		if child != nil {
-			total += child.MaxHeight() + v.gap
+			total += child.Height() + v.gap
 		}
 	}
 	return total - v.gap
@@ -96,7 +98,7 @@ func (v *HBox) layout() {
 	col := 0
 	for i, child := range v.children {
 		v.positions[i] = Pos{Line: 0, Col: col}
-		col += child.MaxWidth() + v.gap
+		col += child.Width() + v.gap
 	}
 }
 
@@ -109,18 +111,17 @@ func (v *HBox) WithGap(gap int) *HBox {
 	return v
 }
 
-func (v *HBox) InnerText() string {
-	return ""
+func (v *HBox) Render([][]cell.Cell) {
 }
 
-func (v *HBox) MaxWidth() int {
+func (v *HBox) Width() int {
 	if len(v.children) == 0 {
 		return 0
 	}
 	total := 0
 	for i, child := range v.children {
 		if child != nil {
-			total += child.MaxWidth()
+			total += child.Width()
 			if i < len(v.children)-1 {
 				total += v.gap
 			}
@@ -129,11 +130,11 @@ func (v *HBox) MaxWidth() int {
 	return total
 }
 
-func (v *HBox) MaxHeight() int {
+func (v *HBox) Height() int {
 	max := 0
 	for _, child := range v.children {
 		if child != nil {
-			if h := child.MaxHeight(); h > max {
+			if h := child.Height(); h > max {
 				max = h
 			}
 		}

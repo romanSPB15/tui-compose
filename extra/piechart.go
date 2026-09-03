@@ -59,7 +59,7 @@ func (pc *PieChart) WithLegendStyle(s tui.Style) *PieChart {
 	return pc
 }
 
-func (pc *PieChart) MaxWidth() int {
+func (pc *PieChart) Width() int {
 	width := 2*pc.radius + 2
 	if pc.showLegend {
 		maxLabelLen := 0
@@ -76,7 +76,7 @@ func (pc *PieChart) MaxWidth() int {
 	return width
 }
 
-func (pc *PieChart) MaxHeight() int {
+func (pc *PieChart) Height() int {
 	return pc.radius
 }
 
@@ -111,8 +111,8 @@ func (pc *PieChart) InnerText() string {
 
 	// Создаём матрицу
 
-	w := pc.MaxWidth()
-	h := pc.MaxHeight()
+	w := pc.Width()
+	h := pc.Height()
 	cells := make([][]cell.Cell, h)
 	for y := range cells {
 		cells[y] = make([]cell.Cell, w)

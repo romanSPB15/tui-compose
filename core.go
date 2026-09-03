@@ -111,6 +111,7 @@ type window struct {
 	worker           atomic.Int32
 	builderPool      sync.Pool
 	styleFunc        func(Widget)
+	widgetBuf        [][]cell.Cell
 }
 
 func (wnd *window) indexClickable(wgt Widget, offset Pos) {
@@ -188,44 +189,40 @@ func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
 		}
 
 	} else {
+		w := wgt.Width()
+		h := wgt.Height()
 
-		txt := wgt.InnerText()
-
-		if txt == "" {
-			return
+		for y := 0; y < h; y++ {
+			for x := 0; x < w; x++ {
+				buf[y+rect[0].Line][x+rect[0].Col] = wnd.initCell
+			}
 		}
 
-		txt = strings.ReplaceAll(txt, "\r\n", "\n")
-		widgetLines := strings.Split(txt, "\n")
+		wgt.Render(wnd.widgetBuf)
 
-		current := cell.Style{}
-
-		for i, line := range widgetLines {
-			if i >= wgt.MaxHeight() {
-				return
-			}
-			if rect[0].Line+i >= wnd.Height() || rect[0].Line+i > rect[1].Line {
-				return
-			}
-			w := wnd.Width() - rect[0].Col
-
-			if w < 0 {
-				continue
-			}
-
-			c, s := cell.ParseFromTo(line, &wnd.cellBuf, current)
-			current = s
-
-			copy(buf[rect[0].Line+i][rect[0].Col:], c)
-
-			wgtWidth := wgt.MaxWidth()
-			if len(c) < wgtWidth {
-				for j := range wgtWidth - len(c) {
-					buf[rect[0].Line+i][rect[0].Col+j+len(c)] = wnd.initCell
+		for y := 0; y < h; y++ {
+			for x := 0; x < w; x++ {
+				x2 := x + rect[0].Col
+				y2 := y + rect[0].Line
+				if x2 < rect[1].Col && y2 < rect[1].Line {
+					buf[y2][x2] = wnd.widgetBuf[y][x]
 				}
 			}
 		}
 	}
+}
+
+func (wnd *window) calcMaxWidgetSize(wgt Widget, w, h int) (int, int) {
+	if c, ok := wgt.(Container); ok {
+		for _, v := range c.Child() {
+			w2, h2 := wnd.calcMaxWidgetSize(v, w, h)
+			w = max(w, w2)
+			h = max(w, h2)
+		}
+		return w, h
+	}
+
+	return max(w, wgt.Width()), max(h, wgt.Height())
 }
 
 func (wnd *window) render() [][]cell.Cell {
@@ -238,11 +235,52 @@ func (wnd *window) render() [][]cell.Cell {
 		return buf
 	}
 
-	wnd.draw(wnd.content, [2]Pos{{Line: 0, Col: 0}, {Line: h, Col: w}}, buf)
+	ww, hw := wnd.calcMaxWidgetSize(wnd.content, 0, 0)
 
-	if wnd.displayOverlay && wnd.overlay != nil {
-		wnd.draw(wnd.overlay, [2]Pos{{Line: 0, Col: 0}, {Line: h, Col: w}}, buf)
+	if len(wnd.widgetBuf) < hw {
+		var w int
+		if len(wnd.buf) != 0 {
+			w = len(wnd.widgetBuf[0])
+		} else {
+			w = ww
+		}
+
+		wnd.widgetBuf = make([][]cell.Cell, hw)
+		for i := range wnd.widgetBuf {
+			wnd.widgetBuf[i] = make([]cell.Cell, w)
+			for j := range wnd.widgetBuf[i] {
+				wnd.widgetBuf[i][j] = wnd.initCell
+			}
+		}
 	}
+
+	if len(wnd.widgetBuf[0]) < ww {
+		wnd.widgetBuf = make([][]cell.Cell, len(wnd.widgetBuf))
+		for i := range wnd.widgetBuf {
+			wnd.widgetBuf[i] = make([]cell.Cell, ww)
+			for j := range wnd.widgetBuf[i] {
+				wnd.widgetBuf[i][j] = wnd.initCell
+			}
+		}
+	}
+
+	if len(wnd.widgetBuf) > hw*2 {
+		newBuf := make([][]cell.Cell, hw)
+		for i := range newBuf {
+			newBuf[i] = make([]cell.Cell, len(wnd.widgetBuf[0]))
+			copy(newBuf[i], wnd.widgetBuf[i])
+		}
+		wnd.widgetBuf = newBuf
+	}
+	if len(wnd.widgetBuf[0]) > ww*2 {
+		for i := range wnd.widgetBuf {
+			newRow := make([]cell.Cell, ww)
+			copy(newRow, wnd.widgetBuf[i][:ww])
+			wnd.widgetBuf[i] = newRow
+		}
+	}
+
+	wnd.draw(wnd.content, [2]Pos{{Line: 0, Col: 0}, {Line: h, Col: w}}, buf)
 
 	return buf
 }
@@ -679,7 +717,7 @@ func (wnd *window) startStopSignalCatcher() {
 func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
 	if wnd.cl != nil {
 		for _, cl := range wnd.cl {
-			if ev.Pos.Y >= cl.p.Line && ev.Pos.Y < cl.p.Line+cl.MaxHeight() && ev.Pos.X >= cl.p.Col && ev.Pos.X < cl.p.Col+cl.MaxWidth() {
+			if ev.Pos.Y >= cl.p.Line && ev.Pos.Y < cl.p.Line+cl.Height() && ev.Pos.X >= cl.p.Col && ev.Pos.X < cl.p.Col+cl.Width() {
 				// Пользователь нажал на этот виджет
 				wnd.doWithMessage(cl.OnClick, "click handler")
 
@@ -688,8 +726,8 @@ func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
 	}
 	if wnd.clAt != nil {
 		for _, clAt := range wnd.clAt {
-			if ev.Pos.Y >= clAt.p.Line && ev.Pos.Y < clAt.p.Line+clAt.MaxHeight() &&
-				ev.Pos.X >= clAt.p.Col && ev.Pos.X < clAt.p.Col+clAt.MaxWidth() {
+			if ev.Pos.Y >= clAt.p.Line && ev.Pos.Y < clAt.p.Line+clAt.Height() &&
+				ev.Pos.X >= clAt.p.Col && ev.Pos.X < clAt.p.Col+clAt.Width() {
 				relX := ev.Pos.X - clAt.p.Col
 				relY := ev.Pos.Y - clAt.p.Line
 				wnd.doWithMessage(func() {

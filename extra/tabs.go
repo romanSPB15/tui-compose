@@ -85,7 +85,7 @@ func (acc *tabsTopPanel) InnerText() string {
 	return sb.String()
 }
 
-func (acc *tabsTopPanel) MaxWidth() int {
+func (acc *tabsTopPanel) Width() int {
 	w := 0
 	for _, v := range acc.t.tabs {
 		w += len(v.Title) + 1
@@ -93,7 +93,7 @@ func (acc *tabsTopPanel) MaxWidth() int {
 	return w - 1
 }
 
-func (acc *tabsTopPanel) MaxHeight() int {
+func (acc *tabsTopPanel) Height() int {
 	return 1
 }
 
@@ -150,20 +150,20 @@ func (acc *Tabs) Pos(i int) tui.Pos {
 		if i == 1 {
 			return tui.Pos{0, 0}
 		}
-		return tui.Pos{acc.tabs[acc.current].Content.MaxHeight(), 0}
+		return tui.Pos{acc.tabs[acc.current].Content.Height(), 0}
 	}
 	if i == 1 {
-		return tui.Pos{acc.topPanel.MaxHeight(), 0}
+		return tui.Pos{acc.topPanel.Height(), 0}
 	}
 	return tui.Pos{0, 0}
 }
 
-func (acc *Tabs) MaxWidth() int {
-	return max(acc.tabs[acc.current].Content.MaxWidth(), acc.topPanel.MaxWidth())
+func (acc *Tabs) Width() int {
+	return max(acc.tabs[acc.current].Content.Width(), acc.topPanel.Width())
 }
 
-func (acc *Tabs) MaxHeight() int {
-	return acc.tabs[acc.current].Content.MaxHeight() + 1
+func (acc *Tabs) Height() int {
+	return acc.tabs[acc.current].Content.Height() + 1
 }
 
 // WithSelectedStyle устанавливает стиль для заголовка выбранной вкладки.

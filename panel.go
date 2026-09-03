@@ -9,11 +9,11 @@ func NewRightPanel(content Widget) *RightPanel {
 	return &RightPanel{content: content}
 }
 
-func (rp *RightPanel) MaxWidth() int {
+func (rp *RightPanel) Width() int {
 	return CurrentWindow().Width()
 }
 
-func (rp *RightPanel) MaxHeight() int {
+func (rp *RightPanel) Height() int {
 	return CurrentWindow().Height()
 }
 
@@ -28,12 +28,12 @@ func (rp *RightPanel) Child() []Widget {
 func (rp *RightPanel) Pos(idx int) Pos {
 	return Pos{
 		Line: 0,
-		Col:  rp.MaxWidth() - rp.panelWidth(),
+		Col:  rp.Width() - rp.panelWidth(),
 	}
 }
 
 func (rp *RightPanel) panelWidth() int {
-	mw := rp.content.MaxWidth()
+	mw := rp.content.Width()
 	if rp.s > mw {
 		return rp.s
 	}

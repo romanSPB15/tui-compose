@@ -115,7 +115,7 @@ func (t *Tree) InnerText() string {
 	return sbRes.String()
 }
 
-func (t *Tree) MaxWidth() int {
+func (t *Tree) Width() int {
 	max := 0
 	for _, node := range t.nodes {
 		length := len(node.Label) + node.Depth*t.Offset
@@ -126,7 +126,7 @@ func (t *Tree) MaxWidth() int {
 	return max
 }
 
-func (t *Tree) MaxHeight() int {
+func (t *Tree) Height() int {
 	return len(t.nodes)
 }
 

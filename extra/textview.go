@@ -99,7 +99,7 @@ func (tv *TextView) InnerText() string {
 	return strings.Join(linesANSI[tv.offset:end], "\n")
 }
 
-func (tv *TextView) MaxHeight() int {
+func (tv *TextView) Height() int {
 	return tv.height
 }
 
@@ -120,7 +120,7 @@ func (tv *TextView) Append(s string) *TextView {
 
 var tagRegex = regexp.MustCompile(`\[([a-z_-]+)\]`)
 
-func (tv *TextView) MaxWidth() int {
+func (tv *TextView) Width() int {
 	if tv.width != 0 {
 		return tv.width
 	}

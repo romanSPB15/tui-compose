@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v3/cell"
 	"github.com/romanSPB15/tui-compose/v3/input"
 )
 
@@ -127,11 +128,12 @@ type stringView struct {
 	text string
 }
 
-func (sv *stringView) InnerText() string {
-	return sv.text
+func (sv *stringView) Render(buf [][]cell.Cell) {
+	p := cell.ParseMultiline(sv.text)
+	copy(buf, p)
 }
 
-func (sv *stringView) MaxWidth() int {
+func (sv *stringView) Width() int {
 	max := 0
 	for _, line := range strings.Split(sv.text, "\n") {
 		if l := len([]rune(line)); l > max {
@@ -141,7 +143,7 @@ func (sv *stringView) MaxWidth() int {
 	return max
 }
 
-func (sv *stringView) MaxHeight() int {
+func (sv *stringView) Height() int {
 	return strings.Count(sv.text, "\n") + 1
 }
 
