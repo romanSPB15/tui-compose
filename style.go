@@ -12,7 +12,7 @@ type Style uint16
 
 // Цвета (0–16)
 const (
-	FrDefault = iota
+	FrDefault Style = iota
 	FrBlack
 	FrRed
 	FrGreen

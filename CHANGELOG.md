@@ -189,9 +189,19 @@
 * Capture-режим — отправка буфера экрана в JSON.
 * Улучшено масштабирование `Sparkline` — аналогично с `LineChart`.
 * Пакет `tea` — ELM в tui-compose.
+* Вывод таймингов `Redraw` в debug-режиме.
 
 ### Changed
 * `Canvas`, `CanvasRGB`, `ColorProgress`, `TextProgress` теперь deprecated. Они будут удалены в v4.
 
 ### Changed
 * Размер: 10000 строк.
+
+## [3.5.0] - 2026-09-03
+
+### Added
+* Поддержка UTF-8 ввода.
+* Тесты для core.go — 55.5%.
+
+### Fixed
+* Исправлен стиль по умолчанию при старте.

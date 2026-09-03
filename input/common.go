@@ -21,9 +21,6 @@ func Start(buf int) (<-chan *MouseEvent, <-chan *KeyboardEvent) {
 	defer mu.Unlock()
 
 	if started {
-		// Если уже запущено, возвращаем существующие каналы.
-		// Но если они были закрыты, пользователь получит nil.
-		// Рекомендуется всегда вызывать Stop() перед новым Start().
 		return mouseCh, keyboardCh
 	}
 
@@ -34,23 +31,17 @@ func Start(buf int) (<-chan *MouseEvent, <-chan *KeyboardEvent) {
 	stopCh = make(chan struct{})
 
 	term.OnInput(func(data []byte) {
-		// Проверяем, не остановлен ли пакет
-		select {
-		case <-stopCh:
+		if ev := parseMouseEvent(data); ev != nil {
+			select {
+			case mouseCh <- ev:
+			default:
+			}
 			return
-		default:
 		}
 
 		if ev := parseKeyboardInput(data); ev != nil {
 			select {
 			case keyboardCh <- ev:
-			default:
-				// Канал переполнен — пропускаем
-			}
-		}
-		if ev := parseMouseEvent(data); ev != nil {
-			select {
-			case mouseCh <- ev:
 			default:
 			}
 		}
