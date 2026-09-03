@@ -31,7 +31,9 @@ func (v *VBox) layout() {
 	line := 0
 	for i := range v.children {
 		v.positions[i] = Pos{Line: line, Col: 0}
-		line += v.children[i].MaxHeight() + v.gap
+		if v.children[i] != nil {
+			line += v.children[i].MaxHeight() + v.gap
+		}
 	}
 }
 
@@ -42,8 +44,10 @@ func (v *VBox) InnerText() string {
 func (v *VBox) MaxWidth() int {
 	max := 0
 	for _, child := range v.children {
-		if child.MaxWidth() > max {
-			max = child.MaxWidth()
+		if child != nil {
+			if child.MaxWidth() > max {
+				max = child.MaxWidth()
+			}
 		}
 	}
 	return max
@@ -51,7 +55,9 @@ func (v *VBox) MaxWidth() int {
 func (v *VBox) MaxHeight() int {
 	total := 0
 	for _, child := range v.children {
-		total += child.MaxHeight() + v.gap
+		if child != nil {
+			total += child.MaxHeight() + v.gap
+		}
 	}
 	return total - v.gap
 }
@@ -113,9 +119,11 @@ func (v *HBox) MaxWidth() int {
 	}
 	total := 0
 	for i, child := range v.children {
-		total += child.MaxWidth()
-		if i < len(v.children)-1 {
-			total += v.gap
+		if child != nil {
+			total += child.MaxWidth()
+			if i < len(v.children)-1 {
+				total += v.gap
+			}
 		}
 	}
 	return total
@@ -124,8 +132,10 @@ func (v *HBox) MaxWidth() int {
 func (v *HBox) MaxHeight() int {
 	max := 0
 	for _, child := range v.children {
-		if h := child.MaxHeight(); h > max {
-			max = h
+		if child != nil {
+			if h := child.MaxHeight(); h > max {
+				max = h
+			}
 		}
 	}
 	return max

@@ -1,6 +1,8 @@
 // Добавлено в TUI 3.1.0.
 package input
 
+import "unicode/utf8"
+
 type KeyboardEvent struct {
 	Key  Key
 	Rune rune
@@ -130,10 +132,21 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 		return 0, v
 	}
 
+	if len(data) > 1 && data[0] != 27 {
+		r, _ := utf8.DecodeRune(data)
+		if r != utf8.RuneError {
+			return r, KeyUnknown
+		}
+	}
+
 	return 0, KeyUnknown
 }
+
 func parseKeyboardInput(data []byte) *KeyboardEvent {
 	if len(data) == 0 {
+		return nil
+	}
+	if len(data) > 2 && data[0] == 27 && data[1] == '[' && data[2] == '<' {
 		return nil
 	}
 	var alt = false

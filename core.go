@@ -3,6 +3,7 @@ package tui
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -86,7 +87,7 @@ var currentWindow *window
 type window struct {
 	cl               []clickableWidgetWithPos
 	clAt             []clickableAtWidgetWithPos
-	f                *os.File
+	f                io.Writer
 	focusIndex       int
 	stopCh           chan struct{}
 	keyHandlers      []KeyboardEventHandler
@@ -109,6 +110,7 @@ type window struct {
 	last             cell.Style
 	worker           atomic.Int32
 	builderPool      sync.Pool
+	styleFunc        func(Widget)
 }
 
 func (wnd *window) indexClickable(wgt Widget, offset Pos) {
@@ -307,7 +309,7 @@ func (wnd *window) Redraw() {
 	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("Redraw called outside worker goroutine: data race")
 	}
-	if wnd.content == nil || !wnd.runned {
+	if !wnd.runned {
 		return
 	}
 
@@ -341,11 +343,11 @@ func (wnd *window) Redraw() {
 		return
 	}
 
-	for y := 0; y < h; y++ {
+	for y := range h {
 		if len(newBuf[y]) < w {
 			continue
 		}
-		for x := 0; x < w; x++ {
+		for x := range w {
 			if newBuf[y][x] != oldBuf[y][x] {
 				b.WriteString("\033[")
 				b.WriteString(strconv.Itoa(y + 1))
@@ -420,15 +422,15 @@ func (wnd *window) Run() {
 			wnd.log.Close()
 		}
 		if err := recover(); err != nil {
-			wnd.LogFatal("Произошла паника: %v", err)
+			wnd.LogFatal("tui: Произошла паника: %v", err)
 		}
 	}()
 	if !capture {
-		if !term.IsTerminal(int(wnd.f.Fd())) {
+		if !term.IsTerminal(int(os.Stdout.Fd())) {
 			wnd.LogFatal("tui: stdout is not terminal")
 		}
 		if err := termL.MakeRaw(); err != nil {
-			wnd.LogInfo("Cannot make raw: %s", err)
+			wnd.LogInfo("tui: Cannot make raw: %s", err)
 		}
 	}
 
@@ -437,11 +439,10 @@ func (wnd *window) Run() {
 	os.Stdout, os.Stderr = wnd.log, wnd.log
 
 	if !capture {
-		fmt.Fprint(wnd.f, "\033[2J")
+		fmt.Fprint(wnd.f, "\033[37m")
+		wnd.last = cell.Style{Fg: "37"}
 
-		fmt.Fprint(wnd.f, "\033[?25l")
-
-		fmt.Fprint(wnd.f, "\033[?1006h\033[?1000h")
+		fmt.Fprint(wnd.f, "\033[2J\033[0m\033[?25l\033[?1006h\033[?1000h")
 	}
 
 	go wnd.startStopSignalCatcher()
@@ -456,8 +457,9 @@ func (wnd *window) Run() {
 
 	wnd.runned = false
 
+	wnd.restoreOut()
+
 	if !capture {
-		wnd.restoreOut()
 		termL.Restore()
 
 		if wnd.last != (cell.Style{}) {
@@ -466,7 +468,6 @@ func (wnd *window) Run() {
 		fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
 		fmt.Fprint(wnd.f, "\033[?1006l\033[?1000l")
 	}
-
 }
 
 func (wnd *window) restoreOut() {
@@ -499,6 +500,7 @@ func NewWindow() Window {
 				return &builder.Builder{}
 			},
 		},
+		last: cell.Style{Args: cell.Bold},
 	}
 	if DEBUG {
 		f, err := os.Create(fmt.Sprintf("debug_log_%d", time.Now().UnixMilli()))
@@ -802,4 +804,12 @@ func (wnd *window) SetBackground(s Style) {
 		wnd.LogFatal("SetBackground called outside worker goroutine: data race")
 	}
 	wnd.SetInitCell(cell.Cell{Char: ' ', Style: ConvertToCellStyle(s)})
+}
+
+// SetStyleFunc устанавливает функцию для стилизации виджетов.
+func (wnd *window) SetStyleFunc(fn func(Widget)) {
+	if DEBUG && !wnd.isWorker() {
+		wnd.LogFatal("SetStyleFunc called outside worker goroutine: data race")
+	}
+	wnd.styleFunc = fn
 }
