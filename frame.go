@@ -197,9 +197,7 @@ func (b *Frame) WithPaddings(v, h int) *Frame {
 	return b
 }
 
-func (b *Frame) InnerText() string {
-	return ""
-}
+func (b *Frame) Render([][]cell.Cell) {}
 
 func (b *Frame) Child() []Widget {
 	return []Widget{&b.border, b.border.content}
