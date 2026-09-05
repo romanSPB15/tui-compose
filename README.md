@@ -1,4 +1,4 @@
-![demo/demo.gif](demo/demo.gif)
+![demo/demo2.gif](demo/demo2.gif)
 # TUI Compose
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/releases)

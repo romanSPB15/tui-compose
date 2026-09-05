@@ -4,7 +4,7 @@
 | [`count`](https://github.com/romanSPB15/tui-compose/tree/main/examples/count)         | Простой счётчик с кнопками                                      |
 | [`form` ](https://github.com/romanSPB15/tui-compose/tree/main/examples/form)          | Простая форма с полями ввода, чекбоксом и кнопками              |
 | [`frame`](https://github.com/romanSPB15/tui-compose/tree/main/examples/frame)         | Расширенный пример использования `Frame`                        |
-| [`gif` ](https://github.com/romanSPB15/tui-compose/tree/main/examples/gif)            | Код примера на GIF в README                                     |
+| [`demo` ](https://github.com/romanSPB15/tui-compose/tree/main/examples/gif)           | Код для demo0.gif                                               |
 | [`label`](https://github.com/romanSPB15/tui-compose/tree/main/examples/label)         | Расширенный пример использования `Label`                        |
 | [`pages`](https://github.com/romanSPB15/tui-compose/tree/main/examples/pages)         | Пример использования `Page`                                     |
 | [`progress`](https://github.com/romanSPB15/tui-compose/tree/main/examples/progress)   | Пример использования `ColorProgress` и `TextProgress`           |
@@ -24,3 +24,4 @@
 | [`hyperlink`](https://github.com/romanSPB15/tui-compose/tree/main/examples/hyperlink) | Пример использования гиперссылок                                |
 | [`gauge`](https://github.com/romanSPB15/tui-compose/tree/main/examples/gauge)         | Пример использования Gauge                                      |
 | [`image`](https://github.com/romanSPB15/tui-compose/tree/main/examples/image)         | Пример использования Image                                      |
+| [`demo2`](https://github.com/romanSPB15/tui-compose/tree/main/examples/image)         | Код для demo2.gif                                               |
