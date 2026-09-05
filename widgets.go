@@ -790,7 +790,7 @@ func init() {
 func NewHyperlink(text string, url string) *Button {
 	return NewButton(text, func() {
 		term.OpenURL(url)
-	})
+	}).WithPaddings(0, 0)
 }
 
 // Gauge — это виджет шкалы прогресса.
