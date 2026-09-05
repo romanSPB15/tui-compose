@@ -7,10 +7,10 @@ import (
 	"math"
 	"unicode/utf8"
 
-	"github.com/romanSPB15/tui-compose/v3/builder"
-	"github.com/romanSPB15/tui-compose/v3/cell"
-	"github.com/romanSPB15/tui-compose/v3/input"
-	"github.com/romanSPB15/tui-compose/v3/term"
+	"github.com/romanSPB15/tui-compose/v4/builder"
+	"github.com/romanSPB15/tui-compose/v4/cell"
+	"github.com/romanSPB15/tui-compose/v4/input"
+	"github.com/romanSPB15/tui-compose/v4/term"
 )
 
 // DisableState хранит состояние disabled и предоставляет методы.
@@ -118,22 +118,6 @@ func NewButton(text string, h func()) *Button {
 	return btn
 }
 
-func (btn *Button) OnFocus() {
-	btn.focused = true
-	currentWindow.Redraw()
-}
-
-func (btn *Button) OnBlur() {
-	btn.focused = false
-	currentWindow.Redraw()
-}
-
-func (btn *Button) OnClick() {
-	if btn.OnClicked != nil {
-		btn.OnClicked()
-	}
-}
-
 func (btn *Button) Render(buf [][]cell.Cell) {
 	var s cell.Style
 	if btn.IsDisabled() {
@@ -144,9 +128,22 @@ func (btn *Button) Render(buf [][]cell.Cell) {
 		s = btn.style
 	}
 
-	runes := []rune(btn.text)
-	for i := range utf8.RuneCountInString(btn.text) {
-		buf[0][i] = cell.Cell{Char: runes[i], Style: s}
+	w := btn.Width()
+	h := btn.Height()
+
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			buf[y][x] = cell.Cell{Char: ' ', Style: s}
+		}
+	}
+
+	textRunes := []rune(btn.text)
+	textLen := len(textRunes)
+	textStartX := (w - textLen) / 2
+	textY := (h - 1) / 2
+
+	for i, r := range textRunes {
+		buf[textY][textStartX+i] = cell.Cell{Char: r, Style: s}
 	}
 }
 
@@ -201,9 +198,21 @@ func (btn *Button) WithHandler(h func()) *Button {
 	return btn
 }
 
-func (btn *Button) OnKeyPress(ev *input.KeyboardEvent) {
-	if ev.Key == input.KeyEnter || ev.Key == input.KeySpace {
+func (btn *Button) Send(ev Event) {
+	switch ev := ev.(type) {
+	case *CheckFocusableEvent:
+		ev.Result = !btn.IsDisabled()
+	case *FocusEvent:
+		btn.focused = ev.Focused
+	case *input.MouseEvent:
 		if btn.OnClicked != nil {
+			btn.OnClicked()
+		}
+		if !btn.focused {
+			btn.Send(FocusEvent{true})
+		}
+	case *input.KeyboardEvent:
+		if (ev.Key == input.KeyEnter || ev.Key == input.KeySpace) && btn.OnClicked != nil {
 			btn.OnClicked()
 		}
 	}
@@ -243,6 +252,7 @@ func (c *Check) Render(buf [][]cell.Cell) {
 	if c.checkedState {
 		buf[0][1] = cell.Cell{Char: 'x', Style: s}
 	}
+	buf[0][2] = cell.Cell{Char: ']', Style: s}
 
 	runes := []rune(c.text)
 	for i := range utf8.RuneCountInString(c.text) {
@@ -250,26 +260,29 @@ func (c *Check) Render(buf [][]cell.Cell) {
 	}
 }
 
-// OnFocus реализует интерфейс Focusable.
-func (c *Check) OnFocus() {
-	c.focused = true
-	currentWindow.Redraw()
+func (c *Check) Width() int {
+	return utf8.RuneCountInString(c.text) + 4
 }
 
-// OnBlur реализует интерфейс Focusable.
-func (c *Check) OnBlur() {
-	c.focused = false
-	currentWindow.Redraw()
+func (c *Check) Height() int {
+	return 1
 }
 
-// OnClick реализует интерфейс Clickable.
-// Добавлено в TUI v3.0.0
-func (c *Check) OnClick() {
-	c.checkedState = !c.checkedState
-	currentWindow.Redraw()
-	if c.OnChanged != nil {
-		c.OnChanged(c.checkedState)
-	}
+// State возвращает текущее состояние чекбокса.
+func (c *Check) State() bool {
+	return c.checkedState
+}
+
+// SetState устанавливает состояние чекбокса.
+func (c *Check) SetState(b bool) {
+	c.checkedState = b
+}
+
+// WithState устанавливает состояние чекбокса и возращает его.
+// Добавлено в TUI v3.1.0
+func (c *Check) WithState(b bool) *Check {
+	c.checkedState = b
+	return c
 }
 
 // WithStyle устанавливает стиль чекбокса (не в фокусе).
@@ -307,38 +320,31 @@ func (c *Check) WithOnChanged(h func(bool)) *Check {
 	return c
 }
 
-// Width реализует интерфейс Widget.
-func (c *Check) Width() int {
-	return len([]rune("[x] " + c.text))
-}
+func (c *Check) Send(ev Event) {
+	switch ev := ev.(type) {
+	case *CheckFocusableEvent:
+		ev.Result = true
+	case *FocusEvent:
+		c.focused = ev.Focused
+	case *input.MouseEvent:
+		c.checkedState = !c.checkedState
+		if !c.focused {
+			c.Send(FocusEvent{true})
+		}
+		currentWindow.Redraw()
+		if c.OnChanged != nil {
+			c.OnChanged(c.checkedState)
+		}
 
-func (c *Check) OnKeyPress(ev *input.KeyboardEvent) {
-	if ev.Key == input.KeyEnter || ev.Key == input.KeySpace {
-		c.OnClick()
+	case *input.KeyboardEvent:
+		if ev.Key == input.KeyEnter || ev.Key == input.KeySpace {
+			c.checkedState = !c.checkedState
+			currentWindow.Redraw()
+			if c.OnChanged != nil {
+				c.OnChanged(c.checkedState)
+			}
+		}
 	}
-}
-
-// Height реализует интерфейс Widget.
-// Добавлено в TUI v3.0.0
-func (c *Check) Height() int {
-	return 1
-}
-
-// State возвращает текущее состояние чекбокса.
-func (c *Check) State() bool {
-	return c.checkedState
-}
-
-// SetState устанавливает состояние чекбокса.
-func (c *Check) SetState(b bool) {
-	c.checkedState = b
-}
-
-// WithState устанавливает состояние чекбокса и возращает его.
-// Добавлено в TUI v3.1.0
-func (c *Check) WithState(b bool) *Check {
-	c.checkedState = b
-	return c
 }
 
 // InputField — однострочное поле ввода.
@@ -362,8 +368,9 @@ type InputField struct {
 func NewInputField(width int) *InputField {
 	return &InputField{
 		width:            width,
-		cursorStyle:      cell.Style{Args: cell.Reverse}, // инверсия по умолчанию
-		placeholderStyle: cell.Style{Fg: "90"},           // серый текст для плейсхолдера
+		style:            cell.Style{Bg: "44"},
+		cursorStyle:      cell.Style{Bg: "47", Fg: "34"},
+		placeholderStyle: cell.Style{Fg: "90"},
 	}
 }
 
@@ -439,7 +446,7 @@ func (f *InputField) Render(buf [][]cell.Cell) {
 	var textStyle cell.Style
 	if !f.focused && f.Text == "" && f.placeholder != "" {
 		displayText = f.placeholder
-		textStyle = f.placeholderStyle
+		textStyle = f.placeholderStyle.Merge(f.style)
 	} else {
 		displayText = f.Text
 		textStyle = fieldStyle
@@ -491,91 +498,82 @@ func (f *InputField) Height() int {
 	return 1
 }
 
-// OnFocus реализует интерфейс Focusable.
-// Добавлено в TUI v3.0.0
-func (f *InputField) OnFocus() {
-	f.focused = true
-	currentWindow.Redraw()
-}
-
-// OnBlur реализует интерфейс Focusable.
-// Добавлено в TUI v3.0.0
-func (f *InputField) OnBlur() {
-	f.focused = false
-	currentWindow.Redraw()
-}
-
-// OnKeyPress реализует интерфейс TextInput.
-// Добавлено в TUI v3.0.0
-func (f *InputField) OnKeyPress(ev *input.KeyboardEvent) {
-	runes := []rune(f.Text)
-	switch ev.Key {
-	case input.KeyDelete:
-		if f.CursorPos < len(runes) {
-			runes = append(runes[:f.CursorPos], runes[f.CursorPos+1:]...)
-			f.Text = string(runes)
-			currentWindow.Redraw()
-		}
-		if f.OnChanged != nil {
-			f.OnChanged(f.Text)
-		}
-	case input.KeyBackspace:
-		if f.CursorPos <= 0 {
-			return
-		}
-		runes = append(runes[:f.CursorPos-1], runes[f.CursorPos:]...)
-		f.Text = string(runes)
-		f.CursorPos--
-		currentWindow.Redraw()
-		if f.OnChanged != nil {
-			f.OnChanged(f.Text)
-		}
-	case input.KeyArrowRight:
-		if f.CursorPos < len(runes) {
-			f.CursorPos++
-			currentWindow.Redraw()
-		}
-	case input.KeyArrowLeft:
-		if f.CursorPos > 0 {
-			f.CursorPos--
-			currentWindow.Redraw()
-		}
-	case input.KeyEnter:
-		if f.OnEnter != nil {
-			f.OnEnter(f.Text)
-		}
-	default:
-		if ev.Rune != 0 {
-			if f.width > 0 && utf8.RuneCountInString(f.Text) >= f.width {
+func (f *InputField) Send(ev Event) {
+	switch ev := ev.(type) {
+	case *CheckFocusableEvent:
+		ev.Result = true
+	case *FocusEvent:
+		f.focused = ev.Focused
+	case *input.KeyboardEvent:
+		runes := []rune(f.Text)
+		switch ev.Key {
+		case input.KeyDelete:
+			if f.CursorPos < len(runes) {
+				runes = append(runes[:f.CursorPos], runes[f.CursorPos+1:]...)
+				f.Text = string(runes)
+				currentWindow.Redraw()
+				if f.OnChanged != nil {
+					f.OnChanged(f.Text)
+				}
+			}
+		case input.KeyBackspace:
+			if f.CursorPos <= 0 {
 				return
 			}
-			runes := append(runes[:f.CursorPos], append([]rune{ev.Rune}, runes[f.CursorPos:]...)...)
+			runes = append(runes[:f.CursorPos-1], runes[f.CursorPos:]...)
 			f.Text = string(runes)
-			f.CursorPos++
+			f.CursorPos--
 			currentWindow.Redraw()
 			if f.OnChanged != nil {
 				f.OnChanged(f.Text)
 			}
+		case input.KeyArrowRight:
+			if f.CursorPos < len(runes) {
+				f.CursorPos++
+				currentWindow.Redraw()
+			}
+		case input.KeyArrowLeft:
+			if f.CursorPos > 0 {
+				f.CursorPos--
+				currentWindow.Redraw()
+			}
+		case input.KeyEnter:
+			if f.OnEnter != nil {
+				f.OnEnter(f.Text)
+			}
+		default:
+			if ev.Rune != 0 {
+				if f.width > 0 && utf8.RuneCountInString(f.Text) >= f.width {
+					return
+				}
+				runes = append(runes[:f.CursorPos], append([]rune{ev.Rune}, runes[f.CursorPos:]...)...)
+				f.Text = string(runes)
+				f.CursorPos++
+				currentWindow.Redraw()
+				if f.OnChanged != nil {
+					f.OnChanged(f.Text)
+				}
+			}
+		}
+	case *input.MouseEvent:
+		if !f.focused {
+			f.Send(FocusEvent{true})
 		}
 	}
 }
 
 func init() {
 	var _ Widget = (*Label)(nil)
-	var _ Widget = (*Button)(nil)
-	var _ Focusable = (*Button)(nil)
-	var _ Clickable = (*Button)(nil)
-	var _ Widget = (*Check)(nil)
-	var _ Focusable = (*Check)(nil)
-	var _ Clickable = (*Check)(nil)
-	var _ KeyReceiver = (*InputField)(nil)
+	var _ EventHandler = (*Button)(nil)
+	var _ EventHandler = (*Check)(nil)
+	var _ EventHandler = (*InputField)(nil)
 }
 
-// NewHyperlink создаёт гиперссылку
+// NewHyperlink создаёт гиперссылку.
 func NewHyperlink(text string, url string) *Button {
 	return NewButton(text, func() {
 		term.OpenURL(url)
-	})
+	}).WithPaddings(0, 0)
 }
 
 // Gauge — это виджет шкалы прогресса.

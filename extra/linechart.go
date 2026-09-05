@@ -3,8 +3,8 @@ package extra
 import (
 	"strconv"
 
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/cell"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type AxisRunes struct {
@@ -131,9 +131,9 @@ func lenNumber(n int) (i int) {
 	return
 }
 
-func (bc *LineChart) InnerText() string {
+func (bc *LineChart) Render(cells [][]cell.Cell) {
 	if len(bc.Data) == 0 {
-		return ""
+		return
 	}
 
 	maxVal := 0
@@ -162,14 +162,6 @@ func (bc *LineChart) InnerText() string {
 
 	w := bc.Width()
 	h := bc.Height()
-
-	cells := make([][]cell.Cell, h)
-	for y := range cells {
-		cells[y] = make([]cell.Cell, w)
-		for x := range cells[y] {
-			cells[y][x] = cell.Cell{Char: ' '}
-		}
-	}
 
 	axisStyle := tui.ConvertToCellStyle(bc.AxisStyle)
 	var axisLabelStyle cell.Style
@@ -266,8 +258,6 @@ func (bc *LineChart) InnerText() string {
 			}
 		}
 	}
-
-	return cell.ToString(cells)
 }
 
 // Default — стандартные Unicode-символы (─ │ └ ·)

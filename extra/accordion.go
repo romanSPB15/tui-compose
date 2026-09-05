@@ -3,7 +3,8 @@ package extra
 import (
 	"fmt"
 
-	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type Accordion struct {
@@ -23,7 +24,7 @@ func NewAccordion(label string, content tui.Widget) *Accordion {
 		opened:    true,
 		content:   content,
 	}
-	acc.label = tui.NewButton("not inited", func() {
+	acc.label = tui.NewButton("", func() {
 		if acc.opened {
 			acc.opened = false
 			acc.label.WithText(fmt.Sprintf("%c %s", acc.CloseRune, acc.text))
@@ -35,16 +36,14 @@ func NewAccordion(label string, content tui.Widget) *Accordion {
 			tui.CurrentWindow().Index()
 			tui.CurrentWindow().Redraw()
 		})
-	})
+	}).WithPaddings(0, 0)
 
-	acc.label.OnClick()
+	acc.label.Send(&tui.MouseEvent{})
 
 	return acc
 }
 
-func (acc *Accordion) InnerText() string {
-	return ""
-}
+func (acc *Accordion) Render([][]cell.Cell) {}
 
 func (acc *Accordion) Child() []tui.Widget {
 	if acc.opened {

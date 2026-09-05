@@ -3,13 +3,19 @@ package main
 import (
 	"time"
 
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/extra"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/extra"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 func main() {
+	go func() {
+		http.ListenAndServe("localhost:6060", nil)
+	}()
 	wnd := tui.NewWindow()
-	wnd.SetTitle("TUI Compose v3.4 Demo")
+	wnd.SetTitle("TUI Compose v4 Demo")
 
 	// данные
 	data := []int{
@@ -196,7 +202,7 @@ func main() {
 		}).WithRadius(15)},
 	})).WithTitle(tui.Title{Text: "Tabs & Accordion"}).WithTitle(tui.Title{Text: "PieChart", Pos: tui.TitleBottomCenter}))).Rounded().
 		WithTitle(tui.Title{Text: "TUI Compose Dashboard", Pos: tui.TitleTopCenter, Style: tui.FrBlue | tui.Bold}).
-		WithTitle(tui.Title{Text: "v3.4", Pos: tui.TitleBottomRight, Style: tui.FrBrightBlack | tui.Italic}).
+		WithTitle(tui.Title{Text: "v4", Pos: tui.TitleBottomRight, Style: tui.FrBrightBlack | tui.Italic}).
 		WithBorderStyle(tui.FrBrightBlack),
 	)
 
@@ -207,7 +213,7 @@ func main() {
 			select {
 			case <-wnd.OnQuit():
 				return
-			case <-time.Tick(time.Second / 200):
+			case <-time.Tick(time.Second / 5):
 				wnd.Commit(func() {
 					if i == len(data)-7 {
 						i = 0

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/extra"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/extra"
 )
 
 func main() {
@@ -30,7 +30,7 @@ func main() {
 		})
 
 	chart3 := extra.NewBarChart().
-		WithHeight(9).
+		WithDataHeight(9).
 		WithValues(data1).
 		WithBarStyle(func(i, v int) tui.Style {
 			if v > 35 {
@@ -44,7 +44,7 @@ func main() {
 		WithBarWidth(2)
 
 	chart4 := extra.NewBarChart().
-		WithHeight(9).
+		WithDataHeight(9).
 		WithValues(data1).
 		WithBarStyle(func(i, v int) tui.Style {
 			if v > 35 {

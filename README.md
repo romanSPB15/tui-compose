@@ -35,7 +35,7 @@
 </tbody>
 </table>
 </p>
-<h3  align="center"><pre>go get -u github.com/romanSPB15/tui-compose/v3</pre></h3>
+<h3  align="center"><pre>go get -u github.com/romanSPB15/tui-compose/v4</pre></h3>
 <p align="center">
 <table>
 <tbody>
@@ -50,7 +50,7 @@ package main
 import (
 	"strconv"
 
-	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v4"
 )
 
 func main() {

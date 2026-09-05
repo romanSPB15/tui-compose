@@ -1,10 +1,8 @@
 package extra
 
 import (
-	"strings"
-
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/builder"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type TableCellAlign int
@@ -145,116 +143,125 @@ func (pc *Table) WithData(tc [][]TableCell) *Table {
 	return pc
 }
 
-func (pc *Table) InnerText() string {
-	if len(pc.data) == 0 {
-		return ""
+func (t *Table) Render(buf [][]cell.Cell) {
+	if len(t.data) == 0 {
+		return
+	}
+	h := t.Height()
+
+	style := func(s tui.Style) cell.Style {
+		return tui.ConvertToCellStyle(s)
 	}
 
-	var b builder.Builder
-
-	// разделитель сверху
-	if pc.hor == EverywhereHorSeparator {
-
-		b.WriteRune(pc.s.TopLeft)
-
-		for i, w := range pc.widths {
-			for range w + 2 {
-				b.WriteRune(pc.s.Hor)
+	if t.hor == EverywhereHorSeparator {
+		buf[0][0] = cell.Cell{Char: t.s.TopLeft, Style: cell.Style{}}
+		x := 1
+		for col, width := range t.widths {
+			for i := 0; i < width+2; i++ {
+				buf[0][x] = cell.Cell{Char: t.s.Hor, Style: cell.Style{}}
+				x++
 			}
-			if i < len(pc.widths)-1 {
-				b.WriteRune(pc.s.PlusTop)
+			if col < len(t.widths)-1 {
+				buf[0][x] = cell.Cell{Char: t.s.PlusTop, Style: cell.Style{}}
+				x++
+			}
+		}
+		buf[0][x] = cell.Cell{Char: t.s.TopRight, Style: cell.Style{}}
+	}
+
+	rowY := 0
+	if t.hor == EverywhereHorSeparator {
+		rowY = 1
+	}
+
+	for rowIdx, row := range t.data {
+		x := 0
+
+		buf[rowY][x] = cell.Cell{Char: t.s.Ver, Style: cell.Style{}}
+		x++
+
+		for colIdx, cellData := range row {
+			colWidth := t.widths[colIdx]
+			text := cellData.Text
+			textRunes := []rune(text)
+			textLen := len(textRunes)
+
+			leftPad, rightPad := 0, 0
+			switch cellData.Align {
+			case AlignLeft:
+				rightPad = colWidth - textLen
+			case AlignRight:
+				leftPad = colWidth - textLen
+			case AlignCenter:
+				leftPad = (colWidth - textLen) / 2
+				rightPad = colWidth - textLen - leftPad
+			}
+
+			buf[rowY][x] = cell.Cell{Char: ' ', Style: style(cellData.Style)}
+			x++
+
+			for i := 0; i < leftPad; i++ {
+				buf[rowY][x] = cell.Cell{Char: ' ', Style: style(cellData.Style)}
+				x++
+			}
+
+			for _, r := range textRunes {
+				buf[rowY][x] = cell.Cell{Char: r, Style: style(cellData.Style)}
+				x++
+			}
+
+			for i := 0; i < rightPad; i++ {
+				buf[rowY][x] = cell.Cell{Char: ' ', Style: style(cellData.Style)}
+				x++
+			}
+
+			buf[rowY][x] = cell.Cell{Char: ' ', Style: style(cellData.Style)}
+			x++
+
+			if colIdx < len(row)-1 {
+				buf[rowY][x] = cell.Cell{Char: t.s.Ver, Style: cell.Style{}}
+				x++
+			} else {
+				buf[rowY][x] = cell.Cell{Char: t.s.Ver, Style: cell.Style{}}
+				x++
 			}
 		}
 
-		b.WriteRune(pc.s.TopRight)
-		b.WriteString("\n")
-	}
+		rowY++
 
-	for i, row := range pc.data {
-		b.WriteRune(pc.s.Ver)
-		b.WriteRune(' ')
-
-		for i, c := range row {
-			b.WriteString(c.Style.String())
-
-			l := len([]rune(c.Text))
-			w := pc.widths[i]
-
-			if c.Align == AlignRight {
-				if l < w {
-					b.WriteString(strings.Repeat(" ", w-l))
+		if rowIdx < len(t.data)-1 && t.hor >= BetweenHorSeparator {
+			buf[rowY][0] = cell.Cell{Char: t.s.PlusLeft, Style: cell.Style{}}
+			x := 1
+			for col, width := range t.widths {
+				for i := 0; i < width+2; i++ {
+					buf[rowY][x] = cell.Cell{Char: t.s.Hor, Style: cell.Style{}}
+					x++
+				}
+				if col < len(t.widths)-1 {
+					buf[rowY][x] = cell.Cell{Char: t.s.Plus, Style: cell.Style{}}
+					x++
 				}
 			}
-
-			if c.Align == AlignCenter {
-				if l < w {
-					b.WriteString(strings.Repeat(" ", (w-l)/2))
-				}
-			}
-
-			b.WriteString(c.Text)
-
-			if c.Align == AlignLeft {
-				if l < w {
-					b.WriteString(strings.Repeat(" ", w-l))
-				}
-			}
-
-			if c.Align == AlignCenter {
-				if l < w {
-					b.WriteString(strings.Repeat(" ", (w-l)/2))
-					if (w-l)%2 == 1 {
-						b.WriteRune(' ')
-					}
-				}
-			}
-
-			if c.Style != 0 {
-				b.WriteString("\033[0m")
-			}
-
-			b.WriteRune(' ')
-			b.WriteRune(pc.s.Ver)
-			b.WriteRune(' ')
-		}
-		if i < len(pc.data)-1 {
-			b.WriteString("\n")
-			if pc.hor >= BetweenHorSeparator {
-				b.WriteRune(pc.s.PlusLeft)
-
-				for i, w := range pc.widths {
-					for range w + 2 {
-						b.WriteRune(pc.s.Hor)
-					}
-					if i < len(pc.widths)-1 {
-						b.WriteRune(pc.s.Plus)
-					}
-				}
-
-				b.WriteRune(pc.s.PlusRight)
-				b.WriteString("\n")
-			}
+			buf[rowY][x] = cell.Cell{Char: t.s.PlusRight, Style: cell.Style{}}
+			rowY++
 		}
 	}
 
-	// разделитель снизу
-	if pc.hor == EverywhereHorSeparator {
-		b.WriteString("\n")
-		b.WriteRune(pc.s.BottomLeft)
-
-		for i, w := range pc.widths {
-			for range w + 2 {
-				b.WriteRune(pc.s.Hor)
+	if t.hor == EverywhereHorSeparator {
+		buf[h-1][0] = cell.Cell{Char: t.s.BottomLeft, Style: cell.Style{}}
+		x := 1
+		for col, width := range t.widths {
+			for i := 0; i < width+2; i++ {
+				buf[h-1][x] = cell.Cell{Char: t.s.Hor, Style: cell.Style{}}
+				x++
 			}
-			if i < len(pc.widths)-1 {
-				b.WriteRune(pc.s.PlusBottom)
+			if col < len(t.widths)-1 {
+				buf[h-1][x] = cell.Cell{Char: t.s.PlusBottom, Style: cell.Style{}}
+				x++
 			}
 		}
-
-		b.WriteRune(pc.s.BottomRight)
+		buf[h-1][x] = cell.Cell{Char: t.s.BottomRight, Style: cell.Style{}}
 	}
-
-	return b.String()
 }
 
 func (t *Table) WithStyle(s TableStyle) *Table {

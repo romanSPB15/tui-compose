@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/react"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/react"
 )
 
 type State struct {

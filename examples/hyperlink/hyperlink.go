@@ -1,6 +1,6 @@
 package main
 
-import "github.com/romanSPB15/tui-compose/v3"
+import "github.com/romanSPB15/tui-compose/v4"
 
 func main() {
 	wnd := tui.NewWindow()

@@ -5,8 +5,8 @@ import (
 	"image/color"
 	"strconv"
 
-	"github.com/romanSPB15/tui-compose/v3/builder"
-	"github.com/romanSPB15/tui-compose/v3/cell"
+	"github.com/romanSPB15/tui-compose/v4/builder"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type Image [][]cell.Cell

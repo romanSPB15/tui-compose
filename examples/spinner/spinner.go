@@ -3,8 +3,8 @@ package main
 import (
 	"time"
 
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/extra"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/extra"
 )
 
 func main() {

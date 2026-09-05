@@ -3,7 +3,7 @@ package tui
 import (
 	"fmt"
 
-	term "github.com/romanSPB15/tui-compose/v3/term"
+	term "github.com/romanSPB15/tui-compose/v4/term"
 )
 
 func recoveryScreen(message string) {

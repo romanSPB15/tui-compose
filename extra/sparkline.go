@@ -1,31 +1,31 @@
 package extra
 
 import (
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/cell"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type Sparkline struct {
 	Fill8, Fill7, Fill6, Fill5, Fill4, Fill3, Fill2, Fill1 rune
 
-	values   []int
-	BarStyle func(i, v int) tui.Style
-	div      float64
-	Height   int
+	values     []int
+	BarStyle   func(i, v int) tui.Style
+	div        float64
+	DataHeight int
 }
 
 func NewSparkline() *Sparkline {
 	return &Sparkline{
-		Fill8:  '█',
-		Fill7:  '▇',
-		Fill6:  '▆',
-		Fill5:  '▅',
-		Fill4:  '▄',
-		Fill3:  '▃',
-		Fill2:  '▂',
-		Fill1:  '▁',
-		Height: 1,
-		div:    1,
+		Fill8:      '█',
+		Fill7:      '▇',
+		Fill6:      '▆',
+		Fill5:      '▅',
+		Fill4:      '▄',
+		Fill3:      '▃',
+		Fill2:      '▂',
+		Fill1:      '▁',
+		DataHeight: 1,
+		div:        1,
 	}
 }
 func (bc *Sparkline) WithValues(v []int) *Sparkline {
@@ -51,19 +51,11 @@ func (bc *Sparkline) Width() int {
 }
 
 func (bc *Sparkline) Height() int {
-	return bc.Height
+	return bc.DataHeight
 }
 
-func (bc *Sparkline) InnerText() string {
-	w := bc.Width()
+func (bc *Sparkline) Render(cells [][]cell.Cell) {
 	h := bc.Height()
-	cells := make([][]cell.Cell, h)
-	for y := range cells {
-		cells[y] = make([]cell.Cell, w)
-		for x := range cells[y] {
-			cells[y][x] = cell.Cell{Char: ' '}
-		}
-	}
 
 	for i, v := range bc.values {
 		var s cell.Style
@@ -75,7 +67,7 @@ func (bc *Sparkline) InnerText() string {
 		vDivided8 := vDivided / 8
 
 		for z := vDivided8 - 1; z >= 0; z-- {
-			if z > bc.Height {
+			if z > bc.DataHeight {
 				continue
 			}
 
@@ -99,8 +91,6 @@ func (bc *Sparkline) InnerText() string {
 			cells[yLast][i] = cell.Cell{Char: bc.Fill7, Style: s}
 		}
 	}
-
-	return cell.ToString(cells)
 }
 
 func (s *Sparkline) Unicode() *Sparkline {
@@ -119,14 +109,13 @@ func (s *Sparkline) ASCII() *Sparkline {
 	s.Fill2 = '_'
 	s.Fill1 = '_'
 
-	s.Height = 3
 	return s
 }
 
 // WithHeight устанавливает высоту спарклайна (количество строк).
 // Автоматически пересчитывает масштаб, если значения уже установлены.
 func (s *Sparkline) WithHeight(h int) *Sparkline {
-	s.Height = h
+	s.DataHeight = h
 	if len(s.values) > 0 {
 		s.recalcDiv()
 	}
@@ -153,7 +142,7 @@ func (s *Sparkline) recalcDiv() {
 	if mx == 0 {
 		mx = 1
 	}
-	s.div = float64(mx) / float64(s.Height-s.Height/8) / 8
+	s.div = float64(mx) / float64(s.DataHeight-s.DataHeight/8) / 8
 	if s.div < 1 {
 		s.div = 1
 	}

@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/romanSPB15/tui-compose/v3/cell"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 func cells(chars string, styles ...cell.Style) []cell.Cell {
@@ -302,10 +302,17 @@ func TestStyleANSI(t *testing.T) {
 		},
 
 		{
-			name:     "reverse - reset",
+			name:     "blink - reset",
 			last:     cell.Style{},
 			new:      cell.Style{Args: cell.Blink},
 			expected: "\033[5m",
+		},
+
+		{
+			name:     "italic off, bold on",
+			last:     cell.Style{Args: cell.Italic},
+			new:      cell.Style{Args: cell.Bold},
+			expected: "\033[1;23m",
 		},
 	}
 

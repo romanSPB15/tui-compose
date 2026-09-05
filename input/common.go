@@ -3,7 +3,7 @@ package input
 import (
 	"sync"
 
-	"github.com/romanSPB15/tui-compose/v3/term"
+	"github.com/romanSPB15/tui-compose/v4/term"
 )
 
 var (

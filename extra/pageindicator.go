@@ -1,8 +1,8 @@
 package extra
 
 import (
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/builder"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type PageIndicator struct {
@@ -10,7 +10,7 @@ type PageIndicator struct {
 	current  int
 	active   rune
 	inactive rune
-	style    tui.Style
+	style    cell.Style
 }
 
 func NewPageIndicator(total int) *PageIndicator {
@@ -32,7 +32,7 @@ func (p *PageIndicator) WithInactive(r rune) *PageIndicator {
 }
 
 func (p *PageIndicator) WithStyle(s tui.Style) *PageIndicator {
-	p.style = s
+	p.style = tui.ConvertToCellStyle(s)
 	return p
 }
 
@@ -61,22 +61,17 @@ func (p *PageIndicator) Height() int {
 	return 1
 }
 
-func (p *PageIndicator) InnerText() string {
-	var builder builder.Builder
+func (p *PageIndicator) Render(buf [][]cell.Cell) {
 	for i := 0; i < p.total; i++ {
 		var ch rune
+		var style cell.Style
 		if i == p.current {
 			ch = p.active
+			style = p.style
 		} else {
 			ch = p.inactive
+			style = cell.Style{}
 		}
-		if i == p.current {
-			builder.WriteString(p.style.String())
-		}
-		builder.WriteRune(ch)
-		if i == p.current {
-			builder.WriteString("\033[0m")
-		}
+		buf[0][i] = cell.Cell{Char: ch, Style: style}
 	}
-	return builder.String()
 }

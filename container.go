@@ -1,6 +1,6 @@
 package tui
 
-import "github.com/romanSPB15/tui-compose/v3/cell"
+import "github.com/romanSPB15/tui-compose/v4/cell"
 
 // Добавлено в TUI 3.0.0.
 type VBox struct {

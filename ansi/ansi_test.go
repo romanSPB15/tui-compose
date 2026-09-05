@@ -3,7 +3,7 @@ package ansi_test
 import (
 	"testing"
 
-	"github.com/romanSPB15/tui-compose/v3/ansi"
+	"github.com/romanSPB15/tui-compose/v4/ansi"
 )
 
 func TestStrip(t *testing.T) {

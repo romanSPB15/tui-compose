@@ -1,6 +1,12 @@
 package tui
 
-func (wnd *window) FocusedWidget() Focusable {
+func isFocusable(w EventHandler) bool {
+	ev := &CheckFocusableEvent{}
+	w.Send(ev)
+	return ev.Result
+}
+
+func (wnd *window) FocusedWidget() EventHandler {
 	if wnd.focusIndex >= 0 && wnd.focusIndex < len(wnd.focusableWidgets) {
 		return wnd.focusableWidgets[wnd.focusIndex]
 	}
@@ -17,10 +23,6 @@ func (wnd *window) NextFocus() {
 	}
 	for i := 0; i < len(wnd.focusableWidgets); i++ {
 		idx := (start + i) % len(wnd.focusableWidgets)
-		w := wnd.focusableWidgets[idx]
-		if d, ok := w.(Disablable); ok && d.IsDisabled() {
-			continue
-		}
 
 		wnd.setFocusTo(idx)
 		return
@@ -37,10 +39,6 @@ func (wnd *window) BeforeFocus() {
 	}
 	for i := 0; i < len(wnd.focusableWidgets); i++ {
 		idx := (start - i + len(wnd.focusableWidgets)) % len(wnd.focusableWidgets)
-		w := wnd.focusableWidgets[idx]
-		if d, ok := w.(Disablable); ok && d.IsDisabled() {
-			continue
-		}
 		wnd.setFocusTo(idx)
 		return
 	}
@@ -48,22 +46,19 @@ func (wnd *window) BeforeFocus() {
 
 func (wnd *window) setFocusTo(idx int) {
 	if wnd.focusIndex != -1 {
-		wnd.focusableWidgets[wnd.focusIndex].OnBlur()
+		wnd.focusableWidgets[wnd.focusIndex].Send(FocusEvent{Focused: false})
 	}
 	wnd.focusIndex = idx
-	wnd.focusableWidgets[idx].OnFocus()
+	wnd.focusableWidgets[idx].Send(FocusEvent{Focused: true})
 	wnd.Do(wnd.Redraw)
 }
 
-func (wnd *window) SetFocus(f Focusable) bool {
-	if !wnd.focusChange {
+func (wnd *window) SetFocus(f EventHandler) bool {
+	if !wnd.focusChange || !isFocusable(f) {
 		return false
 	}
 	for i, w := range wnd.focusableWidgets {
 		if w == f {
-			if d, ok := w.(Disablable); ok && d.IsDisabled() {
-				return false
-			}
 			wnd.setFocusTo(i)
 			return true
 		}
@@ -73,7 +68,7 @@ func (wnd *window) SetFocus(f Focusable) bool {
 
 func (wnd *window) ClearFocus() {
 	if wnd.focusIndex != -1 {
-		wnd.focusableWidgets[wnd.focusIndex].OnBlur()
+		wnd.focusableWidgets[wnd.focusIndex].Send(FocusEvent{Focused: false})
 		wnd.focusIndex = -1
 		wnd.Do(wnd.Redraw)
 	}
@@ -102,7 +97,7 @@ func (wnd *window) SetIndex(idx int) {
 	}
 
 	if wnd.focusIndex != -1 && wnd.focusIndex < len(wnd.focusableWidgets) {
-		wnd.focusableWidgets[wnd.focusIndex].OnBlur()
+		wnd.focusableWidgets[wnd.focusIndex].Send(FocusEvent{Focused: false})
 	}
 
 	if idx == -1 {
@@ -112,6 +107,6 @@ func (wnd *window) SetIndex(idx int) {
 	}
 
 	wnd.focusIndex = idx
-	wnd.focusableWidgets[idx].OnFocus()
+	wnd.focusableWidgets[idx].Send(FocusEvent{Focused: true})
 	wnd.Redraw()
 }

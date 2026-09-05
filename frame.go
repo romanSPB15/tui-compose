@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"github.com/romanSPB15/tui-compose/v3/cell"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type TitlePosition int
@@ -164,6 +164,7 @@ func (b *border) Render(cells [][]cell.Cell) {
 
 	for _, t := range b.titles {
 		titleStyle := ConvertToCellStyle(t.Style)
+		// currentWindow.LogInfo("%s:%v", t.Text, titleStyle)
 
 		titleRunes := []rune(t.Text)
 

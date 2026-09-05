@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v4"
 )
 
 func main() {

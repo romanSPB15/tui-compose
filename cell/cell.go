@@ -6,8 +6,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/romanSPB15/tui-compose/v3/ansi"
-	"github.com/romanSPB15/tui-compose/v3/builder"
+	"github.com/romanSPB15/tui-compose/v4/ansi"
+	"github.com/romanSPB15/tui-compose/v4/builder"
 )
 
 // BIURBlRe - Bold Italic Underline Reverse Blink
@@ -98,6 +98,88 @@ func (c Style) ANSI(last Style) string {
 		return ""
 	}
 	return "\033[" + strings.Join(codes, ";") + "m"
+}
+
+func (c Style) WriteANSI(last Style, bb *builder.Builder) {
+	if c == last {
+		return
+	}
+
+	if (c == Style{}) {
+		bb.WriteString("\x1b[0m")
+		return
+	}
+
+	if c.Args&Reset != 0 {
+		bb.WriteString("\x1b[0m")
+		return
+	}
+
+	bb.WriteString("\x1b[")
+
+	needSep := false
+
+	writeCode := func(code string) {
+		if needSep {
+			bb.WriteByte(';')
+		}
+		bb.WriteString(code)
+		needSep = true
+	}
+
+	if c.Args&Bold != 0 && last.Args&Bold == 0 {
+		writeCode("1")
+	} else if c.Args&Bold == 0 && last.Args&Bold != 0 {
+		writeCode("22")
+	}
+
+	if c.Args&Italic != 0 && last.Args&Italic == 0 {
+		writeCode("3")
+	} else if c.Args&Italic == 0 && last.Args&Italic != 0 {
+		writeCode("23")
+	}
+
+	if c.Args&Underline != 0 && last.Args&Underline == 0 {
+		writeCode("4")
+	} else if c.Args&Underline == 0 && last.Args&Underline != 0 {
+		writeCode("24")
+	}
+
+	if c.Args&Reverse != 0 && last.Args&Reverse == 0 {
+		writeCode("7")
+	} else if c.Args&Reverse == 0 && last.Args&Reverse != 0 {
+		writeCode("27")
+	}
+
+	if c.Args&Blink != 0 && last.Args&Blink == 0 {
+		writeCode("5")
+	} else if c.Args&Blink == 0 && last.Args&Blink != 0 {
+		writeCode("25")
+	}
+
+	if c.Fg != last.Fg {
+		if c.Fg == "" {
+			writeCode("39")
+		} else {
+			parts := strings.Split(c.Fg, ";")
+			for _, p := range parts {
+				writeCode(p)
+			}
+		}
+	}
+
+	if c.Bg != last.Bg {
+		if c.Bg == "" {
+			writeCode("49")
+		} else {
+			parts := strings.Split(c.Bg, ";")
+			for _, p := range parts {
+				writeCode(p)
+			}
+		}
+	}
+
+	bb.WriteByte('m')
 }
 
 func (c Style) Merge(new Style) Style {

@@ -3,28 +3,28 @@ package extra
 import (
 	"strconv"
 
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/cell"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type BarChart struct {
-	FillRune  rune
-	values    []int
-	BarWidth  int
-	Space     int
-	BarStyle  func(i, v int) tui.Style
-	TextStyle func(i, v int) tui.Style
-	div       float32
-	Height    int
+	FillRune   rune
+	values     []int
+	BarWidth   int
+	Space      int
+	BarStyle   func(i, v int) tui.Style
+	TextStyle  func(i, v int) tui.Style
+	div        float32
+	DataHeight int
 }
 
 func NewBarChart() *BarChart {
 	return &BarChart{
-		FillRune: '█',
-		BarWidth: 3,
-		Space:    1,
-		Height:   20,
-		div:      1,
+		FillRune:   '█',
+		BarWidth:   3,
+		Space:      1,
+		DataHeight: 20,
+		div:        1,
 	}
 }
 
@@ -36,7 +36,7 @@ func (bc *BarChart) WithValues(v []int) *BarChart {
 			mx = v
 		}
 	}
-	bc.div = float32(mx) / float32(bc.Height) * 1.15
+	bc.div = float32(mx) / float32(bc.DataHeight) * 1.15
 	if bc.div == 0 {
 		bc.div = 1
 	}
@@ -48,19 +48,11 @@ func (bc *BarChart) Width() int {
 }
 
 func (bc *BarChart) Height() int {
-	return bc.Height
+	return bc.DataHeight
 }
 
-func (bc *BarChart) InnerText() string {
-	w := bc.Width()
+func (bc *BarChart) Render(cells [][]cell.Cell) {
 	h := bc.Height()
-	cells := make([][]cell.Cell, h)
-	for y := range cells {
-		cells[y] = make([]cell.Cell, w)
-		for x := range cells[y] {
-			cells[y][x] = cell.Cell{Char: ' '}
-		}
-	}
 
 	for i, v := range bc.values {
 		var s cell.Style
@@ -69,7 +61,7 @@ func (bc *BarChart) InnerText() string {
 		}
 		vDivided := int(float32(v) / bc.div)
 		for z := vDivided; z >= 0; z-- {
-			if z >= bc.Height {
+			if z >= bc.DataHeight {
 				continue
 			}
 			for j := range bc.BarWidth {
@@ -96,8 +88,6 @@ func (bc *BarChart) InnerText() string {
 			cells[y][x+i] = cell.Cell{Char: r, Style: s}
 		}
 	}
-
-	return cell.ToString(cells)
 }
 
 // WithBarWidth устанавливает ширину столбцов.
@@ -113,8 +103,8 @@ func (bc *BarChart) WithSpace(s int) *BarChart {
 }
 
 // WithHeight устанавливает высоту графика в символах(примерно).
-func (bc *BarChart) WithHeight(h int) *BarChart {
-	bc.Height = h
+func (bc *BarChart) WithDataHeight(h int) *BarChart {
+	bc.DataHeight = h
 	return bc
 }
 

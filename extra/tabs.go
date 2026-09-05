@@ -1,9 +1,9 @@
 package extra
 
 import (
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/builder"
-	"github.com/romanSPB15/tui-compose/v3/input"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/cell"
+	"github.com/romanSPB15/tui-compose/v4/input"
 )
 
 type TabPosition int
@@ -63,26 +63,22 @@ func (tp *tabsTopPanel) OnKeyPress(ev *input.KeyboardEvent) {
 	}
 }
 
-func (acc *tabsTopPanel) InnerText() string {
-	var sb builder.Builder
+func (acc *tabsTopPanel) Render(buf [][]cell.Cell) {
+	x := 0
 	for i, v := range acc.t.tabs {
+		s := tui.ConvertToCellStyle(v.TitleStyle)
 		if acc.t.current == i {
-			sb.WriteString(acc.t.selected.String())
-		} else {
-			sb.WriteString(v.TitleStyle.String())
+			s = tui.ConvertToCellStyle(acc.t.selected)
 		}
-		sb.WriteString(v.Title)
-		sb.WriteString(tui.Reset.String())
-		if i != len(acc.t.tabs)-1 {
-			if acc.focused {
-				sb.WriteByte('_')
-			} else {
-				sb.WriteByte(' ')
-			}
-
+		runes := []rune(v.Title)
+		for i, v := range runes {
+			buf[0][i+x] = cell.Cell{Char: v, Style: s}
 		}
+		if acc.focused {
+			buf[0][x+len(runes)] = cell.Cell{}
+		}
+		x += len(runes) + 1
 	}
-	return sb.String()
 }
 
 func (acc *tabsTopPanel) Width() int {
@@ -137,9 +133,7 @@ func NewTabs(t []Tab) *Tabs {
 	return tabs
 }
 
-func (acc *Tabs) InnerText() string {
-	return ""
-}
+func (acc *Tabs) Render([][]cell.Cell) {}
 
 func (acc *Tabs) Child() []tui.Widget {
 	return []tui.Widget{&acc.topPanel, acc.tabs[acc.current].Content}

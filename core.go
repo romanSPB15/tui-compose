@@ -15,10 +15,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/romanSPB15/tui-compose/v3/builder"
-	"github.com/romanSPB15/tui-compose/v3/cell"
-	"github.com/romanSPB15/tui-compose/v3/input"
-	termL "github.com/romanSPB15/tui-compose/v3/term"
+	"github.com/romanSPB15/tui-compose/v4/builder"
+	"github.com/romanSPB15/tui-compose/v4/cell"
+	"github.com/romanSPB15/tui-compose/v4/input"
+	termL "github.com/romanSPB15/tui-compose/v4/term"
 	"golang.org/x/term"
 )
 
@@ -72,21 +72,16 @@ type task struct {
 	msg  string
 }
 
-type clickableWidgetWithPos struct {
-	Clickable
-	p Pos
-}
-
-type clickableAtWidgetWithPos struct {
-	ClickableAt
+type eventHandlerWithPos struct {
+	EventHandler
 	p Pos
 }
 
 var currentWindow *window
 
 type window struct {
-	cl               []clickableWidgetWithPos
-	clAt             []clickableAtWidgetWithPos
+	focusableWidgets []eventHandlerWithPos
+	wgt              []eventHandlerWithPos
 	f                io.Writer
 	focusIndex       int
 	stopCh           chan struct{}
@@ -101,7 +96,6 @@ type window struct {
 	mouseHandlers    []MouseEventHandler
 	content          Widget
 	buf              [][]cell.Cell
-	focusableWidgets []Focusable
 	overlay          Widget
 	displayOverlay   bool
 	initCell         cell.Cell
@@ -112,6 +106,8 @@ type window struct {
 	builderPool      sync.Pool
 	styleFunc        func(Widget)
 	widgetBuf        [][]cell.Cell
+	maxWidgetSize    Pos
+	subBuf           [][]cell.Cell
 }
 
 func (wnd *window) indexClickable(wgt Widget, offset Pos) {
@@ -126,22 +122,12 @@ func (wnd *window) indexClickable(wgt Widget, offset Pos) {
 		return
 	}
 
-	if cl, ok := wgt.(Clickable); ok {
-		if _, ok := wgt.(ClickableAt); !ok {
-			wnd.cl = append(wnd.cl, clickableWidgetWithPos{
-				Clickable: cl,
-				p:         offset,
-			})
-		}
-	}
-
-	if clAt, ok := wgt.(ClickableAt); ok {
-		wnd.clAt = append(wnd.clAt, clickableAtWidgetWithPos{
-			ClickableAt: clAt,
-			p:           offset,
+	if evh, ok := wgt.(EventHandler); ok {
+		wnd.wgt = append(wnd.wgt, eventHandlerWithPos{
+			EventHandler: evh,
+			p:            offset,
 		})
 	}
-
 }
 
 func (wnd *window) indexFocusable(wgt Widget, offset Pos) {
@@ -156,8 +142,13 @@ func (wnd *window) indexFocusable(wgt Widget, offset Pos) {
 		return
 	}
 
-	if foc, ok := wgt.(Focusable); ok {
-		wnd.focusableWidgets = append(wnd.focusableWidgets, foc)
+	if evh, ok := wgt.(EventHandler); ok {
+		if isFocusable(evh) {
+			wnd.focusableWidgets = append(wnd.focusableWidgets, eventHandlerWithPos{
+				EventHandler: evh,
+				p:            offset,
+			})
+		}
 	}
 }
 
@@ -166,14 +157,15 @@ func (wnd *window) Index() {
 		return
 	}
 	wnd.focusableWidgets = nil
-	wnd.cl = nil
-	wnd.clAt = nil
+	wnd.wgt = nil
 
 	wnd.indexClickable(wnd.overlay, Pos{0, 0})
 	wnd.indexFocusable(wnd.overlay, Pos{0, 0})
 
 	wnd.indexClickable(wnd.content, Pos{0, 0})
 	wnd.indexFocusable(wnd.content, Pos{0, 0})
+
+	wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line = wnd.calcMaxWidgetSize(wnd.content, 0, 0)
 }
 
 func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
@@ -182,32 +174,65 @@ func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
 	}
 	if c, ok := wgt.(Container); ok {
 		for i, ch := range c.Child() {
-			wnd.draw(ch, [2]Pos{
+			childRect := [2]Pos{
 				{Line: rect[0].Line + c.Pos(i).Line, Col: rect[0].Col + c.Pos(i).Col},
 				{Line: rect[1].Line + c.Pos(i).Line, Col: rect[1].Col + c.Pos(i).Col},
-			}, buf)
-		}
-
-	} else {
-		w := wgt.Width()
-		h := wgt.Height()
-
-		for y := 0; y < h; y++ {
-			for x := 0; x < w; x++ {
-				buf[y+rect[0].Line][x+rect[0].Col] = wnd.initCell
 			}
+			wnd.draw(ch, childRect, buf)
 		}
+		return
+	}
 
-		wgt.Render(wnd.widgetBuf)
+	w, h := wgt.Width(), wgt.Height()
+	if w <= 0 || h <= 0 {
+		return
+	}
 
-		for y := 0; y < h; y++ {
-			for x := 0; x < w; x++ {
-				x2 := x + rect[0].Col
-				y2 := y + rect[0].Line
-				if x2 < rect[1].Col && y2 < rect[1].Line {
-					buf[y2][x2] = wnd.widgetBuf[y][x]
-				}
-			}
+	currentH := len(wnd.subBuf)
+	var currentW int
+	if currentH > 0 {
+		currentW = len(wnd.subBuf[0])
+	}
+
+	if currentH < h || currentW < w {
+		newH := max(currentH, h)
+		newW := max(currentW, w)
+		newBuf := make([][]cell.Cell, newH)
+		for i := range newBuf {
+			newBuf[i] = make([]cell.Cell, newW)
+		}
+		wnd.subBuf = newBuf
+	} else if currentH > h*2 || currentW > w*2 {
+		newBuf := make([][]cell.Cell, h)
+		for i := range newBuf {
+			newBuf[i] = make([]cell.Cell, w)
+		}
+		wnd.subBuf = newBuf
+	}
+
+	subBuf := wnd.subBuf[:h]
+	for y := range subBuf {
+		if len(subBuf[y]) < w {
+			subBuf[y] = append(subBuf[y], make([]cell.Cell, w-len(subBuf[y]))...)
+		}
+		for x := range w {
+			subBuf[y][x] = wnd.initCell
+		}
+	}
+
+	wgt.Render(subBuf)
+
+	for y := 0; y < h && y+rect[0].Line < rect[1].Line; y++ {
+		destY := y + rect[0].Line
+		srcRow := subBuf[y]
+		dstRow := buf[destY]
+
+		copyLen := w
+		if rect[0].Col+copyLen > rect[1].Col {
+			copyLen = rect[1].Col - rect[0].Col
+		}
+		if copyLen > 0 {
+			copy(dstRow[rect[0].Col:rect[0].Col+copyLen], srcRow[:copyLen])
 		}
 	}
 }
@@ -235,7 +260,11 @@ func (wnd *window) render() [][]cell.Cell {
 		return buf
 	}
 
-	ww, hw := wnd.calcMaxWidgetSize(wnd.content, 0, 0)
+	ww, hw := wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line
+	if ww == 0 && hw == 0 {
+		wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line = wnd.calcMaxWidgetSize(wnd.content, 0, 0)
+		ww, hw = wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line
+	}
 
 	if len(wnd.widgetBuf) < hw {
 		var w int
@@ -381,6 +410,9 @@ func (wnd *window) Redraw() {
 		return
 	}
 
+	renderDur := time.Since(renderStart)
+	makeStringStart := time.Now()
+
 	for y := range h {
 		if len(newBuf[y]) < w {
 			continue
@@ -393,11 +425,7 @@ func (wnd *window) Redraw() {
 				b.WriteString(strconv.Itoa(x + 1))
 				b.WriteByte('H')
 
-				ansi := newBuf[y][x].Style.ANSI(wnd.last)
-				if ansi != "" {
-					b.WriteString(ansi)
-					wnd.last = newBuf[y][x].Style
-				}
+				newBuf[y][x].Style.WriteANSI(wnd.last, b)
 
 				if newBuf[y][x].Char == 0 {
 					wnd.LogInfo("null rune detected at [%d, %d]", x, y)
@@ -411,7 +439,7 @@ func (wnd *window) Redraw() {
 		}
 	}
 
-	renderDur := time.Since(renderStart)
+	makeStringDur := time.Since(makeStringStart)
 
 	writeStart := time.Now()
 
@@ -419,11 +447,26 @@ func (wnd *window) Redraw() {
 
 	writeDur := time.Since(writeStart)
 
-	wnd.LogInfo("Redraw time: %s %s", renderDur, writeDur)
-
 	wnd.builderPool.Put(b)
 
 	wnd.releaseBuffer(newBuf)
+
+	var fps, fpsIO int
+	t := renderDur + makeStringDur
+	if t == 0 {
+		fps = -1
+	} else {
+		fps = int(time.Second / t)
+	}
+
+	t = renderDur + makeStringDur + writeDur
+	if t == 0 {
+		fpsIO = -1
+	} else {
+		fpsIO = int(time.Second / t)
+	}
+
+	wnd.LogInfo("Redraw timings: %s %s %s, FPS: %d:%d", renderDur, makeStringDur, writeDur, fps, fpsIO)
 }
 
 func (wnd *window) SetOverlay(wgt Widget) {
@@ -715,24 +758,21 @@ func (wnd *window) startStopSignalCatcher() {
 }
 
 func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
-	if wnd.cl != nil {
-		for _, cl := range wnd.cl {
-			if ev.Pos.Y >= cl.p.Line && ev.Pos.Y < cl.p.Line+cl.Height() && ev.Pos.X >= cl.p.Col && ev.Pos.X < cl.p.Col+cl.Width() {
-				// Пользователь нажал на этот виджет
-				wnd.doWithMessage(cl.OnClick, "click handler")
-
-			}
-		}
-	}
-	if wnd.clAt != nil {
-		for _, clAt := range wnd.clAt {
-			if ev.Pos.Y >= clAt.p.Line && ev.Pos.Y < clAt.p.Line+clAt.Height() &&
-				ev.Pos.X >= clAt.p.Col && ev.Pos.X < clAt.p.Col+clAt.Width() {
-				relX := ev.Pos.X - clAt.p.Col
-				relY := ev.Pos.Y - clAt.p.Line
+	if wnd.wgt != nil {
+		for _, cl := range wnd.wgt {
+			if ev.Pos.Y >= cl.p.Line && ev.Pos.Y < cl.p.Line+cl.Height() &&
+				ev.Pos.X >= cl.p.Col && ev.Pos.X < cl.p.Col+cl.Width() {
 				wnd.doWithMessage(func() {
-					clAt.OnClickAt(relX, relY)
-				}, "clickAt handler")
+					ev2 := &input.MouseEvent{
+						Button: ev.Button,
+						Pos: input.Point{
+							X: ev.Pos.X - cl.p.Col,
+							Y: ev.Pos.Y - cl.p.Line,
+						},
+					}
+					cl.Send(ev2)
+				}, "mouse event")
+				break
 			}
 		}
 	}
@@ -758,9 +798,7 @@ func (wnd *window) startInputCatcher() {
 	wnd.Do(func() {
 		wnd.RegisterKeyHandler(func(ke *input.KeyboardEvent) {
 			if wnd.focusIndex != -1 {
-				if te, ok := wnd.focusableWidgets[wnd.focusIndex].(KeyReceiver); ok {
-					te.OnKeyPress(ke)
-				}
+				wnd.focusableWidgets[wnd.focusIndex].Send(ke)
 			}
 			if !wnd.focusChange {
 				return

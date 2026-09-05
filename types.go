@@ -1,8 +1,8 @@
 package tui
 
 import (
-	"github.com/romanSPB15/tui-compose/v3/cell"
-	"github.com/romanSPB15/tui-compose/v3/input"
+	"github.com/romanSPB15/tui-compose/v4/cell"
+	"github.com/romanSPB15/tui-compose/v4/input"
 )
 
 // Widget — это интерфейс для TUI-виджетов.
@@ -13,42 +13,9 @@ type Widget interface {
 	Height() int
 }
 
-// Focusable это интерфейс виджетов, которые могут получить фокус.
-// Переключение проиходит с помощью Tab и Shift+Tab.
-// Отключить автоматическое переключение можно через Window.Focus().Disable().
-// Добавлено в TUI 2.0.0.
-type Focusable interface {
+type EventHandler interface {
 	Widget
-	OnFocus()
-	OnBlur()
-}
-
-// Clickable это интерфейс виджетов, которые могут быть нажатыми мышью.
-// Добавлено в TUI 2.0.0.
-type Clickable interface {
-	Widget
-	OnClick()
-}
-
-// ClickableAt это интерфейс виджетов, которые могут быть нажаты мышью.
-// Добавлено в TUI 3.0.0.
-type ClickableAt interface {
-	Widget
-	OnClickAt(x, y int)
-}
-
-// Добавлено в TUI 3.0.0.
-type KeyReceiver interface {
-	Focusable
-	OnKeyPress(ev *input.KeyboardEvent)
-}
-
-// Disablable — интерфейс для виджетов, которые могут быть отключены.
-// Добавлено в TUI 3.1.0.
-type Disablable interface {
-	Widget
-	SetDisabled(bool)
-	IsDisabled() bool
+	Send(Event)
 }
 
 // Window — это объект приложения.
@@ -97,15 +64,15 @@ type Window interface {
 // FocusManager — интерфейс менеджера фокуса.
 // Добавлено в TUI 3.1.0.
 type FocusManager interface {
-	FocusedWidget() Focusable // FocusedWidget вовзращает виджет, на котором установлен фокус.
-	NextFocus()               // NextFocus переносит фокус вперёд.
-	BeforeFocus()             // BeforeFocus переносит фокус назад.
-	SetFocus(Focusable) bool  // BeforeFocus устанавливает фокус на переданный виджет.
-	ClearFocus()              // ClearFocus сбрасывает фокус.
-	Disable()                 // Disable отключает автоматическую смену фокуса.
-	Enable()                  // Enable включает автоматическую смену фокуса, если была выключена.
-	FocusedIndex() int        // FocusedIndex возвращает индекс текущего фокуса, или -1 если фокус не установлен.
-	SetIndex(idx int)         // SetIndex устанавливает фокус на виджет с индексом idx.
+	FocusedWidget() EventHandler // FocusedWidget вовзращает виджет, на котором установлен фокус.
+	NextFocus()                  // NextFocus переносит фокус вперёд.
+	BeforeFocus()                // BeforeFocus переносит фокус назад.
+	SetFocus(EventHandler) bool  // BeforeFocus устанавливает фокус на переданный виджет.
+	ClearFocus()                 // ClearFocus сбрасывает фокус.
+	Disable()                    // Disable отключает автоматическую смену фокуса.
+	Enable()                     // Enable включает автоматическую смену фокуса, если была выключена.
+	FocusedIndex() int           // FocusedIndex возвращает индекс текущего фокуса, или -1 если фокус не установлен.
+	SetIndex(idx int)            // SetIndex устанавливает фокус на виджет с индексом idx.
 }
 
 // Container это интерфейс контейнеров.

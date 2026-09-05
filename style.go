@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/romanSPB15/tui-compose/v3/cell"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 // Style — битовая маска стиля виджета.

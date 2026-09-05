@@ -3,8 +3,8 @@ package extra
 import (
 	"time"
 
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/builder"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 type Spinner struct {
 	typ   int
 	i     int
-	style tui.Style
+	style cell.Style
 }
 
 func NewSpinner(typ int) *Spinner {
@@ -38,87 +38,84 @@ func (bc *Spinner) Height() int {
 	return 1
 }
 
-func (bc *Spinner) InnerText() string {
-	b := builder.New(10)
-
-	if bc.style != 0 {
-		b.WriteString(bc.style.String())
-	}
+func (bc *Spinner) Render(buf [][]cell.Cell) {
 	switch bc.typ {
 	case 0:
 		switch bc.i {
 		case 0:
-			b.WriteByte('_')
+			buf[0][0] = cell.Cell{Char: '_', Style: bc.style}
 		case 1:
-			b.WriteByte(' ')
+			buf[0][0] = cell.Cell{Char: ' ', Style: bc.style}
 		}
 	case 1:
 		switch bc.i {
 		case 0:
-			b.WriteRune('⣾')
+			buf[0][0] = cell.Cell{Char: '⣾', Style: bc.style}
 		case 1:
-			b.WriteRune('⣽')
+			buf[0][0] = cell.Cell{Char: '⣽', Style: bc.style}
 		case 2:
-			b.WriteRune('⣻')
+			buf[0][0] = cell.Cell{Char: '⣻', Style: bc.style}
 		case 3:
-			b.WriteRune('⢿')
+			buf[0][0] = cell.Cell{Char: '⢿', Style: bc.style}
 		case 4:
-			b.WriteRune('⡿')
+			buf[0][0] = cell.Cell{Char: '⡿', Style: bc.style}
 		case 5:
-			b.WriteRune('⣟')
+			buf[0][0] = cell.Cell{Char: '⣟', Style: bc.style}
 		case 6:
-			b.WriteRune('⣯')
+			buf[0][0] = cell.Cell{Char: '⣯', Style: bc.style}
 		case 7:
-			b.WriteRune('⣷')
+			buf[0][0] = cell.Cell{Char: '⣷', Style: bc.style}
 		}
 	case 2:
 		switch bc.i {
 		case 0:
-			b.WriteString("∙∙∙")
+			buf[0][0] = cell.Cell{Char: '∙', Style: bc.style}
+			buf[0][1] = cell.Cell{Char: '∙', Style: bc.style}
+			buf[0][2] = cell.Cell{Char: '∙', Style: bc.style}
 		case 1:
-			b.WriteString("●∙∙")
+			buf[0][0] = cell.Cell{Char: '●', Style: bc.style}
+			buf[0][1] = cell.Cell{Char: '∙', Style: bc.style}
+			buf[0][2] = cell.Cell{Char: '∙', Style: bc.style}
 		case 2:
-			b.WriteString("∙●∙")
+			buf[0][0] = cell.Cell{Char: '∙', Style: bc.style}
+			buf[0][1] = cell.Cell{Char: '●', Style: bc.style}
+			buf[0][2] = cell.Cell{Char: '∙', Style: bc.style}
 		case 3:
-			b.WriteString("∙∙●")
+			buf[0][0] = cell.Cell{Char: '∙', Style: bc.style}
+			buf[0][1] = cell.Cell{Char: '∙', Style: bc.style}
+			buf[0][2] = cell.Cell{Char: '●', Style: bc.style}
 		}
 	case 3:
 		switch bc.i {
 		case 0:
-			b.WriteByte('|')
+			buf[0][0] = cell.Cell{Char: '|', Style: bc.style}
 		case 1:
-			b.WriteByte('/')
+			buf[0][0] = cell.Cell{Char: '/', Style: bc.style}
 		case 2:
-			b.WriteByte('-')
+			buf[0][0] = cell.Cell{Char: '-', Style: bc.style}
 		case 3:
-			b.WriteByte('\\')
+			buf[0][0] = cell.Cell{Char: '\\', Style: bc.style}
 		}
 	case 4:
 		switch bc.i {
 		case 7:
-			b.WriteRune('⣾')
+			buf[0][0] = cell.Cell{Char: '⣾', Style: bc.style}
 		case 6:
-			b.WriteRune('⣽')
+			buf[0][0] = cell.Cell{Char: '⣽', Style: bc.style}
 		case 5:
-			b.WriteRune('⣻')
+			buf[0][0] = cell.Cell{Char: '⣻', Style: bc.style}
 		case 4:
-			b.WriteRune('⢿')
+			buf[0][0] = cell.Cell{Char: '⢿', Style: bc.style}
 		case 3:
-			b.WriteRune('⡿')
+			buf[0][0] = cell.Cell{Char: '⡿', Style: bc.style}
 		case 2:
-			b.WriteRune('⣟')
+			buf[0][0] = cell.Cell{Char: '⣟', Style: bc.style}
 		case 1:
-			b.WriteRune('⣯')
+			buf[0][0] = cell.Cell{Char: '⣯', Style: bc.style}
 		case 0:
-			b.WriteRune('⣷')
+			buf[0][0] = cell.Cell{Char: '⣷', Style: bc.style}
 		}
 	}
-
-	if bc.style != 0 {
-		b.WriteString(tui.Reset.String())
-	}
-
-	return b.String()
 }
 
 func (bc *Spinner) Start(f time.Duration) *Spinner {
@@ -157,6 +154,6 @@ func (bc *Spinner) Start(f time.Duration) *Spinner {
 }
 
 func (bc *Spinner) WithStyle(s tui.Style) *Spinner {
-	bc.style = s
+	bc.style = tui.ConvertToCellStyle(s)
 	return bc
 }

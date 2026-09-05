@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/cell"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type PieData struct {
@@ -80,9 +80,9 @@ func (pc *PieChart) Height() int {
 	return pc.radius
 }
 
-func (pc *PieChart) InnerText() string {
+func (pc *PieChart) Render(cells [][]cell.Cell) {
 	if len(pc.data) == 0 {
-		return ""
+		return
 	}
 
 	// центр окружности
@@ -98,7 +98,7 @@ func (pc *PieChart) InnerText() string {
 		total += d.Value
 	}
 	if total == 0 {
-		return ""
+		return
 	}
 
 	angles := []float64{} // углы конца секторов
@@ -109,17 +109,8 @@ func (pc *PieChart) InnerText() string {
 		angles = append(angles, angle)
 	}
 
-	// Создаём матрицу
-
 	w := pc.Width()
 	h := pc.Height()
-	cells := make([][]cell.Cell, h)
-	for y := range cells {
-		cells[y] = make([]cell.Cell, w)
-		for x := range cells[y] {
-			cells[y][x] = cell.Cell{Char: ' '}
-		}
-	}
 
 	// Получаем цвет пикселя в точке x, y
 
@@ -127,7 +118,7 @@ func (pc *PieChart) InnerText() string {
 		// Считаем угол от центра к этой точке
 
 		dx := float64(x - cx)
-		dy := float64(y-cy) * 2.2 // коррекция соотношения сторон, подобрано
+		dy := float64(y-cy) * 2.2
 		dist2 := dx*dx + dy*dy
 
 		if dist2 > float64(pc.radius*pc.radius) {
@@ -205,5 +196,4 @@ func (pc *PieChart) InnerText() string {
 			}
 		}
 	}
-	return cell.ToString(cells)
 }

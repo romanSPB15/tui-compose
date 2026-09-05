@@ -3,6 +3,8 @@ package extra
 import (
 	"regexp"
 	"strings"
+
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type TextView struct {
@@ -83,20 +85,41 @@ func NewTextView(h int) *TextView {
 	}
 }
 
-func (tv *TextView) InnerText() string {
-	linesANSI := []string{}
-	for _, line := range tv.lines {
-		for k, v := range replaceList {
-			line = strings.ReplaceAll(line, "["+k+"]", "\033["+v+"m")
-		}
-		linesANSI = append(linesANSI, line)
-	}
-
-	end := tv.offset + tv.height
+func (tv *TextView) Render(buf [][]cell.Cell) {
+	start := tv.offset
+	end := start + tv.height
 	if end > len(tv.lines) {
 		end = len(tv.lines)
 	}
-	return strings.Join(linesANSI[tv.offset:end], "\n")
+	w := tv.width
+	if w == 0 {
+		w = tv.Width()
+	}
+
+	var cellBuf []cell.Cell
+
+	for y, lineIdx := start, 0; y < end && y < len(buf); y, lineIdx = y+1, lineIdx+1 {
+		line := tv.lines[lineIdx]
+
+		ansiLine := line
+		for k, v := range replaceList {
+			ansiLine = strings.ReplaceAll(ansiLine, "["+k+"]", "\033["+v+"m")
+		}
+
+		cells, _ := cell.ParseFromTo(ansiLine, &cellBuf, cell.Style{})
+
+		row := buf[y]
+		for i, c := range cells {
+			if i >= w {
+				break
+			}
+			row[i] = c
+		}
+
+		for i := len(cells); i < w && i < len(row); i++ {
+			row[i] = cell.Cell{Char: ' ', Style: cell.Style{}}
+		}
+	}
 }
 
 func (tv *TextView) Height() int {

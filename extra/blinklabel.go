@@ -1,10 +1,10 @@
 package extra
 
 import (
-	"strings"
 	"time"
 
-	"github.com/romanSPB15/tui-compose/v3"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type BlinkLabel struct {
@@ -57,11 +57,10 @@ func (b *BlinkLabel) Stop() {
 	close(b.stopCh)
 }
 
-func (b *BlinkLabel) InnerText() string {
+func (b *BlinkLabel) Render(buf [][]cell.Cell) {
 	if b.visible {
-		return b.label.InnerText()
+		b.label.Render(buf)
 	}
-	return strings.Repeat(" ", b.Width())
 }
 
 func (b *BlinkLabel) Width() int  { return b.label.Width() }

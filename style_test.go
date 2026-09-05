@@ -3,8 +3,8 @@ package tui_test
 import (
 	"testing"
 
-	"github.com/romanSPB15/tui-compose/v3"
-	"github.com/romanSPB15/tui-compose/v3/cell"
+	"github.com/romanSPB15/tui-compose/v4"
+	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 func TestStyleString(t *testing.T) {
