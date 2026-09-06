@@ -160,6 +160,18 @@ func (wnd *window) indexFocusable(wgt Widget, offset Pos) {
 	}
 }
 
+func (wnd *window) applyStyles(wgt Widget) {
+	if wnd.styleFunc == nil {
+		return
+	}
+	wnd.styleFunc(wgt)
+	if c, ok := wgt.(Container); ok {
+		for _, child := range c.Child() {
+			wnd.applyStyles(child)
+		}
+	}
+}
+
 func (wnd *window) Index() {
 	if wnd.content == nil {
 		return
@@ -173,6 +185,11 @@ func (wnd *window) Index() {
 
 	wnd.indexClickable(wnd.content, Pos{0, 0})
 	wnd.indexFocusable(wnd.content, Pos{0, 0})
+
+	wnd.applyStyles(wnd.content)
+	if wnd.overlay != nil {
+		wnd.applyStyles(wnd.overlay)
+	}
 }
 
 func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
