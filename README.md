@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/releases)
 [![Test](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml/badge.svg)](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml)
-[![Documentation](https://img.shields.io/badge/GitHub-Wiki-red?logo=github)](https://github.com/romanSPB15/tui-compose/wiki)
+[![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2FromanSPB15%2Ftui-compose&label=visitors&labelColor=%23666666&countColor=%23eeccee&style=flat&labelStyle=none)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2FromanSPB15%2Ftui-compose)
 ![Lightweight](https://img.shields.io/badge/Lightweight-~10000_lines-brightgreen)
 [![Examples](https://img.shields.io/badge/Examples-23-white?logo=github)](https://github.com/romanSPB15/tui-compose/tree/main/examples)
 
@@ -86,7 +86,7 @@ func main() {
 }
 ```
 
-*Подробная документация доступна в [Wiki](https://github.com/romanSPB15/tui-compose/wiki).*<br>
+*Документация доступна в [Wiki](https://github.com/romanSPB15/tui-compose/wiki).*<br>
 *Другие примеры доступны в [examples](https://github.com/romanSPB15/tui-compose/tree/main/examples).*
 
 
