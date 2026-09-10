@@ -2,33 +2,64 @@
 
 package term
 
-/*
-#include <windows.h>
-
-	void copy_to_clipboard_utf16(const wchar_t* text, int length) {
-	    if (!OpenClipboard(NULL)) return;
-	    EmptyClipboard();
-	    // Размер в байтах: (length+1) * sizeof(wchar_t)
-	    HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, (length+1) * sizeof(wchar_t));
-	    if (hMem) {
-	        wchar_t* pMem = (wchar_t*)GlobalLock(hMem);
-	        for (int i = 0; i <= length; i++) {
-	            pMem[i] = text[i];
-	        }
-	        GlobalUnlock(hMem);
-	        SetClipboardData(CF_UNICODETEXT, hMem);
-	    }
-	    CloseClipboard();
-	}
-*/
-import "C"
 import (
+	"syscall"
 	"unicode/utf16"
 	"unsafe"
 )
 
+var (
+	user32   = syscall.NewLazyDLL("user32.dll")
+	kernel32 = syscall.NewLazyDLL("kernel32.dll")
+
+	procOpenClipboard    = user32.NewProc("OpenClipboard")
+	procCloseClipboard   = user32.NewProc("CloseClipboard")
+	procEmptyClipboard   = user32.NewProc("EmptyClipboard")
+	procSetClipboardData = user32.NewProc("SetClipboardData")
+
+	procGlobalAlloc  = kernel32.NewProc("GlobalAlloc")
+	procGlobalLock   = kernel32.NewProc("GlobalLock")
+	procGlobalUnlock = kernel32.NewProc("GlobalUnlock")
+	procGlobalFree   = kernel32.NewProc("GlobalFree")
+)
+
+const (
+	cfUnicodeText = 13
+	gmemMoveable  = 0x0002
+)
+
 func CopyToClipboard(text string) {
-	utf16 := utf16.Encode([]rune(text))
-	utf16 = append(utf16, 0)
-	C.copy_to_clipboard_utf16((*C.wchar_t)(unsafe.Pointer(&utf16[0])), C.int(len(utf16)-1))
+	u16 := utf16.Encode([]rune(text))
+	u16 = append(u16, 0)
+
+	size := len(u16) * 2
+
+	r, _, _ := procOpenClipboard.Call(0)
+	if r == 0 {
+		return
+	}
+	defer procCloseClipboard.Call()
+
+	procEmptyClipboard.Call()
+
+	hMem, _, _ := procGlobalAlloc.Call(gmemMoveable, uintptr(size))
+	if hMem == 0 {
+		return
+	}
+
+	ptr, _, _ := procGlobalLock.Call(hMem)
+	if ptr == 0 {
+		procGlobalFree.Call(hMem)
+		return
+	}
+
+	dst := unsafe.Slice((*uint16)(unsafe.Pointer(ptr)), len(u16))
+	copy(dst, u16)
+
+	procGlobalUnlock.Call(hMem)
+
+	r, _, _ = procSetClipboardData.Call(cfUnicodeText, hMem)
+	if r == 0 {
+		procGlobalFree.Call(hMem)
+	}
 }
