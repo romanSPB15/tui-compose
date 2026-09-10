@@ -723,7 +723,7 @@ func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
 }
 
 func (wnd *window) RegisterClickHandler(h func(ev *input.MouseEvent)) {
-	if DEBUG && wnd.isWorker() {
+	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("RegisterClickHandler called outside worker goroutine: data race")
 	}
 	wnd.mouseHandlers = append(wnd.mouseHandlers, h)
