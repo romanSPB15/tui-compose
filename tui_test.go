@@ -79,7 +79,13 @@ type widget struct {
 
 func (w *widget) Render(buf [][]cell.Cell) {
 	c := cell.ParseMultiline(w.text)
-	copy(buf, c)
+	for y := range len(c) {
+		for x := range len(c[0]) {
+			if y < len(buf) && x < len(buf[0]) {
+				buf[y][x] = c[y][x]
+			}
+		}
+	}
 }
 
 func (w *widget) Width() int {

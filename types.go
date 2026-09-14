@@ -45,10 +45,6 @@ type Window interface {
 	SetTitle(string)        // SetTitle устанавливает заголовок окна терминала.
 	CopyToClipboard(string) // CopyToClipboard копирует текст в буфер обмена.
 
-	SetOverlay(Widget)
-	ShowOverlay()
-	HideOverlay()
-
 	Focus() FocusManager
 
 	SetInitCell(cell.Cell) // SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.

@@ -78,21 +78,6 @@ func (a *App[T]) Height() int {
 	return a.wnd.Height()
 }
 
-// SetOverlay устанавливает оверлей.
-func (a *App[T]) SetOverlay(w tui.Widget) {
-	a.wnd.SetOverlay(w)
-}
-
-// ShowOverlay показывает оверлей.
-func (a *App[T]) ShowOverlay() {
-	a.wnd.ShowOverlay()
-}
-
-// HideOverlay скрывает оверлей.
-func (a *App[T]) HideOverlay() {
-	a.wnd.HideOverlay()
-}
-
 func (a *App[T]) Focus() tui.FocusManager {
 	return a.wnd.Focus()
 }

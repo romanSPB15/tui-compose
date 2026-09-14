@@ -22,35 +22,6 @@ import (
 	"golang.org/x/term"
 )
 
-// Color — это код цвета.
-type Color int
-
-const NoColor Color = 0
-
-// Обычные цвета.
-const (
-	Black Color = iota + 30
-	Red
-	Green
-	Yellow
-	Blue
-	Magenta
-	Cyan
-	White
-)
-
-// Яркие цвета(работают не во всем терминалах).
-const (
-	BrightBlack Color = iota + 90
-	BrightRed
-	BrightGreen
-	BrightYellow
-	BrightBlue
-	BrightMagenta
-	BrightCyan
-	BrightWhite
-)
-
 // ColorRGB — это цвет в RGB.
 type ColorRGB struct {
 	R, G, B uint8
@@ -90,24 +61,26 @@ type window struct {
 	runned           bool
 	work             chan *task
 	focusChange      bool
-	stdout           *os.File
-	stderr           *os.File
-	oldMode          *term.State
-	mouseHandlers    []MouseEventHandler
-	content          Widget
-	buf              [][]cell.Cell
-	overlay          Widget
-	displayOverlay   bool
-	initCell         cell.Cell
-	bufferPool       *sync.Pool
-	cellBuf          []cell.Cell
-	last             cell.Style
-	worker           atomic.Int32
-	builderPool      sync.Pool
-	styleFunc        func(Widget)
-	widgetBuf        [][]cell.Cell
-	maxWidgetSize    Pos
-	subBuf           [][]cell.Cell
+
+	mouseHandlers []MouseEventHandler
+	content       Widget
+	initCell      cell.Cell
+	bufferPool    *sync.Pool
+	cellBuf       []cell.Cell
+	worker        atomic.Int32
+	builderPool   sync.Pool
+	styleFunc     func(Widget)
+	widgetBuf     [][]cell.Cell
+	maxWidgetSize Pos
+	subBuf        [][]cell.Cell
+
+	stdout    *os.File
+	stderr    *os.File
+	oldMode   *term.State
+	last      cell.Style
+	cursorPos Pos
+
+	buf [][]cell.Cell
 }
 
 func (wnd *window) indexClickable(wgt Widget, offset Pos) {
@@ -152,6 +125,18 @@ func (wnd *window) indexFocusable(wgt Widget, offset Pos) {
 	}
 }
 
+func (wnd *window) applyStyles(wgt Widget) {
+	if wnd.styleFunc == nil {
+		return
+	}
+	wnd.styleFunc(wgt)
+	if c, ok := wgt.(Container); ok {
+		for _, child := range c.Child() {
+			wnd.applyStyles(child)
+		}
+	}
+}
+
 func (wnd *window) Index() {
 	if wnd.content == nil {
 		return
@@ -159,13 +144,12 @@ func (wnd *window) Index() {
 	wnd.focusableWidgets = nil
 	wnd.wgt = nil
 
-	wnd.indexClickable(wnd.overlay, Pos{0, 0})
-	wnd.indexFocusable(wnd.overlay, Pos{0, 0})
-
 	wnd.indexClickable(wnd.content, Pos{0, 0})
 	wnd.indexFocusable(wnd.content, Pos{0, 0})
 
 	wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line = wnd.calcMaxWidgetSize(wnd.content, 0, 0)
+
+	wnd.applyStyles(wnd.content)
 }
 
 func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
@@ -222,14 +206,27 @@ func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
 
 	wgt.Render(subBuf)
 
-	for y := 0; y < h && y+rect[0].Line < rect[1].Line; y++ {
+	for y := 0; y < h; y++ {
 		destY := y + rect[0].Line
+		if destY < 0 || destY >= len(buf) {
+			continue
+		}
+		if destY >= rect[1].Line {
+			break
+		}
 		srcRow := subBuf[y]
 		dstRow := buf[destY]
+
+		if rect[0].Col < 0 {
+			continue
+		}
 
 		copyLen := w
 		if rect[0].Col+copyLen > rect[1].Col {
 			copyLen = rect[1].Col - rect[0].Col
+		}
+		if rect[0].Col+copyLen > len(dstRow) {
+			copyLen = len(dstRow) - rect[0].Col
 		}
 		if copyLen > 0 {
 			copy(dstRow[rect[0].Col:rect[0].Col+copyLen], srcRow[:copyLen])
@@ -238,11 +235,14 @@ func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
 }
 
 func (wnd *window) calcMaxWidgetSize(wgt Widget, w, h int) (int, int) {
+	if wgt == nil {
+		return w, h
+	}
 	if c, ok := wgt.(Container); ok {
 		for _, v := range c.Child() {
 			w2, h2 := wnd.calcMaxWidgetSize(v, w, h)
 			w = max(w, w2)
-			h = max(w, h2)
+			h = max(h, h2)
 		}
 		return w, h
 	}
@@ -264,49 +264,6 @@ func (wnd *window) render() [][]cell.Cell {
 	if ww == 0 && hw == 0 {
 		wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line = wnd.calcMaxWidgetSize(wnd.content, 0, 0)
 		ww, hw = wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line
-	}
-
-	if len(wnd.widgetBuf) < hw {
-		var w int
-		if len(wnd.buf) != 0 {
-			w = len(wnd.widgetBuf[0])
-		} else {
-			w = ww
-		}
-
-		wnd.widgetBuf = make([][]cell.Cell, hw)
-		for i := range wnd.widgetBuf {
-			wnd.widgetBuf[i] = make([]cell.Cell, w)
-			for j := range wnd.widgetBuf[i] {
-				wnd.widgetBuf[i][j] = wnd.initCell
-			}
-		}
-	}
-
-	if len(wnd.widgetBuf[0]) < ww {
-		wnd.widgetBuf = make([][]cell.Cell, len(wnd.widgetBuf))
-		for i := range wnd.widgetBuf {
-			wnd.widgetBuf[i] = make([]cell.Cell, ww)
-			for j := range wnd.widgetBuf[i] {
-				wnd.widgetBuf[i][j] = wnd.initCell
-			}
-		}
-	}
-
-	if len(wnd.widgetBuf) > hw*2 {
-		newBuf := make([][]cell.Cell, hw)
-		for i := range newBuf {
-			newBuf[i] = make([]cell.Cell, len(wnd.widgetBuf[0]))
-			copy(newBuf[i], wnd.widgetBuf[i])
-		}
-		wnd.widgetBuf = newBuf
-	}
-	if len(wnd.widgetBuf[0]) > ww*2 {
-		for i := range wnd.widgetBuf {
-			newRow := make([]cell.Cell, ww)
-			copy(newRow, wnd.widgetBuf[i][:ww])
-			wnd.widgetBuf[i] = newRow
-		}
 	}
 
 	wnd.draw(wnd.content, [2]Pos{{Line: 0, Col: 0}, {Line: h, Col: w}}, buf)
@@ -371,6 +328,74 @@ func (wnd *window) releaseBuffer(buf [][]cell.Cell) {
 
 var capture bool
 
+func reflow(old [][]cell.Cell, newW, newH int, initCell cell.Cell) [][]cell.Cell {
+	if len(old) == 0 {
+		return emptyBuffer(newW, newH, initCell)
+	}
+
+	oldW := len(old[0])
+	if oldW == 0 {
+		return emptyBuffer(newW, newH, initCell)
+	}
+
+	var lines [][]cell.Cell
+	if oldW == newW {
+		lines = old
+	} else {
+		var stream []cell.Cell
+		stream = make([]cell.Cell, 0, oldW*len(old))
+		for y := range old {
+			stream = append(stream, old[y]...)
+		}
+
+		newLineCount := (len(stream) + newW - 1) / newW
+		lines = make([][]cell.Cell, newLineCount)
+		for y := range newLineCount {
+			lines[y] = make([]cell.Cell, newW)
+			for x := range newW {
+				idx := y*newW + x
+				if idx < len(stream) {
+					lines[y][x] = stream[idx]
+				} else {
+					lines[y][x] = cell.Cell{Char: ' ', Style: initCell.Style}
+				}
+			}
+		}
+	}
+
+	result := make([][]cell.Cell, newH)
+	if len(lines) >= newH {
+		start := len(lines) - newH
+		for y := range newH {
+			result[y] = lines[start+y]
+		}
+	} else {
+		copy(result, lines)
+
+		for y := len(lines); y < newH; y++ {
+			result[y] = emptyRow(newW, initCell)
+		}
+	}
+
+	return result
+}
+
+func emptyBuffer(w, h int, initCell cell.Cell) [][]cell.Cell {
+	buf := make([][]cell.Cell, h)
+	for y := range buf {
+		buf[y] = emptyRow(w, initCell)
+	}
+	return buf
+}
+
+func emptyRow(w int, initCell cell.Cell) []cell.Cell {
+	row := make([]cell.Cell, w)
+	for x := range row {
+		row[x] = initCell
+	}
+	return row
+}
+
 func (wnd *window) Redraw() {
 	renderStart := time.Now()
 	if DEBUG && !wnd.isWorker() {
@@ -380,20 +405,27 @@ func (wnd *window) Redraw() {
 		return
 	}
 
+	h := wnd.Height()
+	w := wnd.Width()
+
+	if h <= 0 || w <= 0 {
+		return
+	}
+
 	newBuf := wnd.render()
 	if newBuf == nil {
 		return
 	}
 
-	h := wnd.Height()
-	w := wnd.Width()
-
-	if wnd.buf == nil || len(wnd.buf) != h || len(wnd.buf[0]) != w {
+	if wnd.buf == nil || len(wnd.buf) != h || (len(wnd.buf) > 0 && len(wnd.buf[0]) != w) {
 		if wnd.buf != nil {
-			wnd.releaseBuffer(wnd.buf)
+			wnd.buf = reflow(wnd.buf, w, h, wnd.initCell)
+			wnd.cursorPos = Pos{-1, -1}
+		} else {
+			wnd.buf = wnd.newEmptyBuffer(h, w)
 		}
-		wnd.buf = wnd.newEmptyBuffer(h, w)
 	}
+
 	oldBuf := wnd.buf
 
 	b := wnd.builderPool.Get().(*builder.Builder)
@@ -402,11 +434,11 @@ func (wnd *window) Redraw() {
 	defer func() {
 		wnd.releaseBuffer(newBuf)
 		wnd.builderPool.Put(b)
-		b.Copy(wnd.f)
 	}()
 
 	if capture {
 		json.NewEncoder(b).Encode(newBuf)
+		b.Copy(wnd.f)
 		return
 	}
 
@@ -419,13 +451,16 @@ func (wnd *window) Redraw() {
 		}
 		for x := range w {
 			if newBuf[y][x] != oldBuf[y][x] {
-				b.WriteString("\033[")
-				b.WriteString(strconv.Itoa(y + 1))
-				b.WriteByte(';')
-				b.WriteString(strconv.Itoa(x + 1))
-				b.WriteByte('H')
+				if wnd.cursorPos.Line != y || wnd.cursorPos.Col != x {
+					b.WriteString("\033[")
+					b.WriteInt(y + 1)
+					b.WriteByte(';')
+					b.WriteInt(x + 1)
+					b.WriteByte('H')
+				}
 
 				newBuf[y][x].Style.WriteANSI(wnd.last, b)
+				wnd.last = newBuf[y][x].Style
 
 				if newBuf[y][x].Char == 0 {
 					wnd.LogInfo("null rune detected at [%d, %d]", x, y)
@@ -435,6 +470,18 @@ func (wnd *window) Redraw() {
 				}
 
 				oldBuf[y][x] = newBuf[y][x]
+
+				x2, y2 := x+1, y
+
+				if x2 == w {
+					x2 = 0
+					y2++
+				}
+
+				wnd.cursorPos = Pos{
+					Line: y2,
+					Col:  x2,
+				}
 			}
 		}
 	}
@@ -446,10 +493,6 @@ func (wnd *window) Redraw() {
 	b.Copy(wnd.f)
 
 	writeDur := time.Since(writeStart)
-
-	wnd.builderPool.Put(b)
-
-	wnd.releaseBuffer(newBuf)
 
 	var fps, fpsIO int
 	t := renderDur + makeStringDur
@@ -469,41 +512,13 @@ func (wnd *window) Redraw() {
 	wnd.LogInfo("Redraw timings: %s %s %s, FPS: %d:%d", renderDur, makeStringDur, writeDur, fps, fpsIO)
 }
 
-func (wnd *window) SetOverlay(wgt Widget) {
-	wnd.Do(func() {
-		wnd.overlay = wgt
-		if wnd.displayOverlay {
-			wnd.Redraw()
-		}
-		wnd.Index()
-	})
-}
-
-func (wnd *window) ShowOverlay() {
-	wnd.Do(func() {
-		if !wnd.displayOverlay {
-			wnd.displayOverlay = true
-			wnd.Redraw()
-		}
-	})
-}
-
-func (wnd *window) HideOverlay() {
-	wnd.Do(func() {
-		if wnd.displayOverlay {
-			wnd.displayOverlay = false
-			wnd.Redraw()
-		}
-	})
-}
-
 func (wnd *window) Run() {
 	defer func() {
-		if DEBUG {
-			wnd.log.Close()
-		}
 		if err := recover(); err != nil {
 			wnd.LogFatal("tui: Произошла паника: %v", err)
+		}
+		if DEBUG {
+			wnd.log.Close()
 		}
 	}()
 	if !capture {
@@ -581,7 +596,7 @@ func NewWindow() Window {
 				return &builder.Builder{}
 			},
 		},
-		last: cell.Style{Args: cell.Bold},
+		cursorPos: Pos{-1, -1},
 	}
 	if DEBUG {
 		f, err := os.Create(fmt.Sprintf("debug_log_%d", time.Now().UnixMilli()))
@@ -784,7 +799,7 @@ func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
 }
 
 func (wnd *window) RegisterClickHandler(h func(ev *input.MouseEvent)) {
-	if DEBUG && wnd.isWorker() {
+	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("RegisterClickHandler called outside worker goroutine: data race")
 	}
 	wnd.mouseHandlers = append(wnd.mouseHandlers, h)

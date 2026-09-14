@@ -38,66 +38,9 @@ type Cell struct {
 
 // ANSI возвращает последовательность для перехода от предыдущего стиля к текущему.
 func (c Style) ANSI(last Style) string {
-	if (c == Style{}) && (last != Style{}) {
-		return "\x1b[0m"
-	}
-
-	var codes []string
-
-	if c.Args&Bold != 0 && last.Args&Bold == 0 {
-		codes = append(codes, "1")
-	} else if c.Args&Bold == 0 && last.Args&Bold != 0 {
-		codes = append(codes, "22")
-	}
-
-	if c.Args&Italic != 0 && last.Args&Italic == 0 {
-		codes = append(codes, "3")
-	} else if c.Args&Italic == 0 && last.Args&Italic != 0 {
-		codes = append(codes, "23")
-	}
-
-	if c.Args&Underline != 0 && last.Args&Underline == 0 {
-		codes = append(codes, "4")
-	} else if c.Args&Underline == 0 && last.Args&Underline != 0 {
-		codes = append(codes, "24")
-	}
-
-	if c.Args&Reverse != 0 && last.Args&Reverse == 0 {
-		codes = append(codes, "7")
-	} else if c.Args&Reverse == 0 && last.Args&Reverse != 0 {
-		codes = append(codes, "27")
-	}
-
-	if c.Args&Blink != 0 && last.Args&Blink == 0 {
-		codes = append(codes, "5")
-	} else if c.Args&Blink == 0 && last.Args&Blink != 0 {
-		codes = append(codes, "25")
-	}
-
-	if c.Fg != last.Fg {
-		if c.Fg == "" {
-			codes = append(codes, "39")
-		} else {
-			codes = append(codes, strings.Split(c.Fg, ";")...)
-		}
-	}
-
-	if c.Bg != last.Bg {
-		if c.Bg == "" {
-			codes = append(codes, "49")
-		} else {
-			codes = append(codes, strings.Split(c.Bg, ";")...)
-		}
-	}
-
-	if c.Args&Reset != 0 {
-		codes = []string{"0"}
-	}
-
-	if len(codes) == 0 {
-		return ""
-	}
-	return "\033[" + strings.Join(codes, ";") + "m"
+	var bb builder.Builder
+	c.WriteANSI(last, &bb)
+	return bb.String()
 }
 
 func (c Style) WriteANSI(last Style, bb *builder.Builder) {

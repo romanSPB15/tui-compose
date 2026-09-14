@@ -85,6 +85,14 @@ func writeFloat32(b *Builder, v float32) {
 	b.buf = strconv.AppendFloat(b.buf, float64(v), 'f', 3, 32)
 }
 
+func (b *Builder) WriteInt(v int) {
+	b.buf = strconv.AppendInt(b.buf, int64(v), 10)
+}
+
+func (b *Builder) WriteUint(v uint) {
+	b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
+}
+
 func (b *Builder) WriteFormat(s string, args ...any) {
 	arg := -1
 	estimate := len(s) + len(args)*10

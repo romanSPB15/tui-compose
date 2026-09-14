@@ -4,7 +4,7 @@
 [![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/releases)
 [![Test](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml/badge.svg)](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml)
 [![Documentation](https://img.shields.io/badge/GitHub-Wiki-red?logo=github)](https://github.com/romanSPB15/tui-compose/wiki)
-![Lightweight](https://img.shields.io/badge/Lightweight-~10000_lines-brightgreen)
+![Lightweight](https://img.shields.io/badge/Lightweight-~9500_lines-brightgreen)
 [![Examples](https://img.shields.io/badge/Examples-23-white?logo=github)](https://github.com/romanSPB15/tui-compose/tree/main/examples)
 
 **Лёгкий путь для создания приложений в терминале на Go.**
@@ -16,15 +16,15 @@
         * Image.
     - **`extra/`**:
         * LineChart, BarChart, PieChart, Sparkline, Tree, Table, Tabs, Accordion, Spinner, BlinkLabel, PageIndicator, TextView.
-* 🏆 Высокоэффективный low-alloc diff-рендер — 200 FPS с I/O без мерцания
+* 🏆 Высокоэффективный low-alloc diff-рендер — 1500–1800 FPS с I/O.
 * ✨ Автоматическое фокус по Tab/Shift+Tab
-* 💎 Минимальный размер: ~10000 строк кода, только `x/sys` + `x/term`
+* 💎 Минимальный размер: ~9500 строк кода, только `x/sys` + `x/term`
 * 🎁 Полная поддержка Windows — без WSL
 * 🛠 Детекция data race при вызове методов окна — `-tags debug`
 * 🎨 Удобная стилизация через битовые маски — быстро и удобно
-* 🔧 Кастомные виджеты — 3-6 методов(зависит от функцонала)
+* 🔧 Кастомные виджеты — 1-2 метода
 * 🛒 Контейнеры — не нужно считать координаты вручную
-* 🚀 react-надстройка — пишите реактивные приложения
+* 🚀 TEA-надстройка — пишите реактивные приложения с ELM
 * 🏹 Поддержка мыши - клики
 
 ---
@@ -90,19 +90,18 @@ func main() {
 *Другие примеры доступны в [examples](https://github.com/romanSPB15/tui-compose/tree/main/examples).*
 
 
-## Сравнение с `gizak/termui`
-| Критерий                     | tui-compose(v3.4.0)                       | termui(v3.1.0)                          |
-|------------------------------|-------------------------------------------|-----------------------------------------|
-| Размер                       | ✅ ~8500 строк                            | ⚠ 4325 строк + 5393(termbox-go)        |
-| Примеры                      | 21                                        | 16                                      |
-| Возраст                      | 3 месяца                                  | 12 лет                                  |
-| Набор виджетов               | ✅ Огромный(20) — от кнопок до графиков   | ⚠ Средний(12)                          |
-| Рендеринг                    | ✅ low-allocation, diff-рендер            | ❌ Полная перерисовка                  |
-| Кастомизация                 | ✅ Полная(стили, выбор символов)          | ⚠ Частичная                            |
-| Зависимости                  | ✅ 2(только `x/sys` + `x/term`)           | ❌ 5+ — `termbox-go`, `x/sys` и другие |
-| Тесты                        | ✅ Покрытие низкоуровневых пакетов        | ❌ Нет                                 |
-| Интерактивность «из коробки» | ✅ Есть                                   | ❌ Нет(реализовывать вручную)          |
-| Композиция                   | ✅ VBox + HBox                            | ⚠ Grid + абсолютные                    |
+## Сравнение с [Bubble Tea](https://github.com/charmbracelet/bubbletea)
+
+| Критерий                     | tui-compose(v4.0.0)                              | Bubble Tea(v2.0.9)                      |
+|------------------------------|------------------------------------------------- |-----------------------------------------|
+| Набор виджетов               | ✅ Огромный(20) — от кнопок до графиков          | ⚠ Средний(12) — в Bubbles              |
+| Производительность           | ✅ zero-allocation, diff-рендер                  | ⚠ diff-рендер, аллокации строк         |
+| Зависимости                  | ✅ 2(только `x/sys` + `x/term`)                  | ❌ 15+                                 |
+| Обработка ресайз             | ✅ Без артефактов                                | ❌ Артефакты при горизонтальном сжатии |
+| Парадигма                    | ✅ Императивная + 2 надстройки — `react` + `tea` | ⚠ Только ELM                           |
+| Размер кода                  | ✅ 9500 строк                                    | ❌ Экосистема >50k                     |
+| Графики                      | ✅ Есть — LineChart, PieChart, Sparkline         | ❌ Нет                                 |
+| Автоматический фокус         | ✅ Есть — по умолчанию                           | ❌ Нет, ручное управление              |
 
 ## Лицензия
 [**MIT**](https://github.com/romanSPB15/tui-compose/blob/main/LICENSE)

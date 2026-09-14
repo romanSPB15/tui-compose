@@ -21,7 +21,6 @@ func (wnd *window) startScreenResizeChecker() {
 				}
 				prevW, prevH = newW, newH
 				wnd.doWithMessage(func() {
-					wnd.buf = nil
 					wnd.Do(wnd.Redraw)
 				}, "buf reset")
 			}

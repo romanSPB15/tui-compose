@@ -1,15 +1,21 @@
 package main
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/romanSPB15/tui-compose/v4"
 	"github.com/romanSPB15/tui-compose/v4/extra"
+
+	_ "net/http/pprof"
 )
 
 func main() {
+	go func() {
+		http.ListenAndServe("localhost:6060", nil)
+	}()
+
 	wnd := tui.NewWindow()
-	wnd.SetTitle("TUI Compose v4 Demo")
 
 	// данные
 	data := []int{
@@ -45,13 +51,13 @@ func main() {
 	wnd.SetContent(tui.NewFrame(tui.NewHBox(tui.NewVBox(
 		tui.NewFrame(chart).Rounded().WithTitle(tui.Title{Text: "Memory, MB", Style: tui.FrRed}).WithTitle(tui.Title{Text: "CPU, %", Style: tui.FrYellow, Pos: tui.TitleTopRight}),
 		tui.NewHBox(
-			tui.NewFrame(extra.NewBlinkLabel(6).WithText("Ошибка").WithStyle(tui.FrRed).Start(time.Second/2)).Heavy(),
+			tui.NewFrame(extra.NewBlinkLabel(6).WithText("Ошибка").WithStyle(tui.FrRed).Start(time.Second/60)).Heavy(),
 			tui.NewFrame(tui.NewHBox(tui.NewStaticLabel("Загрузка page.html..."),
-				extra.NewSpinner(extra.SpinnerBrailleReverse).WithStyle(tui.FrBrightMagenta).Start(time.Second/10),
+				extra.NewSpinner(extra.SpinnerBrailleReverse).WithStyle(tui.FrBrightMagenta).Start(time.Second/20),
 			)).Double(),
 			tui.NewFrame(tui.NewHBox(
 				tui.NewGauge(20).EmptySquares().WithValue(0.25),
-				extra.NewSpinner(extra.SpinnerLine).Start(time.Second/3)).WithGap(2),
+				extra.NewSpinner(extra.SpinnerLine).Start(time.Second/30)).WithGap(2),
 			).BevelASCII(),
 		),
 	), tui.NewFrame(extra.NewTree([]extra.TreeNode{
@@ -207,7 +213,7 @@ func main() {
 			select {
 			case <-wnd.OnQuit():
 				return
-			case <-time.Tick(time.Second / 5):
+			case <-time.Tick(time.Second / 120):
 				wnd.Commit(func() {
 					if i == len(data)-7 {
 						i = 0

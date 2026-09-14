@@ -251,8 +251,11 @@ func (c *Check) Render(buf [][]cell.Cell) {
 	buf[0][0] = cell.Cell{Char: '[', Style: s}
 	if c.checkedState {
 		buf[0][1] = cell.Cell{Char: 'x', Style: s}
+	} else {
+		buf[0][1] = cell.Cell{Char: ' ', Style: s}
 	}
 	buf[0][2] = cell.Cell{Char: ']', Style: s}
+	buf[0][3] = cell.Cell{Char: ' ', Style: s}
 
 	runes := []rune(c.text)
 	for i := range utf8.RuneCountInString(c.text) {
