@@ -24,4 +24,4 @@
 | [`hyperlink`](https://github.com/romanSPB15/tui-compose/tree/main/examples/hyperlink) | Пример использования гиперссылок                                |
 | [`gauge`](https://github.com/romanSPB15/tui-compose/tree/main/examples/gauge)         | Пример использования Gauge                                      |
 | [`image`](https://github.com/romanSPB15/tui-compose/tree/main/examples/image)         | Пример использования Image                                      |
-| [`demo2`](https://github.com/romanSPB15/tui-compose/tree/main/examples/image)         | Код для demo2.gif                                               |
+| [`demo2`](https://github.com/romanSPB15/tui-compose/tree/main/examples/demo2)         | Код для demo2.gif                                               |
