@@ -2,12 +2,12 @@
 
 ## Supported Versions
 
-Only the latest major version (v3.x.x) is supported with security updates.
+Only the latest major version (v4.x.x) is supported with security updates.
 
 | Version | Supported |
 | ------- | --------- |
-| 3.x.x   | ✅        |
-| < 3.0   | ❌        |
+| 4.x.x   | ✅        |
+| < 4.0   | ❌        |
 
 ## Reporting a Vulnerability
 

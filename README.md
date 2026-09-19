@@ -29,7 +29,7 @@
 
 ---
 
-<h3  align="center"><pre>go get -u github.com/romanSPB15/tui-compose/v4</pre></h3>
+<h3 align="center"><pre>go get -u github.com/romanSPB15/tui-compose/v4</pre></h3>
 
 ## Быстрый старт
 ```go
