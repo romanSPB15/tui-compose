@@ -45,7 +45,7 @@ jobs:
         if: steps.check.outputs.skip == 'true'
         run: echo "No pushes in the last 3 days, skipping."
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         if: steps.check.outputs.skip != 'true'
         with:
           go-version-file: go.mod
