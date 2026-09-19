@@ -9,3 +9,4 @@ coverage
 stats.json
 debug_log_*
 temp-frames/
+stats-old.json
