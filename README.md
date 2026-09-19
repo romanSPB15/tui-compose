@@ -4,7 +4,7 @@
 [![Latest release](https://img.shields.io/github/v/release/romanSPB15/tui-compose)](https://github.com/romanSPB15/tui-compose/releases)
 [![Test](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml/badge.svg)](https://github.com/romanSPB15/tui-compose/actions/workflows/test.yaml)
 [![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2FromanSPB15%2Ftui-compose&label=visitors&labelColor=%23666666&countColor=%23eeccee&style=flat&labelStyle=none)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2FromanSPB15%2Ftui-compose)
-![Lightweight](https://img.shields.io/badge/Lightweight-~10000_lines-brightgreen)
+[![Docs](https://img.shields.io/badge/docs-github.io-blue?logo=github)](https://romanSPB15.github.io/tui-compose/docs.html)
 [![Examples](https://img.shields.io/badge/Examples-23-white?logo=github)](https://github.com/romanSPB15/tui-compose/tree/main/examples)
 
 **Лёгкий путь для создания приложений в терминале на Go.**
@@ -86,7 +86,7 @@ func main() {
 }
 ```
 
-*Документация доступна в [Wiki](https://github.com/romanSPB15/tui-compose/wiki).*<br>
+*Документация доступна на [GitHub Pages](https://romanspb15.github.io/tui-compose/docs.html).*<br>
 *Другие примеры доступны в [examples](https://github.com/romanSPB15/tui-compose/tree/main/examples).*
 
 
