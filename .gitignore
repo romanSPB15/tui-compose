@@ -8,5 +8,4 @@ coverage
 stats-old.json
 debug_log_*
 temp-frames/
-extra/
 coverage.txt
