@@ -127,7 +127,7 @@ func (pc *PieChart) InnerText() string {
 		// Считаем угол от центра к этой точке
 
 		dx := float64(x - cx)
-		dy := float64(y-cy) * 2.2 // коррекция соотношения сторон, подобрано
+		dy := float64(y-cy) * 2 // коррекция соотношения сторон, подобрано
 		dist2 := dx*dx + dy*dy
 
 		if dist2 > float64(pc.radius*pc.radius) {
@@ -179,7 +179,7 @@ func (pc *PieChart) InnerText() string {
 			am := (before+a)/2 - 0.1 // середина
 
 			x := cx + int(math.Cos(am)*float64(textRadius))
-			y := cy + int(math.Sin(am)*float64(textRadius)/2.2) // коррекция соотношения сторон
+			y := cy + int(math.Sin(am)*float64(textRadius)/2) // коррекция соотношения сторон
 
 			drawText(x, y, fmt.Sprintf("%.0f%%", (pc.data[i].Value/total)*100))
 
