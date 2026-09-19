@@ -35,7 +35,7 @@ func main() {
 	}).WithStyle(tui.BgBlue)
 
 	box := tui.NewVBox(label, tui.NewHBox(btnAdd, btnSub), btnQuit)
-	wnd.SetContent(box)
+	wnd.SetContent(tui.NewFrame(box).Rounded())
 
 	wnd.Run()
 }

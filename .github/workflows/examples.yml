@@ -1,0 +1,79 @@
+name: Examples
+
+on:
+  schedule:
+    - cron: '0 6 */2 * *'   # каждые 2 дня в 06:00 UTC
+  workflow_dispatch:         # и вручную
+
+permissions:
+  contents: write
+
+concurrency:
+  group: examples-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check recent activity
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LAST=$(gh api repos/${{ github.repository }}/commits/main \
+                   --jq '.[0].commit.committer.date' 2>/dev/null || echo "")
+          if [ -z "$LAST" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          LAST_TS=$(date -d "$LAST" +%s)
+          NOW_TS=$(date +%s)
+          DAYS=$(( (NOW_TS - LAST_TS) / 86400 ))
+          echo "last commit: $LAST ($DAYS days ago)"
+          if [ "$DAYS" -gt 3 ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip (no activity)
+        if: steps.check.outputs.skip == 'true'
+        run: echo "No pushes in the last 3 days, skipping."
+
+      - uses: actions/setup-go@v5
+        if: steps.check.outputs.skip != 'true'
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build tools
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          go build -o ./snap ./tools/snap
+          go build -o ./readmegen ./tools/readmegen
+
+      - name: Generate screenshots
+        if: steps.check.outputs.skip != 'true'
+        run: ./snap -all ./examples/... -o screenshot.png -w 120 -h 30
+
+      - name: Generate example READMEs
+        if: steps.check.outputs.skip != 'true'
+        run: ./readmegen -root examples
+
+      - name: Commit if changed
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'examples/**/screenshot.png' 'examples/**/README.md'
+          if git diff --staged --quiet; then
+            echo "No changes"
+          else
+            git commit -m "docs: regenerate example screenshots and READMEs [skip ci]"
+            git push
+          fi

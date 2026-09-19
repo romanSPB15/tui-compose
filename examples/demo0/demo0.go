@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	tui "github.com/romanSPB15/tui-compose/v3"
@@ -20,8 +21,8 @@ func main() {
 	))
 
 	box := tui.NewVBox(
-		tui.NewHBox(tui.NewStaticLabel("First Name:"), tui.NewInputField(20)),
-		tui.NewHBox(tui.NewStaticLabel("Last Name:"), tui.NewInputField(20)),
+		tui.NewHBox(tui.NewStaticLabel("First Name:"), tui.NewInputField(20).WithStyle(tui.BgBrightBlack)),
+		tui.NewHBox(tui.NewStaticLabel("Last Name:"), tui.NewInputField(20).WithStyle(tui.BgBrightBlack)),
 		tui.NewCheck("I agree to the terms of use").WithStyle(tui.Italic|tui.FrRed),
 		tui.NewButton("Submit", func() {
 			w.Commit(goodbye.Open)
@@ -37,7 +38,7 @@ func main() {
 				w.Quit()
 			}()
 		}).WithStyle(tui.Italic|tui.BgBrightCyan),
-	)
+	).WithGap(1)
 
 	form := tui.NewPage(box)
 
@@ -68,7 +69,11 @@ func main() {
 		}()
 	})
 
-	w.SetContent(cnv)
+	if os.Getenv("TUI_WIDTH") != "" {
+		form.Open()
+	} else {
+		w.SetContent(cnv)
+	}
 
 	w.Run()
 }
