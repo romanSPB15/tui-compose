@@ -10,24 +10,30 @@ import (
 	"github.com/romanSPB15/tui-compose/v4/builder"
 )
 
-// BIURBlRe - Bold Italic Underline Reverse Blink
-
+// Style — стиль ячейки.
 type Style struct {
-	Fg   string
-	Bg   string
-	Args uint32
+	Fg   string // ANSI код цвета текста
+	Bg   string // ANSI код цвета фона
+	Args uint32 // Битовая маска аргументов
 }
 
 const (
+	// Bold включает жирный текст.
 	Bold = 1 << iota
+	// Italic включает курсив.
 	Italic
+	// Underline включает подчёркивание.
 	Underline
+	// Reverse включает инверсию цветов.
 	Reverse
+	// Blink включает мигание.
 	Blink
+	// Reset сбрасывает все атрибуты.
 	Reset
 
 	resetFg
 	resetBg
+	resetAll
 )
 
 // Cell представляет одну ячейку экрана.
@@ -43,6 +49,10 @@ func (c Style) ANSI(last Style) string {
 	return bb.String()
 }
 
+// WriteANSI записывает ANSI для перехода от предыдущего стиля к текущему.
+//
+// bb := &builder.Builder{}
+// myStyle.WriteANSI(last, bb)
 func (c Style) WriteANSI(last Style, bb *builder.Builder) {
 	if c == last {
 		return
@@ -125,6 +135,8 @@ func (c Style) WriteANSI(last Style, bb *builder.Builder) {
 	bb.WriteByte('m')
 }
 
+// Merge сливает текущий стиль с переданным, и возвращает объединённый.
+// Старый стиль изменяется.
 func (c Style) Merge(new Style) Style {
 	if new.Args&Reset != 0 {
 		return Style{}
@@ -159,8 +171,8 @@ func parseANSI(seq string) (Style, uint16) {
 		v, _ := strconv.Atoi(params[i])
 		switch v {
 		case 0:
-			s.Args |= Reset
-			return s, 0
+			s.Args = 0
+			clearMask |= resetAll
 		case 1:
 			s.Args |= Bold
 		case 3:
@@ -195,7 +207,7 @@ func parseANSI(seq string) (Style, uint16) {
 			clearMask |= resetBg
 		case 38:
 			if i+1 < len(params) {
-				if params[i+1] == "2" && i+3 < len(params) {
+				if params[i+1] == "2" && i+4 < len(params) {
 					s.Fg = fmt.Sprintf("38;2;%s;%s;%s", params[i+2], params[i+3], params[i+4])
 					i += 4
 				} else if params[i+1] == "5" && i+2 < len(params) {
@@ -205,7 +217,7 @@ func parseANSI(seq string) (Style, uint16) {
 			}
 		case 48:
 			if i+1 < len(params) {
-				if params[i+1] == "2" && i+3 < len(params) {
+				if params[i+1] == "2" && i+4 < len(params) {
 					s.Bg = fmt.Sprintf("48;2;%s;%s;%s", params[i+2], params[i+3], params[i+4])
 					i += 4
 				} else if params[i+1] == "5" && i+2 < len(params) {
@@ -222,12 +234,13 @@ func parseANSI(seq string) (Style, uint16) {
 }
 
 // Parse разбирает строку с ANSI-кодами и возвращает слайс ячеек.
-// zero-allocation
 func Parse(s string, buf *[]Cell) []Cell {
 	cells, _ := ParseFromTo(s, buf, Style{})
 	return cells
 }
 
+// ParseFromTo разбирает строку с ANSI-кодами, начиная с переданного стиля,
+// и возвращает слайс ячеек и итоговый стиль.
 func ParseFromTo(s string, buf *[]Cell, currentStyle Style) ([]Cell, Style) {
 	if s == "" {
 		return nil, currentStyle
@@ -255,6 +268,11 @@ func ParseFromTo(s string, buf *[]Cell, currentStyle Style) ([]Cell, Style) {
 			seq := matches[mi].Seq
 			newStyle, clearMask := parseANSI(seq)
 
+			if clearMask&resetAll != 0 {
+				currentStyle = Style{}
+				clearMask &^= resetAll
+			}
+
 			currentStyle.Args &^= uint32(clearMask)
 
 			if clearMask&resetFg != 0 {
@@ -279,6 +297,8 @@ func ParseFromTo(s string, buf *[]Cell, currentStyle Style) ([]Cell, Style) {
 	return cells, currentStyle
 }
 
+// ParseMultiline разбирает многострочную строку с ANSI-кодами и возвращает
+// двумерный слайс ячеек, выравнивая строки по максимальной ширине.
 func ParseMultiline(s string) [][]Cell {
 	if s == "" {
 		return nil
@@ -318,6 +338,7 @@ func ParseMultiline(s string) [][]Cell {
 	return result
 }
 
+// ToString преобразует двумерный слайс ячеек обратно в строку с ANSI-кодами.
 func ToString(cells [][]Cell) string {
 	if len(cells) == 0 {
 		return ""

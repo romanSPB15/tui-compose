@@ -25,9 +25,11 @@ func (wnd *window) startScreenResizeChecker() {
 				}
 				prevW, prevH = newW, newH
 				wnd.doWithMessage(func() {
-					wnd.buf = nil
+					for _, h := range wnd.resizeHandlers {
+						h(newW, newH)
+					}
 
-					wnd.Do(wnd.Redraw)
+					wnd.Redraw()
 				}, "buf reset")
 			}
 		case <-wnd.stopCh:

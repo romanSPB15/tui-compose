@@ -168,6 +168,14 @@ func (b *border) Render(cells [][]cell.Cell) {
 
 		titleRunes := []rune(t.Text)
 
+		maxTitleW := w - 4
+		if maxTitleW < 0 {
+			maxTitleW = 0
+		}
+		if len(titleRunes) > maxTitleW {
+			titleRunes = titleRunes[:maxTitleW]
+		}
+
 		drawTitle := func(x, y int) {
 			for i, r := range titleRunes {
 				cells[y][x+i] = cell.Cell{r, titleStyle}

@@ -9,6 +9,7 @@ import (
 
 func main() {
 	wnd := tui.NewWindow()
+	wnd.SetTitle("TUI Compose - Tree Demo")
 
 	nodes := []extra.TreeNode{
 		// Корень

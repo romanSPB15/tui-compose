@@ -5,6 +5,12 @@ import (
 	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
+// Sparkline — виджет мини-графика (спарклайна).
+// Отображает последовательность значений столбцами высотой до DataHeight
+// строк, используя частичные блочные символы для сглаживания.
+// Добавлено в TUI v3.3.0.
+//
+// s := extra.NewSparkline().WithValues([]int{1, 5, 3, 8}).WithHeight(3).AutoScale()
 type Sparkline struct {
 	Fill8, Fill7, Fill6, Fill5, Fill4, Fill3, Fill2, Fill1 rune
 
@@ -14,6 +20,8 @@ type Sparkline struct {
 	DataHeight int
 }
 
+// NewSparkline создаёт спарклайн с Unicode-заполнителями по умолчанию,
+// высотой в одну строку и единичным масштабом.
 func NewSparkline() *Sparkline {
 	return &Sparkline{
 		Fill8:      '█',
@@ -28,6 +36,9 @@ func NewSparkline() *Sparkline {
 		div:        1,
 	}
 }
+
+// WithValues устанавливает данные графика.
+// Если масштаб ещё не был задан явно, пересчитывает его автоматически.
 func (bc *Sparkline) WithValues(v []int) *Sparkline {
 	bc.values = v
 	if bc.div == 0 {
@@ -36,24 +47,29 @@ func (bc *Sparkline) WithValues(v []int) *Sparkline {
 	return bc
 }
 
+// AutoScale пересчитывает автоматический масштаб.
 func (bc *Sparkline) AutoScale() *Sparkline {
 	bc.recalcDiv()
 	return bc
 }
 
+// WithScale устанавливает масштаб вручную.
 func (bc *Sparkline) WithScale(div float64) *Sparkline {
 	bc.div = div
 	return bc
 }
 
+// Width возвращает ширину спарклайна — по количеству значений.
 func (bc *Sparkline) Width() int {
 	return len(bc.values)
 }
 
+// Height возвращает высоту спарклайна в строках.
 func (bc *Sparkline) Height() int {
 	return bc.DataHeight
 }
 
+// Render рисует спарклайн в буфер.
 func (bc *Sparkline) Render(cells [][]cell.Cell) {
 	h := bc.Height()
 
@@ -93,12 +109,14 @@ func (bc *Sparkline) Render(cells [][]cell.Cell) {
 	}
 }
 
+// Unicode переключает на блочные символы Unicode.
 func (s *Sparkline) Unicode() *Sparkline {
 	s.Fill8, s.Fill7, s.Fill6, s.Fill5, s.Fill4, s.Fill3, s.Fill2, s.Fill1 =
 		'█', '▇', '▆', '▅', '▄', '▃', '▂', '▁'
 	return s
 }
 
+// ASCII переключает на ASCII-заполнители.
 func (s *Sparkline) ASCII() *Sparkline {
 	s.Fill8 = '#'
 	s.Fill7 = '#'
@@ -128,6 +146,8 @@ func (s *Sparkline) WithBarStyle(fn func(i, v int) tui.Style) *Sparkline {
 	return s
 }
 
+// recalcDiv пересчитывает делитель масштаба так, чтобы максимум значений
+// умещался в DataHeight строк с учётом дробной части блочных символов.
 func (s *Sparkline) recalcDiv() {
 	if len(s.values) == 0 {
 		s.div = 1

@@ -19,17 +19,17 @@ func main() {
 			tui.NewHBox(
 				tui.NewButton("+", func() {
 					app.Mutate(func(s *State) { s.Count++ })
-				}).WithStyle(tui.BgRed),
+				}).WithStyle(tui.BgRed).WithPaddings(0, 0),
 				tui.NewButton("-", func() {
 					if state.Count > 0 {
 						app.Mutate(func(s *State) { s.Count-- })
 					}
-				}).WithStyle(tui.BgBlue),
+				}).WithStyle(tui.BgBlue).WithPaddings(0, 0),
 			),
 			tui.NewButton("Выход", func() {
 				app.Quit()
-			}).WithStyle(tui.FrBrightBlack),
-		)).WithTitle(tui.Title{Text: "TUI Compose React"})
+			}).WithStyle(tui.BgBrightBlack),
+		).WithGap(1)).WithTitle(tui.Title{Text: "TUI Compose", Pos: tui.TitleTopCenter, Style: tui.FrBlue | tui.Bold}).Double().WithPaddings(0, 3)
 	})
 
 	app.SetTitle("Моё приложение")

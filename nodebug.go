@@ -14,6 +14,6 @@ func (wnd *window) LogInfo(message string, args ...any) {}
 
 // LogFatal() логирует указанное сообщение подобно fmt.Printf() в файл, если при сборке использовался тег debug. Потом вых
 func (wnd *window) LogFatal(message string, args ...any) {
-	recoveryScreen(fmt.Sprintf(message, args...))
+	wnd.recoveryScreen(fmt.Sprintf(message, args...))
 	os.Exit(1)
 }

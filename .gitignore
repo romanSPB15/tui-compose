@@ -1,12 +1,11 @@
 *.cmd
 *.bar
-*.ps1
 log.*
 log
 *.exe
 game-linux
 coverage
-stats.json
+stats-old.json
 debug_log_*
 temp-frames/
 extra/

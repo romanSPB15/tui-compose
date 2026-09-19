@@ -5,6 +5,8 @@ import (
 	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
+// TableCellAlign — выравнивание текста в ячейке таблицы.
+// Добавлено в TUI v3.3.0.
 type TableCellAlign int
 
 const (
@@ -13,6 +15,8 @@ const (
 	AlignRight  = iota
 )
 
+// HorSeparator — режим отображения горизонтальных разделителей таблицы.
+// Добавлено в TUI v3.3.0.
 type HorSeparator int
 
 const (
@@ -21,18 +25,24 @@ const (
 	EverywhereHorSeparator
 )
 
+// TableCell — одна ячейка таблицы.
+// Добавлено в TUI v3.3.0.
 type TableCell struct {
 	Style tui.Style
 	Text  string
 	Align TableCellAlign
 }
 
+// TableStyle — символы, используемые для отрисовки рамки таблицы.
+// Добавлено в TUI v3.3.0.
 type TableStyle struct {
 	Hor, Ver                                       rune // — │
 	TopRight, TopLeft, BottomRight, BottomLeft     rune // ┐ ┌ ┘ └
 	Plus, PlusLeft, PlusRight, PlusBottom, PlusTop rune // ┼ ├ ┤ ┴ ┬
 }
 
+// Table — виджет таблицы.
+// Добавлено в TUI v3.3.0.
 type Table struct {
 	data   [][]TableCell
 	widths []int
@@ -40,6 +50,9 @@ type Table struct {
 	s      TableStyle
 }
 
+// NewTable создаёт таблицу с указанными ячейками.
+// Ширины колонок вычисляются автоматически.
+// Добавлено в TUI v3.3.0.
 func NewTable(cells [][]TableCell) *Table {
 	if len(cells) == 0 {
 		return (&Table{
@@ -67,6 +80,8 @@ func NewTable(cells [][]TableCell) *Table {
 	return tbl
 }
 
+// Default устанавливает стиль таблицы по умолчанию (одинарные линии).
+// Добавлено в TUI v3.3.0.
 func (tbl *Table) Default() *Table {
 	tbl.s = TableStyle{
 		Hor: '─', Ver: '│',
@@ -78,6 +93,8 @@ func (tbl *Table) Default() *Table {
 	return tbl
 }
 
+// Rounded устанавливает стиль таблицы со скруглёнными углами.
+// Добавлено в TUI v3.3.0.
 func (tbl *Table) Rounded() *Table {
 	tbl.s = TableStyle{
 		Hor: '─', Ver: '│',
@@ -89,6 +106,8 @@ func (tbl *Table) Rounded() *Table {
 	return tbl
 }
 
+// ASCII устанавливает ASCII-совместимый стиль таблицы.
+// Добавлено в TUI v3.3.0.
 func (tbl *Table) ASCII() *Table {
 	tbl.s = TableStyle{
 		Hor: '-', Ver: '|',
@@ -118,6 +137,9 @@ func (pc *Table) Height() int {
 	return len(pc.data)*2 + 1
 }
 
+// WithData заменяет содержимое таблицы и пересчитывает ширины колонок.
+// Автоматически перерисовывает окно.
+// Добавлено в TUI v3.3.0.
 func (pc *Table) WithData(tc [][]TableCell) *Table {
 	pc.data = tc
 	if len(pc.data) != 0 {
@@ -137,9 +159,6 @@ func (pc *Table) WithData(tc [][]TableCell) *Table {
 		}
 	}
 
-	if tui.CurrentWindow() != nil {
-		tui.CurrentWindow().Do(tui.CurrentWindow().Redraw)
-	}
 	return pc
 }
 
@@ -218,13 +237,8 @@ func (t *Table) Render(buf [][]cell.Cell) {
 			buf[rowY][x] = cell.Cell{Char: ' ', Style: style(cellData.Style)}
 			x++
 
-			if colIdx < len(row)-1 {
-				buf[rowY][x] = cell.Cell{Char: t.s.Ver, Style: cell.Style{}}
-				x++
-			} else {
-				buf[rowY][x] = cell.Cell{Char: t.s.Ver, Style: cell.Style{}}
-				x++
-			}
+			buf[rowY][x] = cell.Cell{Char: t.s.Ver, Style: cell.Style{}}
+			x++
 		}
 
 		rowY++
@@ -264,11 +278,15 @@ func (t *Table) Render(buf [][]cell.Cell) {
 	}
 }
 
+// WithStyle устанавливает произвольный стиль рамки таблицы.
+// Добавлено в TUI v3.3.0.
 func (t *Table) WithStyle(s TableStyle) *Table {
 	t.s = s
 	return t
 }
 
+// WithHorSeparator устанавливает режим отображения горизонтальных разделителей.
+// Добавлено в TUI v3.3.0.
 func (t *Table) WithHorSeparator(h HorSeparator) *Table {
 	t.hor = h
 	return t

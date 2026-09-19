@@ -7,6 +7,9 @@ import (
 	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
+// Accordion — виджет раскрывающегося списка.
+// Состоит из заголовка-кнопки и содержимого, которое можно скрыть или показать.
+// Добавлено в TUI v3.3.0.
 type Accordion struct {
 	content   tui.Widget
 	label     *tui.Button
@@ -14,8 +17,19 @@ type Accordion struct {
 	CloseRune rune
 	OpenRune  rune
 	text      string
+	wnd       tui.Window
 }
 
+func (btn *Accordion) Send(ev tui.Event) {
+	switch ev := ev.(type) {
+	case *tui.WindowEvent:
+		btn.wnd = ev.Window
+	}
+}
+
+// NewAccordion создаёт аккордеон с указанным заголовком и содержимым.
+// По умолчанию аккордеон закрыт. Символы: '▼' — открыт, '▶' — закрыт.
+// Добавлено в TUI v3.3.0.
 func NewAccordion(label string, content tui.Widget) *Accordion {
 	acc := &Accordion{
 		CloseRune: '▶',
@@ -32,10 +46,10 @@ func NewAccordion(label string, content tui.Widget) *Accordion {
 			acc.opened = true
 			acc.label.WithText(fmt.Sprintf("%c %s", acc.OpenRune, acc.text))
 		}
-		tui.CurrentWindow().Do(func() {
-			tui.CurrentWindow().Index()
-			tui.CurrentWindow().Redraw()
-		})
+		if acc.wnd != nil {
+			acc.wnd.Index()
+			acc.wnd.Redraw()
+		}
 	}).WithPaddings(0, 0)
 
 	acc.label.Send(&tui.MouseEvent{})

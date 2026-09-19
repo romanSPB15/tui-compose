@@ -14,7 +14,7 @@ type BarChart struct {
 	Space      int
 	BarStyle   func(i, v int) tui.Style
 	TextStyle  func(i, v int) tui.Style
-	div        float32
+	div        float64
 	DataHeight int
 }
 
@@ -28,18 +28,24 @@ func NewBarChart() *BarChart {
 	}
 }
 
+// WithValues устанавливает данные графика.
 func (bc *BarChart) WithValues(v []int) *BarChart {
 	bc.values = v
-	mx := -1 << 31
-	for _, v := range bc.values {
-		if mx < v {
-			mx = v
-		}
-	}
-	bc.div = float32(mx) / float32(bc.DataHeight) * 1.15
 	if bc.div == 0 {
-		bc.div = 1
+		bc.recalcDiv()
 	}
+	return bc
+}
+
+// AutoScale пересчитывает автоматический масштаб.
+func (bc *BarChart) AutoScale() *BarChart {
+	bc.recalcDiv()
+	return bc
+}
+
+// WithScale устанавливает масштаб вручную.
+func (bc *BarChart) WithScale(div float64) *BarChart {
+	bc.div = div
 	return bc
 }
 
@@ -59,7 +65,7 @@ func (bc *BarChart) Render(cells [][]cell.Cell) {
 		if bc.BarStyle != nil {
 			s = tui.ConvertToCellStyle(bc.BarStyle(i, v))
 		}
-		vDivided := int(float32(v) / bc.div)
+		vDivided := int(float64(v) / bc.div)
 		for z := vDivided; z >= 0; z-- {
 			if z >= bc.DataHeight {
 				continue
@@ -90,6 +96,26 @@ func (bc *BarChart) Render(cells [][]cell.Cell) {
 	}
 }
 
+func (bc *BarChart) recalcDiv() {
+	if len(bc.values) == 0 {
+		bc.div = 1
+		return
+	}
+	mx := 0
+	for _, v := range bc.values {
+		if v > mx {
+			mx = v
+		}
+	}
+	if mx == 0 {
+		mx = 1
+	}
+	bc.div = float64(mx) / float64(bc.DataHeight) * 1.15
+	if bc.div == 0 {
+		bc.div = 1
+	}
+}
+
 // WithBarWidth устанавливает ширину столбцов.
 func (bc *BarChart) WithBarWidth(w int) *BarChart {
 	bc.BarWidth = w
@@ -102,9 +128,12 @@ func (bc *BarChart) WithSpace(s int) *BarChart {
 	return bc
 }
 
-// WithHeight устанавливает высоту графика в символах(примерно).
+// WithDataHeight устанавливает высоту графика в символах (примерно).
 func (bc *BarChart) WithDataHeight(h int) *BarChart {
 	bc.DataHeight = h
+	if len(bc.values) > 0 {
+		bc.recalcDiv()
+	}
 	return bc
 }
 

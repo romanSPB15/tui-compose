@@ -9,7 +9,7 @@ import (
 
 func main() {
 	wnd := tui.NewWindow()
-	wnd.SetTitle("TUI Compose v3.3 - Tabs")
+	wnd.SetTitle("TUI Compose Tabs Demo")
 
 	wnd.SetContent(extra.NewTabs([]extra.Tab{
 		{

@@ -80,6 +80,7 @@ func generateLog() string {
 
 func main() {
 	wnd := tui.NewWindow()
+	wnd.SetTitle("TUI Compose - TextView Demo")
 
 	tv := extra.NewTextView(2).WithLines([]string{
 		"Text [fg-red]Red [bold]Red Bold[-] [fg-blue]Blue[-]",

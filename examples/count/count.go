@@ -10,11 +10,11 @@ func main() {
 	wnd := tui.NewWindow()
 	wnd.SetTitle("Моё приложение")
 
-	label := tui.NewStaticLabel("Привет, TUI!").WithStyle(tui.FrCyan)
+	label := tui.NewStaticLabel("0").WithStyle(tui.FrCyan)
 
 	btnQuit := tui.NewButton("Выход", func() {
 		wnd.Quit()
-	})
+	}).WithStyle(tui.BgBrightBlack).WithPaddings(3, 0)
 
 	v := 0
 
@@ -34,8 +34,10 @@ func main() {
 		}
 	}).WithStyle(tui.BgBlue)
 
-	box := tui.NewVBox(label, tui.NewHBox(btnAdd, btnSub), btnQuit)
-	wnd.SetContent(box)
+	box := tui.NewVBox(label, tui.NewHBox(btnAdd, btnSub), btnQuit).WithGap(1)
+	wnd.SetContent(tui.NewFrame(box).
+		WithTitle(tui.Title{Text: "TUI Compose", Pos: tui.TitleTopCenter, Style: tui.FrYellow | tui.Bold}).
+		WithPaddings(0, 2).Rounded())
 
 	wnd.Run()
 }

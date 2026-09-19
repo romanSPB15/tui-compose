@@ -2,6 +2,7 @@ package tui
 
 import "github.com/romanSPB15/tui-compose/v4/cell"
 
+// VBox — вертикальный компоновщик виджетов.
 // Добавлено в TUI 3.0.0.
 type VBox struct {
 	children  []Widget
@@ -9,21 +10,26 @@ type VBox struct {
 	gap       int
 }
 
+// NewVBox создаёт VBox с указанным содержимым.
 func NewVBox(children ...Widget) *VBox {
 	v := &VBox{}
 	v.children = append(v.children, children...)
 	return v
 }
 
+// SetGap устанавливает щель между виджетами в символах.
 func (v *VBox) SetGap(gap int) {
 	v.gap = gap
 }
 
+// WithGap устанавливает щель между виджетами в символах.
+// Возращает тот же VBox для создания цепочки методов.
 func (v *VBox) WithGap(gap int) *VBox {
 	v.SetGap(gap)
 	return v
 }
 
+// Add добавляет новый виджет в VBox.
 func (v *VBox) Add(widgets ...Widget) {
 	v.children = append(v.children, widgets...)
 }
@@ -61,7 +67,7 @@ func (v *VBox) Height() int {
 			total += child.Height() + v.gap
 		}
 	}
-	return total - v.gap
+	return max(total-v.gap, 0)
 }
 
 func (v *VBox) Child() []Widget {
@@ -70,12 +76,17 @@ func (v *VBox) Child() []Widget {
 }
 
 func (v *VBox) Pos(i int) Pos {
+	if v.positions == nil || len(v.positions) != len(v.children) {
+		v.layout()
+	}
 	if i < 0 || i >= len(v.positions) {
 		return Pos{}
 	}
+
 	return v.positions[i]
 }
 
+// HBox — горизонтальный компоновщик виджетов.
 // Добавлено в TUI 3.0.0.
 type HBox struct {
 	children  []Widget
@@ -83,12 +94,14 @@ type HBox struct {
 	gap       int
 }
 
+// NewHBox создаёт HBox с указанным содержимым.
 func NewHBox(children ...Widget) *HBox {
 	v := &HBox{gap: 1}
 	v.children = append(v.children, children...)
 	return v
 }
 
+// Add добавляет новый виджет в HBox.
 func (v *HBox) Add(widgets ...Widget) {
 	v.children = append(v.children, widgets...)
 }
@@ -98,14 +111,20 @@ func (v *HBox) layout() {
 	col := 0
 	for i, child := range v.children {
 		v.positions[i] = Pos{Line: 0, Col: col}
-		col += child.Width() + v.gap
+		if v.children[i] != nil {
+			col += child.Width() + v.gap
+		}
 	}
 }
 
+// SetGap устанавливает щель между виджетами в символах.
+// Возращает тот же HBox для создания цепочки методов.
 func (v *HBox) SetGap(gap int) {
 	v.gap = gap
 }
 
+// WithGap устанавливает щель между виджетами в символах.
+// Возращает тот же HBox для создания цепочки методов.
 func (v *HBox) WithGap(gap int) *HBox {
 	v.SetGap(gap)
 	return v
@@ -148,9 +167,13 @@ func (v *HBox) Child() []Widget {
 }
 
 func (v *HBox) Pos(i int) Pos {
+	if v.positions == nil || len(v.positions) != len(v.children) {
+		v.layout()
+	}
 	if i < 0 || i >= len(v.positions) {
 		return Pos{}
 	}
+
 	return v.positions[i]
 }
 

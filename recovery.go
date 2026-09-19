@@ -6,17 +6,17 @@ import (
 	term "github.com/romanSPB15/tui-compose/v4/term"
 )
 
-func recoveryScreen(message string) {
-	fmt.Fprint(currentWindow.f, "\033[0m")
-	fmt.Fprint(currentWindow.f, "\033[2J\033[H\033[?25h")
-	fmt.Fprint(currentWindow.f, "\033[?1006l\033[?1000l")
+func (wnd *window) recoveryScreen(message string) {
+	fmt.Fprint(wnd.f, "\033[0m")
+	fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
+	fmt.Fprint(wnd.f, "\033[?1006l\033[?1000l\033[?1049l")
 
-	currentWindow.restoreOut()
+	wnd.restoreOut()
 	term.Restore()
 
-	if currentWindow.stopCh != nil {
-		close(currentWindow.stopCh)
+	if wnd.stopCh != nil {
+		close(wnd.stopCh)
 	}
 
-	fmt.Fprintln(currentWindow.f, message)
+	fmt.Fprintln(wnd.f, message)
 }

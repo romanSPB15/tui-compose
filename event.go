@@ -15,3 +15,12 @@ type FocusEvent struct {
 type CheckFocusableEvent struct {
 	Result bool
 }
+
+type MouseHoverEvent struct {
+	Entered bool
+	Pos     input.Point
+}
+
+type WindowEvent struct {
+	Window Window
+}

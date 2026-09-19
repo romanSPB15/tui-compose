@@ -7,6 +7,7 @@ import (
 	"runtime"
 )
 
+// CopyToClipboard копирует текст в буфер обмена.
 func CopyToClipboard(text string) {
 	var cmd *exec.Cmd
 

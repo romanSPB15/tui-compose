@@ -28,6 +28,7 @@ const (
 	gmemMoveable  = 0x0002
 )
 
+// CopyToClipboard копирует текст в буфер обмена.
 func CopyToClipboard(text string) {
 	u16 := utf16.Encode([]rune(text))
 	u16 = append(u16, 0)

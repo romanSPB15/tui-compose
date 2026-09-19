@@ -1,22 +1,33 @@
 package extra
 
 import (
+	"unicode/utf8"
+
 	"github.com/romanSPB15/tui-compose/v4"
 	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
+// Tree — виджет древовидного списка.
+// Узлы задаются плоско, а иерархия определяется полем Depth.
+// Отступ между уровнями задаётся полем Offset.
+// Добавлено в TUI v3.3.0.
 type Tree struct {
 	nodes                                    []TreeNode
 	Offset                                   int
 	DepthEnd, Continue, Horizontal, Vertical rune
 }
 
+// TreeNode — один узел дерева.
+// Depth = 0 — корень, 1 — первый уровень вложенности и т.д.
+// Добавлено в TUI v3.3.0.
 type TreeNode struct {
 	Label string
 	Depth int // уровень вложенности (0, 1, 2...)
 	Style tui.Style
 }
 
+// NewTree создаёт дерево с узлами по умолчанию (Unicode-символы, Offset = 3).
+// Добавлено в TUI v3.3.0.
 func NewTree(nodes []TreeNode) *Tree {
 	return &Tree{
 		nodes:      nodes,
@@ -104,7 +115,7 @@ func (t *Tree) Render(buf [][]cell.Cell) {
 func (t *Tree) Width() int {
 	max := 0
 	for _, node := range t.nodes {
-		length := len(node.Label) + node.Depth*t.Offset
+		length := utf8.RuneCountInString(node.Label) + node.Depth*t.Offset
 		if length > max {
 			max = length
 		}
@@ -116,6 +127,8 @@ func (t *Tree) Height() int {
 	return len(t.nodes)
 }
 
+// Default устанавливает стандартные Unicode-символы ветвления.
+// Добавлено в TUI v3.3.0.
 func (t *Tree) Default() *Tree {
 	t.DepthEnd = '└'
 	t.Continue = '├'
@@ -124,6 +137,8 @@ func (t *Tree) Default() *Tree {
 	return t
 }
 
+// Rounded устанавливает скруглённый символ для последнего элемента.
+// Добавлено в TUI v3.3.0.
 func (t *Tree) Rounded() *Tree {
 	t.DepthEnd = '╰'
 	t.Continue = '├'
@@ -132,6 +147,8 @@ func (t *Tree) Rounded() *Tree {
 	return t
 }
 
+// Heavy устанавливает жирные Unicode-символы ветвления.
+// Добавлено в TUI v3.3.0.
 func (t *Tree) Heavy() *Tree {
 	t.DepthEnd = '┗'
 	t.Continue = '┣'
@@ -140,6 +157,8 @@ func (t *Tree) Heavy() *Tree {
 	return t
 }
 
+// ASCII устанавливает ASCII-совместимые символы ветвления.
+// Добавлено в TUI v3.3.0.
 func (t *Tree) ASCII() *Tree {
 	t.DepthEnd = '+'
 	t.Continue = '+'
@@ -148,6 +167,8 @@ func (t *Tree) ASCII() *Tree {
 	return t
 }
 
+// WithNodes заменяет список узлов дерева.
+// Добавлено в TUI v3.3.0.
 func (t *Tree) WithNodes(n []TreeNode) *Tree {
 	t.nodes = n
 	return t

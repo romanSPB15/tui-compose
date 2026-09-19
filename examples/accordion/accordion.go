@@ -7,10 +7,10 @@ import (
 
 func main() {
 	wnd := tui.NewWindow()
-	wnd.SetTitle("TUI Compose v3.3 - Accordion")
+	wnd.SetTitle("TUI Compose - Accordion Demo")
 
 	accordion := extra.NewAccordion(
-		"Accordion. Click to open",
+		"Accordion",
 		tui.NewStaticLabel("<you content here>").WithStyle(tui.FrCyan),
 	)
 

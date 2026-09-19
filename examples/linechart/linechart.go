@@ -9,7 +9,7 @@ import (
 
 func main() {
 	wnd := tui.NewWindow()
-	wnd.SetTitle("TUI Compose v3.3 - LineChart")
+	wnd.SetTitle("TUI Compose - LineChart Demo")
 
 	// Данные: синусоида и косинусоида
 	const n = 16
@@ -27,7 +27,7 @@ func main() {
 		WithXLabels([]string{"0", "5", "10", "15", "20"}).
 		WithYLabels([]int{0, 25, 50, 75, 100}).
 		WithDefaultAxis().
-		WithHeight(12).
+		WithDataHeight(12).
 		AutoScale(). // AutoScale обязательно после WithHeight и WithData!!!
 		WithPointDistance(4).
 		WithDisplayPoints(true)
@@ -40,7 +40,7 @@ func main() {
 		WithXLabels([]string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"}).
 		GenerateYLabels(4, true).
 		WithRoundedAxis().
-		WithHeight(12).
+		WithDataHeight(12).
 		WithScale(10).
 		WithPointDistance(3)
 
@@ -49,7 +49,7 @@ func main() {
 			{Values: sinVals, LineStyle: tui.FrGreen},
 		}).
 		WithASCIIAxis().
-		WithHeight(10).
+		WithDataHeight(10).
 		AutoScale().
 		WithPointDistance(2).
 		GenerateYLabels(3, false)

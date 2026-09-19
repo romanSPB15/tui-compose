@@ -7,7 +7,7 @@ import (
 
 func main() {
 	wnd := tui.NewWindow()
-	wnd.SetTitle("TUI Compose v3.3 Demo")
+	wnd.SetTitle("TUI Compose Table Demo")
 
 	// Таблица 1 — без разделителей (по умолчанию)
 	table1 := extra.NewTable([][]extra.TableCell{

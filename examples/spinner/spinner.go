@@ -9,6 +9,7 @@ import (
 
 func main() {
 	wnd := tui.NewWindow()
+	wnd.SetTitle("TUI Compose - Spinner Demo")
 
 	wnd.SetContent(tui.NewFrame(tui.NewVBox(
 		tui.NewHBox(

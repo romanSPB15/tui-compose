@@ -9,7 +9,7 @@ import (
 
 func main() {
 	wnd := tui.NewWindow()
-	wnd.SetTitle("TUI Compose v4 Demo")
+	wnd.SetTitle("TUI Compose Demo")
 
 	// данные
 	data := []int{
@@ -203,11 +203,13 @@ func main() {
 	go func() {
 		i := 0
 		j := len(data) / 2
+		ticker := time.NewTicker(time.Second / 20 / 10000000)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-wnd.OnQuit():
 				return
-			case <-time.Tick(time.Second / 5):
+			case <-ticker.C:
 				wnd.Commit(func() {
 					if i == len(data)-7 {
 						i = 0

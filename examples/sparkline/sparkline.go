@@ -10,7 +10,7 @@ import (
 
 func main() {
 	wnd := tui.NewWindow()
-	wnd.SetTitle("TUI Compose v3.3 - Sparkline")
+	wnd.SetTitle("TUI Compose - Sparkline Demo")
 
 	const n = 30
 	data := make([]int, n)
@@ -31,11 +31,6 @@ func main() {
 		WithBarStyle(func(i, v int) tui.Style {
 			return tui.FrRed
 		})
-
-	data2 := make([]int, 20)
-	for i := range data2 {
-		data2[i] = i * 2
-	}
 
 	spark3 := extra.NewSparkline().
 		WithValues(data).

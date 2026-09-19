@@ -7,7 +7,7 @@ import (
 
 func main() {
 	wnd := tui.NewWindow()
-	wnd.SetTitle("TUI Compose v3.3 - PieChart")
+	wnd.SetTitle("TUI Compose - PieChart Demo")
 
 	data := []extra.PieData{
 		{Label: "TUI Compose", Value: 50, Color: tui.FrBrightBlue},

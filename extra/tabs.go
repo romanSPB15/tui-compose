@@ -6,6 +6,8 @@ import (
 	"github.com/romanSPB15/tui-compose/v4/input"
 )
 
+// TabPosition — позиция панели с заголовками вкладок.
+// Добавлено в TUI v3.3.0.
 type TabPosition int
 
 const (
@@ -16,10 +18,13 @@ const (
 type tabsTopPanel struct {
 	t       *Tabs
 	focused bool
+	wnd     tui.Window
 }
 
 func (tp *tabsTopPanel) Send(ev tui.Event) {
 	switch e := ev.(type) {
+	case *tui.WindowEvent:
+		tp.wnd = e.Window
 	case *tui.CheckFocusableEvent:
 		e.Result = true
 	case *tui.FocusEvent:
@@ -29,43 +34,50 @@ func (tp *tabsTopPanel) Send(ev tui.Event) {
 		case input.KeyArrowRight, input.KeyEnter, input.KeyPgDown:
 			if tp.t.current < len(tp.t.tabs)-1 {
 				tp.t.current++
-				tui.CurrentWindow().Commit(func() {
-					tui.CurrentWindow().Index()
-				})
+				if tp.wnd != nil {
+					tp.wnd.Index()
+					tp.wnd.Redraw()
+				}
 			}
 		case input.KeyArrowLeft, input.KeyBackspace, input.KeyPgUp:
 			if tp.t.current > 0 {
 				tp.t.current--
-				tui.CurrentWindow().Commit(func() {
-					tui.CurrentWindow().Index()
-				})
+				if tp.wnd != nil {
+					tp.wnd.Index()
+					tp.wnd.Redraw()
+				}
 			}
 		case input.KeyHome:
 			if tp.t.current != 0 {
 				tp.t.current = 0
-				tui.CurrentWindow().Commit(func() {
-					tui.CurrentWindow().Index()
-				})
+				if tp.wnd != nil {
+					tp.wnd.Index()
+					tp.wnd.Redraw()
+				}
 			}
 		case input.KeyEnd:
 			if tp.t.current != len(tp.t.tabs)-1 {
 				tp.t.current = len(tp.t.tabs) - 1
-				tui.CurrentWindow().Commit(func() {
-					tui.CurrentWindow().Index()
-				})
+				if tp.wnd != nil {
+					tp.wnd.Index()
+					tp.wnd.Redraw()
+				}
 			}
 		}
 	case *input.MouseEvent:
-		w := 0
-		for i, v := range tp.t.tabs {
-			if e.Pos.X >= w && e.Pos.X < w+len(v.Title) {
-				tp.t.current = i
-				tui.CurrentWindow().Commit(func() {
-					tui.CurrentWindow().Index()
-				})
-				break
+		if e.Action == input.MousePress {
+			w := 0
+			for i, v := range tp.t.tabs {
+				if e.Pos.X >= w && e.Pos.X < w+len(v.Title) {
+					tp.t.current = i
+					if tp.wnd != nil {
+						tp.wnd.Index()
+						tp.wnd.Redraw()
+					}
+					break
+				}
+				w += len(v.Title) + 1
 			}
-			w += len(v.Title) + 1
 		}
 	}
 }
@@ -101,6 +113,10 @@ func (tp *tabsTopPanel) Height() int {
 }
 
 // Tab — вкладка Tabs.
+// Title — заголовок вкладки, отображаемый на панели.
+// TitleStyle — стиль заголовка.
+// Content — виджет содержимого.
+// Добавлено в TUI v3.3.0.
 type Tab struct {
 	Content    tui.Widget
 	Title      string
@@ -108,6 +124,8 @@ type Tab struct {
 }
 
 // Tabs — контейнер вкладок.
+// Отображает панель заголовков и содержимое активной вкладки.
+// Добавлено в TUI v3.3.0.
 type Tabs struct {
 	tabs     []Tab
 	current  int
@@ -116,6 +134,9 @@ type Tabs struct {
 	tp       TabPosition
 }
 
+// NewTabs создаёт контейнер вкладок из указанного списка.
+// По умолчанию активна первая вкладка, панель заголовков сверху.
+// Добавлено в TUI v3.3.0.
 func NewTabs(t []Tab) *Tabs {
 	tabs := &Tabs{
 		tabs:     t,
@@ -153,11 +174,16 @@ func (acc *Tabs) Height() int {
 	return acc.tabs[acc.current].Content.Height() + 1
 }
 
+// WithSelectedStyle устанавливает стиль заголовка выбранной вкладки.
+// Добавлено в TUI v3.3.0.
 func (acc *Tabs) WithSelectedStyle(s tui.Style) *Tabs {
 	acc.selected = s
 	return acc
 }
 
+// WithCurrent выбирает активную вкладку по индексу.
+// Значения вне допустимого диапазона игнорируются.
+// Добавлено в TUI v3.3.0.
 func (acc *Tabs) WithCurrent(i int) *Tabs {
 	if i > 0 && i < len(acc.tabs) {
 		acc.current = i
@@ -165,6 +191,8 @@ func (acc *Tabs) WithCurrent(i int) *Tabs {
 	return acc
 }
 
+// WithTabPosition задаёт позицию панели заголовков: сверху или снизу.
+// Добавлено в TUI v3.3.0.
 func (acc *Tabs) WithTabPosition(tp TabPosition) *Tabs {
 	acc.tp = tp
 	return acc

@@ -94,15 +94,36 @@ func TestParseMouseEvent(t *testing.T) {
 		data []byte
 		want *MouseEvent
 	}{
-		{"left click", []byte("\x1b[<0;10;20m"), &MouseEvent{Button: 0, Pos: Point{X: 9, Y: 19}}},
-		{"middle click", []byte("\x1b[<1;5;5m"), &MouseEvent{Button: 1, Pos: Point{X: 4, Y: 4}}},
-		{"right click", []byte("\x1b[<2;1;1m"), &MouseEvent{Button: 2, Pos: Point{X: 0, Y: 0}}},
+		{"left press", []byte("\x1b[<0;10;20M"), &MouseEvent{Action: MousePress, Button: 0, Pos: Point{X: 9, Y: 19}}},
+		{"middle press", []byte("\x1b[<1;5;5M"), &MouseEvent{Action: MousePress, Button: 1, Pos: Point{X: 4, Y: 4}}},
+		{"right press", []byte("\x1b[<2;1;1M"), &MouseEvent{Action: MousePress, Button: 2, Pos: Point{X: 0, Y: 0}}},
+
+		{"left release", []byte("\x1b[<0;10;20m"), &MouseEvent{Action: MouseRelease, Button: 0, Pos: Point{X: 9, Y: 19}}},
+		{"right release", []byte("\x1b[<2;10;20m"), &MouseEvent{Action: MouseRelease, Button: 2, Pos: Point{X: 9, Y: 19}}},
+
+		{"drag left", []byte("\x1b[<32;10;20M"), &MouseEvent{Action: MouseMove, Button: 0, Pos: Point{X: 9, Y: 19}}},
+		{"drag middle", []byte("\x1b[<33;10;20M"), &MouseEvent{Action: MouseMove, Button: 1, Pos: Point{X: 9, Y: 19}}},
+		{"pure motion", []byte("\x1b[<35;10;20M"), &MouseEvent{Action: MouseMove, Button: NoButton, Pos: Point{X: 9, Y: 19}}},
+
+		{"wheel up", []byte("\x1b[<64;10;20M"), &MouseEvent{Action: MouseWheelUp, Button: NoButton, Pos: Point{X: 9, Y: 19}}},
+		{"wheel down", []byte("\x1b[<65;10;20M"), &MouseEvent{Action: MouseWheelDown, Button: NoButton, Pos: Point{X: 9, Y: 19}}},
+		{"wheel left", []byte("\x1b[<66;10;20M"), &MouseEvent{Action: MouseWheelLeft, Button: NoButton, Pos: Point{X: 9, Y: 19}}},
+		{"wheel right", []byte("\x1b[<67;10;20M"), &MouseEvent{Action: MouseWheelRight, Button: NoButton, Pos: Point{X: 9, Y: 19}}},
+
+		{"shift+click", []byte("\x1b[<4;10;20M"), &MouseEvent{Action: MousePress, Button: 0, Shift: true, Pos: Point{X: 9, Y: 19}}},
+		{"alt+click", []byte("\x1b[<8;10;20M"), &MouseEvent{Action: MousePress, Button: 0, Alt: true, Pos: Point{X: 9, Y: 19}}},
+		{"ctrl+click", []byte("\x1b[<16;10;20M"), &MouseEvent{Action: MousePress, Button: 0, Ctrl: true, Pos: Point{X: 9, Y: 19}}},
+		{"ctrl+wheel", []byte("\x1b[<80;10;20M"), &MouseEvent{Action: MouseWheelUp, Button: NoButton, Ctrl: true, Pos: Point{X: 9, Y: 19}}},
+
 		{"invalid prefix", []byte("abc"), nil},
 		{"invalid parts", []byte("\x1b[<0;10m"), nil},
-		{"invalid number 1", []byte("\x1b[<a;10;20m"), nil},
-		{"invalid number 2", []byte("\x1b[<1;a;20m"), nil},
-		{"invalid number 3", []byte("\x1b[<1;10;am"), nil},
+		{"invalid suffix", []byte("\x1b[<0;10;20X"), nil},
+		{"invalid number 1", []byte("\x1b[<a;10;20M"), nil},
+		{"invalid number 2", []byte("\x1b[<1;a;20M"), nil},
+		{"invalid number 3", []byte("\x1b[<1;10;aM"), nil},
+		{"negative cb", []byte("\x1b[<-1;10;20M"), nil},
 		{"empty", []byte{}, nil},
+		{"short", []byte("\x1b[<"), nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

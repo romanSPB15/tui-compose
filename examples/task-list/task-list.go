@@ -7,7 +7,7 @@ import (
 func main() {
 	a := tui.NewWindow()
 
-	a.SetTitle("TUI Compose")
+	a.SetTitle("TUI Compose Tasklist")
 
 	label := tui.NewDynamicLabel("", 30).WithStyle(tui.FrRed)
 

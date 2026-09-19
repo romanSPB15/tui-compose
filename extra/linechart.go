@@ -172,7 +172,7 @@ func (bc *LineChart) Render(cells [][]cell.Cell) {
 	}
 
 	if bc.div == 0 {
-		bc.AutoScale()
+		bc.div = 1
 	}
 
 	if len(bc.YLabels) > 0 {
@@ -331,7 +331,7 @@ func (lc *LineChart) AutoScale() *LineChart {
 	return lc
 }
 
-// WithData устанавливает данные.
+// WithData устанавливает данные графика.
 func (lc *LineChart) WithData(d []Series) *LineChart {
 	lc.Data = d
 	return lc
@@ -403,8 +403,8 @@ func roundToNice(x int) int {
 	return (x / 1000) * 1000
 }
 
-// WithHeight устанавливает высоту графика (количество строк), без учёта горизонтальной оси.
-func (lc *LineChart) WithHeight(h int) *LineChart {
+// WithDataHeight устанавливает высоту графика (количество строк), без учёта горизонтальной оси.
+func (lc *LineChart) WithDataHeight(h int) *LineChart {
 	lc.DataHeight = h
 	return lc
 }

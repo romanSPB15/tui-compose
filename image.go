@@ -9,8 +9,13 @@ import (
 	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
+// Image — виджет изображения.
+// Хранит матрицу ячеек, готовую к рендерингу в терминал.
+// Добавлено в TUI v3.4.0.
 type Image [][]cell.Cell
 
+// NewImage создаёт пустой виджет изображения.
+// Добавлено в TUI v3.4.0.
 func NewImage() Image {
 	return nil
 }
@@ -30,16 +35,21 @@ func (iw Image) Height() int {
 	return len(iw)
 }
 
+// LoadMode — режим загрузки изображения.
+// Комбинируется из палитры (Palette16Color / PaletteTrueColor) и
+// способа отображения (HalfSymbol / OneSymbol / TwoSymbol).
+// Добавлено в TUI v3.4.0.
 type LoadMode uint16
 
 const (
 	Palette16Color LoadMode = 1 << iota
 	PaletteTrueColor
-	HalfSymbol LoadMode = 1<<iota + 4
+	HalfSymbol
 	OneSymbol
 	TwoSymbol
 )
 
+// makeRGBANSIBg формирует ANSI-последовательность для установки RGB-фона.
 func makeRGBANSIBg(r, g, b uint8, buf *builder.Builder) string {
 	buf.Reset()
 	buf.WriteString("48;2;")
@@ -51,6 +61,7 @@ func makeRGBANSIBg(r, g, b uint8, buf *builder.Builder) string {
 	return buf.StringCopy()
 }
 
+// makeRGBANSIFg формирует ANSI-последовательность для установки RGB-цвета текста.
 func makeRGBANSIFg(r, g, b uint8, buf *builder.Builder) string {
 	buf.Reset()
 	buf.WriteString("38;2;")
@@ -62,6 +73,7 @@ func makeRGBANSIFg(r, g, b uint8, buf *builder.Builder) string {
 	return buf.StringCopy()
 }
 
+// nearestANSI16Fg возвращает ближайший ANSI-код цвета текста из 16-цветной палитры.
 func nearestANSI16Fg(r, g, b uint8) string {
 	// таблица RGB для 16 цветов (индексы 0..15)
 	palette := [16][3]uint8{
@@ -103,6 +115,7 @@ func nearestANSI16Fg(r, g, b uint8) string {
 	return strconv.Itoa(90 + (bestIdx - 8))
 }
 
+// nearestANSI16Bg возвращает ближайший ANSI-код фона из 16-цветной палитры.
 func nearestANSI16Bg(r, g, b uint8) string {
 	// таблица RGB для 16 цветов (индексы 0..15)
 	palette := [16][3]uint8{
@@ -144,6 +157,11 @@ func nearestANSI16Bg(r, g, b uint8) string {
 	return strconv.Itoa(100 + (bestIdx - 8))
 }
 
+// LoadImage преобразует изображение в матрицу ячеек согласно указанному режиму.
+// Поддерживает True Color и 16 цветов, а также три способа отображения:
+// HalfSymbol (два пикселя на ячейку через '▀'), OneSymbol и TwoSymbol
+// (один и два пробела с цветным фоном соответственно).
+// Добавлено в TUI v3.4.0.
 func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 	sb := &builder.Builder{}
 	switch pal {
@@ -367,6 +385,9 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 	return iw
 }
 
+// DownscaleImage уменьшает изображение до указанных размеров,
+// усредняя пиксели исходного изображения по областям.
+// Добавлено в TUI v3.4.0.
 func DownscaleImage(img image.Image, newWidth, newHeight int) *image.RGBA {
 	bounds := img.Bounds()
 	srcW, srcH := bounds.Dx(), bounds.Dy()
@@ -412,6 +433,9 @@ func DownscaleImage(img image.Image, newWidth, newHeight int) *image.RGBA {
 	return dst
 }
 
+// ScaleToHeight масштабирует изображение до указанной высоты,
+// сохраняя пропорции ширины.
+// Добавлено в TUI v3.4.0.
 func ScaleToHeight(img image.Image, targetHeight int) *image.RGBA {
 	dx, dy := img.Bounds().Dx(), img.Bounds().Dy()
 	coff := float64(dy) / float64(targetHeight)
@@ -420,6 +444,9 @@ func ScaleToHeight(img image.Image, targetHeight int) *image.RGBA {
 	return DownscaleImage(img, newW, newH)
 }
 
+// ScaleToWidth масштабирует изображение до указанной ширины,
+// сохраняя пропорции высоты.
+// Добавлено в TUI v3.4.0.
 func ScaleToWidth(img image.Image, targetWidth int) *image.RGBA {
 	dx, dy := img.Bounds().Dx(), img.Bounds().Dy()
 	coff := float64(dx) / float64(targetWidth)
@@ -462,6 +489,8 @@ func brailleChar(bits [4][2]bool) rune {
 }
 
 // LoadBraille загружает матрицу bool как изображение в стиле Брайля.
+// Каждая ячейка результата соответствует блоку 4×2 пикселя исходной матрицы.
+// Добавлено в TUI v3.4.0.
 func (iw Image) LoadBraille(data [][]bool, style Style) Image {
 	if len(data) == 0 || len(data[0]) == 0 {
 		return nil

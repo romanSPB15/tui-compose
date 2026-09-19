@@ -7,6 +7,20 @@ import (
 	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
+// TextView — виджет многострочного текста с поддержкой тегов стилей.
+// Теги задаются в квадратных скобках: [fg-red], [bold], [bg-blue] и т.д.
+// Поддерживает прокрутку содержимого.
+//
+//	tv := extra.NewTextView(2).WithLines([]string{
+//			"Text [fg-red]Red [bold]Red Bold[-] [fg-blue]Blue[-]",
+//			"[bg-yellow]Yellow Background[reset]",
+//			"[italic]Italic[-]",
+//			"[cursive]Cursive[-]",
+//			"[reverse]Reversed[-]",
+//			"[underline]Underline[-]",
+//		})
+//
+// Добавлено в TUI v3.3.0.
 type TextView struct {
 	lines  []string
 	offset int

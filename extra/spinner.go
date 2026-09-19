@@ -1,12 +1,15 @@
 package extra
 
 import (
+	"sync"
 	"time"
 
 	"github.com/romanSPB15/tui-compose/v4"
 	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
+// Типы спиннеров.
+// Передаются в Spinner при создании.
 const (
 	SpinnerUnderscore = iota
 	SpinnerBraille
@@ -15,14 +18,35 @@ const (
 	SpinnerBrailleReverse
 )
 
+// Spinner — виджет спиннера.
+// Добавлено в TUI v3.3.0.
+//
+// s := extra.NewSpinner(extra.SpinnerBrailleReverse)
+// s.Start(time.Second/15)
 type Spinner struct {
-	typ   int
-	i     int
-	style cell.Style
+	typ       int
+	i         int
+	style     cell.Style
+	wnd       tui.Window
+	wndReady  chan struct{}
+	wndOnce   sync.Once
+	startOnce sync.Once
 }
 
+func (sp *Spinner) Send(ev tui.Event) {
+	switch ev := ev.(type) {
+	case *tui.WindowEvent:
+		sp.wnd = ev.Window
+		sp.wndOnce.Do(func() { close(sp.wndReady) })
+	}
+}
+
+// NewSpinner создаёт спиннер с указанным типом.
 func NewSpinner(typ int) *Spinner {
-	return &Spinner{typ: typ}
+	return &Spinner{
+		typ:      typ,
+		wndReady: make(chan struct{}),
+	}
 }
 
 func (bc *Spinner) Width() int {
@@ -118,41 +142,44 @@ func (bc *Spinner) Render(buf [][]cell.Cell) {
 	}
 }
 
+// Start запускает анимацию.
+// Анимация автоматически останвливается при выходе из приложения.
 func (bc *Spinner) Start(f time.Duration) *Spinner {
-	go func() {
-		ticker := time.NewTicker(f)
-		for {
-			select {
-			case <-tui.CurrentWindow().OnQuit():
-				ticker.Stop()
-				return
-			case <-ticker.C:
-				bc.i++
-				switch bc.typ {
-				case 0:
-					if bc.i > 1 {
-						bc.i = 0
-					}
-				case 1, 4:
-					if bc.i > 7 {
-						bc.i = 0
-					}
-				case 2, 3:
-					if bc.i > 3 {
-						bc.i = 0
-					}
+	bc.startOnce.Do(func() {
+		go func() {
+			<-bc.wndReady
+			ticker := time.NewTicker(f)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-bc.wnd.OnQuit():
+					return
+				case <-ticker.C:
+					bc.wnd.Commit(func() {
+						bc.i++
+						switch bc.typ {
+						case 0:
+							if bc.i > 1 {
+								bc.i = 0
+							}
+						case 1, 4:
+							if bc.i > 7 {
+								bc.i = 0
+							}
+						case 2, 3:
+							if bc.i > 3 {
+								bc.i = 0
+							}
+						}
+					})
 				}
-				tui.CurrentWindow().Do(func() {
-					if tui.CurrentWindow().IsRunned() {
-						tui.CurrentWindow().Redraw()
-					}
-				})
 			}
-		}
-	}()
+		}()
+	})
 	return bc
 }
 
+// WithStyle устанавливает стиль для спиннера.
 func (bc *Spinner) WithStyle(s tui.Style) *Spinner {
 	bc.style = tui.ConvertToCellStyle(s)
 	return bc

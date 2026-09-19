@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/romanSPB15/tui-compose/v4/ansi"
 	"github.com/romanSPB15/tui-compose/v4/builder"
 	"github.com/romanSPB15/tui-compose/v4/cell"
 	"github.com/romanSPB15/tui-compose/v4/input"
@@ -30,8 +31,10 @@ type ColorRGB struct {
 type (
 	MouseEventHandler    func(*input.MouseEvent)
 	KeyboardEventHandler func(*input.KeyboardEvent)
+	ResizeHandler        func(width, height int)
 )
 
+// Pos - точка на экране.
 type Pos struct {
 	Line int
 	Col  int
@@ -48,7 +51,14 @@ type eventHandlerWithPos struct {
 	p Pos
 }
 
-var currentWindow *window
+type windowStats struct {
+	frames       atomic.Int64 // количество успешных Redraw
+	renderNanos  atomic.Int64 // накопленное время render()
+	makeStrNanos atomic.Int64 // накопленное время diff + ANSI
+	writeNanos   atomic.Int64 // накопленное время write в терминал
+	tasksDone    atomic.Int64 // количество выполненных задач
+	redrawCount  atomic.Int64 // счётчик для периодической проверки isWorker
+}
 
 type window struct {
 	focusableWidgets []eventHandlerWithPos
@@ -56,66 +66,74 @@ type window struct {
 	f                io.Writer
 	focusIndex       int
 	stopCh           chan struct{}
-	keyHandlers      []KeyboardEventHandler
-	log              *os.File
-	runned           bool
-	work             chan *task
-	focusChange      bool
 
-	mouseHandlers []MouseEventHandler
-	content       Widget
-	initCell      cell.Cell
-	bufferPool    *sync.Pool
+	keyHandlers    []KeyboardEventHandler
+	mouseHandlers  []MouseEventHandler
+	resizeHandlers []ResizeHandler
+
+	log         *os.File
+	runned      bool
+	work        chan *task
+	focusChange bool
+	worker      atomic.Int32
+
+	styleFunc func(Widget)
+
+	hovered map[EventHandler]struct{}
+
 	cellBuf       []cell.Cell
-	worker        atomic.Int32
-	builderPool   sync.Pool
-	styleFunc     func(Widget)
-	widgetBuf     [][]cell.Cell
 	maxWidgetSize Pos
-	subBuf        [][]cell.Cell
 
-	stdout    *os.File
-	stderr    *os.File
+	content     Widget
+	initCell    cell.Cell
+	bufferPool  *sync.Pool
+	builderPool sync.Pool
+	subBuf      [][]cell.Cell
+	buf         [][]cell.Cell
+	quitOnce    sync.Once
+
+	stdout *os.File
+	stderr *os.File
+	stdin  *os.File
+
 	oldMode   *term.State
 	last      cell.Style
 	cursorPos Pos
+	altScreen bool
 
-	buf [][]cell.Cell
+	stats      windowStats
+	lastReport time.Time
+
+	width   int
+	height  int
+	in      io.Reader
+	skipRaw bool
 }
 
-func (wnd *window) indexClickable(wgt Widget, offset Pos) {
+func (wnd *window) SetAltScreenEnable(v bool) {
+	if DEBUG && !wnd.isWorker() {
+		wnd.LogFatal("SetAltScreenEnable called outside worker goroutine: data race")
+	}
+	wnd.altScreen = v
+}
+
+func (wnd *window) indexWgt(wgt Widget, offset Pos) {
 	if c, ok := wgt.(Container); ok {
 		for i, child := range c.Child() {
 			childOffset := Pos{
 				Line: offset.Line + c.Pos(i).Line,
 				Col:  offset.Col + c.Pos(i).Col,
 			}
-			wnd.indexClickable(child, childOffset)
+			wnd.indexWgt(child, childOffset)
 		}
-		return
 	}
 
 	if evh, ok := wgt.(EventHandler); ok {
+		evh.Send(&WindowEvent{Window: wnd})
 		wnd.wgt = append(wnd.wgt, eventHandlerWithPos{
 			EventHandler: evh,
 			p:            offset,
 		})
-	}
-}
-
-func (wnd *window) indexFocusable(wgt Widget, offset Pos) {
-	if c, ok := wgt.(Container); ok {
-		for i, child := range c.Child() {
-			childOffset := Pos{
-				Line: offset.Line + c.Pos(i).Line,
-				Col:  offset.Col + c.Pos(i).Col,
-			}
-			wnd.indexFocusable(child, childOffset)
-		}
-		return
-	}
-
-	if evh, ok := wgt.(EventHandler); ok {
 		if isFocusable(evh) {
 			wnd.focusableWidgets = append(wnd.focusableWidgets, eventHandlerWithPos{
 				EventHandler: evh,
@@ -144,8 +162,7 @@ func (wnd *window) Index() {
 	wnd.focusableWidgets = nil
 	wnd.wgt = nil
 
-	wnd.indexClickable(wnd.content, Pos{0, 0})
-	wnd.indexFocusable(wnd.content, Pos{0, 0})
+	wnd.indexWgt(wnd.content, Pos{0, 0})
 
 	wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line = wnd.calcMaxWidgetSize(wnd.content, 0, 0)
 
@@ -157,10 +174,21 @@ func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
 		return
 	}
 	if c, ok := wgt.(Container); ok {
+		contBottom := rect[0].Line + wgt.Height()
+		contRight := rect[0].Col + wgt.Width()
+		if contBottom > rect[1].Line {
+			contBottom = rect[1].Line
+		}
+		if contRight > rect[1].Col {
+			contRight = rect[1].Col
+		}
+
 		for i, ch := range c.Child() {
+			offLine := c.Pos(i).Line
+			offCol := c.Pos(i).Col
 			childRect := [2]Pos{
-				{Line: rect[0].Line + c.Pos(i).Line, Col: rect[0].Col + c.Pos(i).Col},
-				{Line: rect[1].Line + c.Pos(i).Line, Col: rect[1].Col + c.Pos(i).Col},
+				{Line: rect[0].Line + offLine, Col: rect[0].Col + offCol},
+				{Line: contBottom, Col: contRight},
 			}
 			wnd.draw(ch, childRect, buf)
 		}
@@ -272,19 +300,13 @@ func (wnd *window) render() [][]cell.Cell {
 }
 
 func (wnd *window) newBuffer(h, w int) [][]cell.Cell {
-	if wnd.bufferPool != nil {
-		buf := wnd.bufferPool.Get().([][]cell.Cell)
-		if len(buf) != h || len(buf[0]) != w {
-			buf := make([][]cell.Cell, h)
-			for i := range buf {
-				buf[i] = make([]cell.Cell, w)
-				for x := 0; x < w; x++ {
-					buf[i][x] = wnd.initCell
-				}
-			}
-			return buf
-		}
+	if h <= 0 || w <= 0 {
+		return nil
+	}
 
+	buf, _ := wnd.bufferPool.Get().([][]cell.Cell)
+
+	if len(buf) == h && len(buf) > 0 && len(buf[0]) == w {
 		for y := 0; y < h; y++ {
 			row := buf[y]
 			for x := 0; x < w; x++ {
@@ -294,7 +316,11 @@ func (wnd *window) newBuffer(h, w int) [][]cell.Cell {
 		return buf
 	}
 
-	buf := make([][]cell.Cell, h)
+	if buf != nil {
+		wnd.bufferPool.Put(buf)
+	}
+
+	buf = make([][]cell.Cell, h)
 	for i := range buf {
 		buf[i] = make([]cell.Cell, w)
 		for x := 0; x < w; x++ {
@@ -317,11 +343,6 @@ func (wnd *window) newEmptyBuffer(h, w int) [][]cell.Cell {
 
 func (wnd *window) releaseBuffer(buf [][]cell.Cell) {
 	if wnd.bufferPool != nil && buf != nil {
-		for y := range buf {
-			for x := range buf[y] {
-				buf[y][x] = wnd.initCell
-			}
-		}
 		wnd.bufferPool.Put(buf)
 	}
 }
@@ -396,11 +417,62 @@ func emptyRow(w int, initCell cell.Cell) []cell.Cell {
 	return row
 }
 
+func resizeBuf(old [][]cell.Cell, newW, newH int, initCell cell.Cell, anchorTop bool) [][]cell.Cell {
+	if newW <= 0 || newH <= 0 {
+		return nil
+	}
+	if len(old) == 0 || len(old[0]) == 0 {
+		return emptyBuffer(newW, newH, initCell)
+	}
+
+	oldH := len(old)
+	oldW := len(old[0])
+
+	buf := make([][]cell.Cell, newH)
+	for y := range buf {
+		buf[y] = emptyRow(newW, initCell)
+	}
+
+	copyW := oldW
+	if newW < copyW {
+		copyW = newW
+	}
+
+	var srcY, copyH int
+	if anchorTop {
+		srcY = 0
+		if newH < oldH {
+			copyH = newH
+		} else {
+			copyH = oldH
+		}
+	} else {
+		if newH <= oldH {
+			srcY = oldH - newH
+			copyH = newH
+		} else {
+			srcY = 0
+			copyH = oldH
+		}
+	}
+
+	for y := 0; y < copyH; y++ {
+		copy(buf[y][:copyW], old[srcY+y][:copyW])
+	}
+
+	return buf
+}
+
 func (wnd *window) Redraw() {
 	renderStart := time.Now()
-	if DEBUG && !wnd.isWorker() {
-		wnd.LogFatal("Redraw called outside worker goroutine: data race")
+
+	if DEBUG {
+		wnd.stats.redrawCount.Add(1)
+		if wnd.stats.redrawCount.Load()%64 == 1 && !wnd.isWorker() {
+			wnd.LogFatal("Redraw called outside worker goroutine: data race")
+		}
 	}
+
 	if !wnd.runned {
 		return
 	}
@@ -419,7 +491,7 @@ func (wnd *window) Redraw() {
 
 	if wnd.buf == nil || len(wnd.buf) != h || (len(wnd.buf) > 0 && len(wnd.buf[0]) != w) {
 		if wnd.buf != nil {
-			wnd.buf = reflow(wnd.buf, w, h, wnd.initCell)
+			wnd.buf = resizeBuf(wnd.buf, w, h, wnd.initCell, wnd.altScreen)
 			wnd.cursorPos = Pos{-1, -1}
 		} else {
 			wnd.buf = wnd.newEmptyBuffer(h, w)
@@ -430,6 +502,10 @@ func (wnd *window) Redraw() {
 
 	b := wnd.builderPool.Get().(*builder.Builder)
 	b.Reset()
+
+	if !capture {
+		b.WriteString("\033[?2026h")
+	}
 
 	defer func() {
 		wnd.releaseBuffer(newBuf)
@@ -486,6 +562,8 @@ func (wnd *window) Redraw() {
 		}
 	}
 
+	b.WriteString("\033[?2026l")
+
 	makeStringDur := time.Since(makeStringStart)
 
 	writeStart := time.Now()
@@ -494,22 +572,51 @@ func (wnd *window) Redraw() {
 
 	writeDur := time.Since(writeStart)
 
-	var fps, fpsIO int
-	t := renderDur + makeStringDur
-	if t == 0 {
-		fps = -1
-	} else {
-		fps = int(time.Second / t)
+	wnd.stats.frames.Add(1)
+	wnd.stats.renderNanos.Add(int64(renderDur))
+	wnd.stats.makeStrNanos.Add(int64(makeStringDur))
+	wnd.stats.writeNanos.Add(int64(writeDur))
+
+	wnd.maybeReport()
+}
+
+func (wnd *window) maybeReport() {
+	if !DEBUG {
+		return
 	}
 
-	t = renderDur + makeStringDur + writeDur
-	if t == 0 {
-		fpsIO = -1
-	} else {
-		fpsIO = int(time.Second / t)
+	now := time.Now()
+	elapsed := now.Sub(wnd.lastReport)
+	if elapsed < time.Second {
+		return
+	}
+	wnd.lastReport = now
+
+	frames := wnd.stats.frames.Swap(0)
+	if frames == 0 {
+		return
+	}
+	r := wnd.stats.renderNanos.Swap(0)
+	m := wnd.stats.makeStrNanos.Swap(0)
+	wrt := wnd.stats.writeNanos.Swap(0)
+	tasks := wnd.stats.tasksDone.Swap(0)
+
+	avgRender := time.Duration(r / frames)
+	avgMake := time.Duration(m / frames)
+	avgWrite := time.Duration(wrt / frames)
+
+	fpsCPU := float64(frames) / elapsed.Seconds()
+
+	var fpsIO float64
+	totalNanos := r + m + wrt
+	if totalNanos > 0 {
+		fpsIO = float64(frames) / (float64(totalNanos) / float64(time.Second))
 	}
 
-	wnd.LogInfo("Redraw timings: %s %s %s, FPS: %d:%d", renderDur, makeStringDur, writeDur, fps, fpsIO)
+	wnd.LogInfo(
+		"FPS: %.0f (cpu) / %.0f (io), frames=%d tasks=%d, avg render=%s makeString=%s write=%s",
+		fpsCPU, fpsIO, frames, tasks, avgRender, avgMake, avgWrite,
+	)
 }
 
 func (wnd *window) Run() {
@@ -517,28 +624,32 @@ func (wnd *window) Run() {
 		if err := recover(); err != nil {
 			wnd.LogFatal("tui: Произошла паника: %v", err)
 		}
-		if DEBUG {
+		if DEBUG && wnd.log != nil {
 			wnd.log.Close()
 		}
 	}()
-	if !capture {
-		if !term.IsTerminal(int(os.Stdout.Fd())) {
-			wnd.LogFatal("tui: stdout is not terminal")
-		}
-		if err := termL.MakeRaw(); err != nil {
-			wnd.LogInfo("tui: Cannot make raw: %s", err)
+
+	if !capture && !wnd.skipRaw {
+		if wnd.stdin != nil && term.IsTerminal(int(wnd.stdin.Fd())) {
+			if err := termL.MakeRawFile(wnd.stdin); err != nil {
+				wnd.LogInfo("tui: Cannot make raw: %s", err)
+			}
 		}
 	}
-
-	wnd.stdout = os.Stdout
-	wnd.stderr = os.Stderr
-	os.Stdout, os.Stderr = wnd.log, wnd.log
 
 	if !capture {
 		fmt.Fprint(wnd.f, "\033[37m")
 		wnd.last = cell.Style{Fg: "37"}
 
-		fmt.Fprint(wnd.f, "\033[2J\033[0m\033[?25l\033[?1006h\033[?1000h")
+		b := wnd.builderPool.Get().(*builder.Builder)
+		b.Reset()
+		b.WriteString("\033[0m\033[?25l\033[?1003h\033[?1006h")
+		if wnd.altScreen {
+			b.WriteString("\033[?1049h")
+		}
+		b.WriteString("\033[2J")
+		b.Copy(wnd.f)
+		wnd.builderPool.Put(b)
 	}
 
 	go wnd.startStopSignalCatcher()
@@ -556,23 +667,35 @@ func (wnd *window) Run() {
 	wnd.restoreOut()
 
 	if !capture {
-		termL.Restore()
+		if wnd.skipRaw == false && wnd.stdout != nil {
+			termL.Restore()
+		}
 
 		if wnd.last != (cell.Style{}) {
 			fmt.Fprint(wnd.f, "\033[0m")
 		}
-		fmt.Fprint(wnd.f, "\033[2J\033[H\033[?25h")
-		fmt.Fprint(wnd.f, "\033[?1006l\033[?1000l")
+
+		b := wnd.builderPool.Get().(*builder.Builder)
+		b.Reset()
+		b.WriteString("\033[2J\033[?25h\033[?1003l\033[?1000l")
+		if wnd.altScreen {
+			b.WriteString("\033[?1049l")
+		}
+		b.Copy(wnd.f)
+		wnd.builderPool.Put(b)
 	}
 }
 
 func (wnd *window) restoreOut() {
+	if wnd.stdout == nil {
+		return
+	}
 	os.Stdout = wnd.stdout
 	os.Stderr = wnd.stderr
 }
 
 func (wnd *window) Quit() {
-	close(wnd.stopCh)
+	wnd.quitOnce.Do(func() { close(wnd.stopCh) })
 }
 
 func (wnd *window) OnQuit() <-chan struct{} {
@@ -586,18 +709,85 @@ func (wnd *window) IsRunned() bool {
 	return wnd.runned
 }
 
+// Options — настройки окна.
+type Options struct {
+	In          io.Reader
+	Out         io.Writer
+	Err         io.Writer
+	Width       int
+	Height      int
+	SkipRawMode bool
+	AltScreen   bool
+}
+
+type Option func(*Options)
+
+func WithIO(in io.Reader, out, err io.Writer) Option {
+	return func(o *Options) { o.In, o.Out, o.Err = in, out, err }
+}
+
+func WithSize(w, h int) Option {
+	return func(o *Options) { o.Width, o.Height = w, h }
+}
+
+func WithSkipRawMode(v bool) Option {
+	return func(o *Options) { o.SkipRawMode = v }
+}
+
+func WithAltScreen(v bool) Option {
+	return func(o *Options) { o.AltScreen = v }
+}
+
 const taskBufSize = 32
 
-func NewWindow() Window {
-	wnd := &window{f: os.Stdout, stopCh: make(chan struct{}), keyHandlers: []KeyboardEventHandler{},
-		work: make(chan *task, taskBufSize), focusIndex: -1, focusChange: true, cellBuf: make([]cell.Cell, 0, 256),
-		initCell: cell.Cell{Char: ' '}, builderPool: sync.Pool{
-			New: func() any {
-				return &builder.Builder{}
-			},
-		},
-		cursorPos: Pos{-1, -1},
+func NewWindow(opts ...Option) Window {
+	o := Options{
+		In:        os.Stdin,
+		Out:       os.Stdout,
+		Err:       os.Stderr,
+		AltScreen: true,
 	}
+	for _, opt := range opts {
+		opt(&o)
+	}
+
+	wnd := &window{
+		f:           o.Out,
+		in:          o.In,
+		width:       o.Width,
+		height:      o.Height,
+		skipRaw:     o.SkipRawMode,
+		altScreen:   o.AltScreen,
+		stopCh:      make(chan struct{}),
+		keyHandlers: []KeyboardEventHandler{},
+		work:        make(chan *task, taskBufSize),
+		focusIndex:  -1,
+		focusChange: true,
+		cellBuf:     make([]cell.Cell, 0, 256),
+		initCell:    cell.Cell{Char: ' '},
+		builderPool: sync.Pool{
+			New: func() any { return &builder.Builder{} },
+		},
+		cursorPos:  Pos{-1, -1},
+		lastReport: time.Now(),
+		bufferPool: &sync.Pool{
+			New: func() any { return [][]cell.Cell(nil) },
+		},
+		hovered: make(map[EventHandler]struct{}),
+	}
+
+	if f, ok := o.In.(*os.File); ok {
+		wnd.stdin = f
+	}
+	if f, ok := o.Out.(*os.File); ok {
+		wnd.stdout = f
+		if e, ok := o.Err.(*os.File); ok {
+			wnd.stderr = e
+		} else {
+			wnd.stderr = f
+		}
+	}
+
 	if DEBUG {
 		f, err := os.Create(fmt.Sprintf("debug_log_%d", time.Now().UnixMilli()))
 		if err != nil {
@@ -605,11 +795,10 @@ func NewWindow() Window {
 		}
 		wnd.log = f
 	}
-	termL.EnableANSIWindows()
+	termL.EnableANSIWindowsFile(wnd.stdout)
 	if DEBUG {
 		wnd.worker.Store(getGorID())
 	}
-	currentWindow = wnd
 	return wnd
 }
 
@@ -632,7 +821,6 @@ func (wnd *window) Do(f func()) {
 		return
 	case wnd.work <- &task{f: f}:
 	}
-
 }
 
 func (wnd *window) DoAndWait(f func()) {
@@ -701,14 +889,11 @@ func (wnd *window) runWorker() {
 	for {
 		select {
 		case <-wnd.stopCh:
-			close(wnd.work)
 			wnd.LogInfo("Воркер остановлен")
 			return
 		case tsk := <-wnd.work:
 			if tsk.msg != "" {
 				wnd.LogInfo("Принята задача: '%s'", tsk.msg)
-			} else {
-				wnd.LogInfo("Принята задача")
 			}
 			func() {
 				defer func() {
@@ -722,19 +907,21 @@ func (wnd *window) runWorker() {
 				}()
 				tsk.f()
 			}()
+			wnd.stats.tasksDone.Add(1)
 			if tsk.done != nil {
 				close(tsk.done)
 			}
 			if tsk.msg != "" {
 				wnd.LogInfo("Завершена задача: '%s'", tsk.msg)
-			} else {
-				wnd.LogInfo("Завершена задача")
 			}
 		}
 	}
 }
 
 func (wnd *window) Width() int {
+	if wnd.width > 0 {
+		return wnd.width
+	}
 	if capture {
 		if w := os.Getenv("TUI_WIDTH"); w != "" {
 			if val, err := strconv.Atoi(w); err == nil && val > 0 {
@@ -743,11 +930,17 @@ func (wnd *window) Width() int {
 		}
 		return 80
 	}
-	w, _ := termL.SizeFd(wnd.stdout.Fd())
-	return w
+	if wnd.stdout != nil {
+		w, _ := termL.SizeFd(wnd.stdout.Fd())
+		return w
+	}
+	return 80
 }
 
 func (wnd *window) Height() int {
+	if wnd.height > 0 {
+		return wnd.height
+	}
 	if capture {
 		if h := os.Getenv("TUI_HEIGHT"); h != "" {
 			if val, err := strconv.Atoi(h); err == nil && val > 0 {
@@ -756,8 +949,18 @@ func (wnd *window) Height() int {
 		}
 		return 24
 	}
-	_, h := termL.SizeFd(wnd.stdout.Fd())
-	return h
+	if wnd.stdout != nil {
+		_, h := termL.SizeFd(wnd.stdout.Fd())
+		return h
+	}
+	return 24
+}
+
+func (wnd *window) SetSize(w, h int) {
+	wnd.Do(func() {
+		wnd.width, wnd.height = w, h
+		wnd.Redraw()
+	})
 }
 
 func (wnd *window) startStopSignalCatcher() {
@@ -768,41 +971,109 @@ func (wnd *window) startStopSignalCatcher() {
 	case <-wnd.stopCh:
 		return
 	default:
-		close(wnd.stopCh)
+		wnd.Quit()
 	}
 }
 
 func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
-	if wnd.wgt != nil {
-		for _, cl := range wnd.wgt {
-			if ev.Pos.Y >= cl.p.Line && ev.Pos.Y < cl.p.Line+cl.Height() &&
-				ev.Pos.X >= cl.p.Col && ev.Pos.X < cl.p.Col+cl.Width() {
-				wnd.doWithMessage(func() {
-					ev2 := &input.MouseEvent{
-						Button: ev.Button,
-						Pos: input.Point{
-							X: ev.Pos.X - cl.p.Col,
-							Y: ev.Pos.Y - cl.p.Line,
-						},
-					}
-					cl.Send(ev2)
-				}, "mouse event")
-				break
-			}
+	if wnd.wgt == nil {
+		return
+	}
+
+	var under []eventHandlerWithPos
+	for _, cl := range wnd.wgt {
+		if ev.Pos.Y >= cl.p.Line && ev.Pos.Y < cl.p.Line+cl.Height() &&
+			ev.Pos.X >= cl.p.Col && ev.Pos.X < cl.p.Col+cl.Width() {
+			under = append(under, cl)
 		}
 	}
-	for _, h := range wnd.mouseHandlers {
+
+	if ev.Action == input.MouseMove {
+		wnd.updateHover(under, ev.Pos)
+	}
+
+	for _, cl := range under {
+		cl := cl
 		wnd.doWithMessage(func() {
-			h(ev)
-		}, "mouse handler")
+			cl.Send(&input.MouseEvent{
+				Action: ev.Action,
+				Button: ev.Button,
+				Pos: input.Point{
+					X: ev.Pos.X - cl.p.Col,
+					Y: ev.Pos.Y - cl.p.Line,
+				},
+				Shift: ev.Shift,
+				Alt:   ev.Alt,
+				Ctrl:  ev.Ctrl,
+			})
+		}, "mouse event")
+	}
+
+	for _, h := range wnd.mouseHandlers {
+		h := h
+		wnd.doWithMessage(func() { h(ev) }, "mouse handler")
 	}
 }
 
-func (wnd *window) RegisterClickHandler(h func(ev *input.MouseEvent)) {
+func (wnd *window) updateHover(under []eventHandlerWithPos, pos input.Point) {
+	now := make(map[EventHandler]struct{}, len(under))
+	for _, cl := range under {
+		now[cl.EventHandler] = struct{}{}
+	}
+
+	for h := range wnd.hovered {
+		if _, still := now[h]; still {
+			continue
+		}
+
+		p := wnd.posOf(h)
+		ev := &MouseHoverEvent{
+			Entered: false,
+			Pos:     input.Point{X: pos.X - p.Col, Y: pos.Y - p.Line},
+		}
+		h := h
+		wnd.doWithMessage(func() { h.Send(ev) }, "mouse leave")
+	}
+
+	for _, cl := range under {
+		h := cl.EventHandler
+		if _, was := wnd.hovered[h]; was {
+			continue
+		}
+		ev := &MouseHoverEvent{
+			Entered: true,
+			Pos: input.Point{
+				X: pos.X - cl.p.Col,
+				Y: pos.Y - cl.p.Line,
+			},
+		}
+		wnd.doWithMessage(func() { h.Send(ev) }, "mouse enter")
+	}
+
+	wnd.hovered = now
+}
+
+func (wnd *window) posOf(h EventHandler) Pos {
+	for _, cl := range wnd.wgt {
+		if cl.EventHandler == h {
+			return cl.p
+		}
+	}
+	return Pos{}
+}
+
+func (wnd *window) RegisterClickHandler(h MouseEventHandler) {
 	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("RegisterClickHandler called outside worker goroutine: data race")
 	}
 	wnd.mouseHandlers = append(wnd.mouseHandlers, h)
+}
+
+func (wnd *window) RegisterResizeHandler(h ResizeHandler) {
+	if DEBUG && !wnd.isWorker() {
+		wnd.LogFatal("RegisterResizeHandler called outside worker goroutine: data race")
+	}
+	wnd.resizeHandlers = append(wnd.resizeHandlers, h)
 }
 
 func (wnd *window) CopyToClipboard(text string) {
@@ -829,7 +1100,7 @@ func (wnd *window) startInputCatcher() {
 		})
 	})
 
-	mouse, keyboard := input.Start(1)
+	mouse, keyboard := input.Start(wnd.in, 1)
 	for {
 		select {
 		case <-wnd.stopCh:
@@ -844,7 +1115,10 @@ func (wnd *window) startInputCatcher() {
 				}
 			}, "key handler")
 		case ev := <-mouse:
-			wnd.handleMouseEvent(ev)
+			ev2 := ev
+			wnd.doWithMessage(func() {
+				wnd.handleMouseEvent(ev2)
+			}, "mouse dispatch")
 		}
 	}
 }
@@ -860,7 +1134,10 @@ func (wnd *window) SetContent(w Widget) {
 
 func (wnd *window) SetTitle(title string) {
 	if !capture {
-		fmt.Fprintf(wnd.f, "\033]0;%s\033\\", title)
+		title = ansi.Strip(title)
+		wnd.Do(func() {
+			fmt.Fprintf(wnd.f, "\033]0;%s\033\\", title)
+		})
 	}
 }
 
@@ -875,10 +1152,6 @@ func (wnd *window) Commit(f func()) {
 	})
 }
 
-func CurrentWindow() Window {
-	return currentWindow
-}
-
 // SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
 // Обычно используется для установки фона.
 func (wnd *window) SetInitCell(c cell.Cell) {
@@ -889,7 +1162,7 @@ func (wnd *window) SetInitCell(c cell.Cell) {
 	wnd.buf = nil
 }
 
-// SetInitCell устанавливает фон пустых позиций окна.
+// SetBackground устанавливает фон пустых позиций окна.
 func (wnd *window) SetBackground(s Style) {
 	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("SetBackground called outside worker goroutine: data race")

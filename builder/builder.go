@@ -17,22 +17,29 @@ type Builder struct {
 	buf []byte
 }
 
+// String возвращает строку, разделяющую память с внутренним буфером.
+// Результат валиден до следующей записи в Builder.
 func (b *Builder) String() string {
 	return unsafe.String(unsafe.SliceData(b.buf), len(b.buf))
 }
 
+// String возвращает копию содержимого буфера в string.
 func (b *Builder) StringCopy() string {
 	return string(b.buf)
 }
 
+// Len возвращает длину буфера.
 func (b *Builder) Len() int { return len(b.buf) }
 
+// Cap возвращает ёмкость буфера.
 func (b *Builder) Cap() int { return cap(b.buf) }
 
+// Reset сбрасывает длину буфера.
 func (b *Builder) Reset() {
 	b.buf = b.buf[:0]
 }
 
+// Grow выделяет N байт.
 func (b *Builder) Grow(n int) {
 	if n < 0 {
 		panic("builder.Grow: negative count")
@@ -48,22 +55,26 @@ func (b *Builder) Grow(n int) {
 	}
 }
 
+// Write реализует io.Writer.
 func (b *Builder) Write(p []byte) (int, error) {
 	b.buf = append(b.buf, p...)
 	return len(p), nil
 }
 
+// WriteByte дописывает байт в Builder.
 func (b *Builder) WriteByte(c byte) error {
 	b.buf = append(b.buf, c)
 	return nil
 }
 
+// WriteByte дописывает руну в Builder.
 func (b *Builder) WriteRune(r rune) (int, error) {
 	n := len(b.buf)
 	b.buf = utf8.AppendRune(b.buf, r)
 	return len(b.buf) - n, nil
 }
 
+// WriteByte дописывает строку в Builder.
 func (b *Builder) WriteString(s string) (int, error) {
 	b.buf = append(b.buf, s...)
 	return len(s), nil
@@ -93,6 +104,10 @@ func (b *Builder) WriteUint(v uint) {
 	b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
 }
 
+// WriteFormat записывает форматированную строку по подмножеству правил
+// fmt.Printf: %s, %d, %f (точность 3), %v (string/int/float/bool), %%.
+// Width, precision, флаги и прочие глаголы не поддерживаются.
+// При нехватке аргументов пишет "%!MISSING" и прекращает разбор.
 func (b *Builder) WriteFormat(s string, args ...any) {
 	arg := -1
 	estimate := len(s) + len(args)*10
@@ -184,14 +199,28 @@ func (b *Builder) WriteFormat(s string, args ...any) {
 	}
 }
 
+// Bytes возращает буфер Builder.
 func (b *Builder) Bytes() []byte {
 	return b.buf
 }
 
+// Copy копирует буфер в io.Writer.
 func (b *Builder) Copy(dst io.Writer) (int, error) {
-	return dst.Write(b.buf)
+	total := 0
+	for total < len(b.buf) {
+		n, err := dst.Write(b.buf[total:])
+		total += n
+		if err != nil {
+			return total, err
+		}
+		if n == 0 {
+			return total, io.ErrShortWrite
+		}
+	}
+	return total, nil
 }
 
+// New создаёт Builder с указанной ёмкостью.
 func New(size int) *Builder {
 	return &Builder{buf: make([]byte, 0, size)}
 }

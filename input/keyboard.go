@@ -3,6 +3,7 @@ package input
 
 import "unicode/utf8"
 
+// KeyboardEvent преставляет собой событие клавиатуры.
 type KeyboardEvent struct {
 	Key  Key
 	Rune rune
@@ -11,6 +12,7 @@ type KeyboardEvent struct {
 
 type Key uint16
 
+// Клавиши на клавиатуре.
 const (
 	KeyUnknown Key = iota
 
@@ -77,6 +79,32 @@ const (
 	KeyEsc
 )
 
+var keyMap = map[string]Key{
+	string([]byte{27, 91, 53, 126}):     KeyPgUp,
+	string([]byte{27, 91, 54, 126}):     KeyPgDown,
+	string([]byte{27, 91, 90}):          KeyShiftTab,
+	string([]byte{27, 91, 51, 126}):     KeyDelete,
+	string([]byte{27, 91, 70}):          KeyEnd,
+	string([]byte{27, 91, 72}):          KeyHome,
+	string([]byte{27, 91, 50, 126}):     KeyInsert,
+	string([]byte{27, 79, 80}):          KeyF1,
+	string([]byte{27, 79, 81}):          KeyF2,
+	string([]byte{27, 79, 82}):          KeyF3,
+	string([]byte{27, 79, 83}):          KeyF4,
+	string([]byte{27, 91, 49, 53, 126}): KeyF5,
+	string([]byte{27, 91, 49, 55, 126}): KeyF6,
+	string([]byte{27, 91, 49, 56, 126}): KeyF7,
+	string([]byte{27, 91, 49, 57, 126}): KeyF8,
+	string([]byte{27, 91, 50, 48, 126}): KeyF9,
+	string([]byte{27, 91, 50, 49, 126}): KeyF10,
+	string([]byte{27, 91, 50, 51, 126}): KeyF11,
+	string([]byte{27, 91, 50, 52, 126}): KeyF12,
+	string([]byte{27, 91, 65}):          KeyArrowUp,
+	string([]byte{27, 91, 67}):          KeyArrowRight,
+	string([]byte{27, 91, 66}):          KeyArrowDown,
+	string([]byte{27, 91, 68}):          KeyArrowLeft,
+}
+
 func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 	if len(data) == 1 {
 		v := data[0]
@@ -93,6 +121,8 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 			return '/', KeySlash
 		case v == 92:
 			return '\\', KeyReverseSlash
+		case v == 27:
+			return 0, KeyEsc
 		case v == 127:
 			return 0, KeyBackspace
 		default:
@@ -102,33 +132,8 @@ func parseAnsiKeyboardInput(data []byte) (rune, Key) {
 			return 0, KeyUnknown
 		}
 	}
-	m := map[string]Key{
-		string([]byte{27, 91, 53, 126}):     KeyPgUp,
-		string([]byte{27, 91, 54, 126}):     KeyPgDown,
-		string([]byte{27, 91, 90}):          KeyShiftTab,
-		string([]byte{27, 91, 51, 126}):     KeyDelete,
-		string([]byte{27, 91, 70}):          KeyEnd,
-		string([]byte{27, 91, 72}):          KeyHome,
-		string([]byte{27, 91, 50, 126}):     KeyInsert,
-		string([]byte{27, 79, 80}):          KeyF1,
-		string([]byte{27, 79, 81}):          KeyF2,
-		string([]byte{27, 79, 82}):          KeyF3,
-		string([]byte{27, 79, 83}):          KeyF4,
-		string([]byte{27, 91, 49, 53, 126}): KeyF5,
-		string([]byte{27, 91, 49, 55, 126}): KeyF6,
-		string([]byte{27, 91, 49, 56, 126}): KeyF7,
-		string([]byte{27, 91, 49, 57, 126}): KeyF8,
-		string([]byte{27, 91, 50, 48, 126}): KeyF9,
-		string([]byte{27, 91, 50, 49, 126}): KeyF10,
-		string([]byte{27, 91, 50, 51, 126}): KeyF11,
-		string([]byte{27, 91, 50, 52, 126}): KeyF12,
-		string([]byte{27, 91, 65}):          KeyArrowUp,
-		string([]byte{27, 91, 67}):          KeyArrowRight,
-		string([]byte{27, 91, 66}):          KeyArrowDown,
-		string([]byte{27, 91, 68}):          KeyArrowLeft,
-	}
 	key := string(data)
-	if v, ok := m[key]; ok {
+	if v, ok := keyMap[key]; ok {
 		return 0, v
 	}
 

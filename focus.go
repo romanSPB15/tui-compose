@@ -59,7 +59,7 @@ func (wnd *window) SetFocus(f EventHandler) bool {
 		return false
 	}
 	for i, w := range wnd.focusableWidgets {
-		if w == f {
+		if w.EventHandler == f {
 			wnd.setFocusTo(i)
 			return true
 		}

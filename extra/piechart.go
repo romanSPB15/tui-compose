@@ -8,12 +8,19 @@ import (
 	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
+// PieData — сектор круговой диаграммы.
+// Label — подпись для легенды.
+// Value — значение (в любых единицах, важно только соотношение).
+// Color — цвет сектора.
+// Добавлено в TUI v3.3.0.
 type PieData struct {
 	Label string
 	Value float64
 	Color tui.Style
 }
 
+// PieChart — виджет круговой диаграммы.
+// Добавлено в TUI v3.3.0.
 type PieChart struct {
 	data        []PieData
 	radius      int
@@ -23,6 +30,9 @@ type PieChart struct {
 	legendStyle tui.Style
 }
 
+// NewPieChart создаёт круговую диаграмму с указанными данными.
+// Радиус по умолчанию 10, проценты отображаются, легенда скрыта.
+// Добавлено в TUI v3.3.0.
 func NewPieChart(data []PieData) *PieChart {
 	return &PieChart{
 		data:        data,
@@ -34,31 +44,43 @@ func NewPieChart(data []PieData) *PieChart {
 	}
 }
 
+// WithRadius устанавливает радиус диаграммы.
+// Добавлено в TUI v3.3.0.
 func (pc *PieChart) WithRadius(r int) *PieChart {
 	pc.radius = r
 	return pc
 }
 
+// WithShowPercent включает или отключает отображение процентов.
+// Добавлено в TUI v3.3.0.
 func (pc *PieChart) WithShowPercent(b bool) *PieChart {
 	pc.showPercent = b
 	return pc
 }
 
+// WithShowLegend включает или отключает отображение легенды.
+// Добавлено в TUI v3.3.0.
 func (pc *PieChart) WithShowLegend(b bool) *PieChart {
 	pc.showLegend = b
 	return pc
 }
 
+// WithValueStyle устанавливает стиль текста процентов.
+// Добавлено в TUI v3.3.0.
 func (pc *PieChart) WithValueStyle(s tui.Style) *PieChart {
 	pc.valueStyle = s
 	return pc
 }
 
+// WithLegendStyle устанавливает стиль текста легенды.
+// Добавлено в TUI v3.3.0.
 func (pc *PieChart) WithLegendStyle(s tui.Style) *PieChart {
 	pc.legendStyle = s
 	return pc
 }
 
+// Width реализует интерфейс Widget.
+// Добавлено в TUI v4.0.0.
 func (pc *PieChart) Width() int {
 	width := 2*pc.radius + 2
 	if pc.showLegend {
@@ -76,10 +98,14 @@ func (pc *PieChart) Width() int {
 	return width
 }
 
+// Height реализует интерфейс Widget.
+// Добавлено в TUI v4.0.0.
 func (pc *PieChart) Height() int {
 	return pc.radius
 }
 
+// Render реализует интерфейс Widget.
+// Добавлено в TUI v4.0.0.
 func (pc *PieChart) Render(cells [][]cell.Cell) {
 	if len(pc.data) == 0 {
 		return

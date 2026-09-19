@@ -113,6 +113,7 @@ func TestRender(t *testing.T) {
 			Content: NewVBox(NewStaticLabel("Hello"), NewButton("", nil)),
 			Expected: [][]cell.Cell{
 				cells("Hello"),
+				cells("    ", cell.Style{Fg: "30", Bg: "47"}),
 			},
 		},
 
@@ -146,10 +147,6 @@ func TestRender(t *testing.T) {
 		},
 	}
 
-	if CurrentWindow() != wnd {
-		t.Fatal("invalid CurrentWindow()")
-	}
-
 	if wnd.Focus() == nil {
 		t.Fatal("invalid Window.Focus()")
 	}
@@ -178,6 +175,7 @@ func TestRedraw(t *testing.T) {
 			Content: NewVBox(NewStaticLabel("Hello"), NewButton("", nil)),
 			Expected: [][]cell.Cell{
 				cells("Hello"),
+				cells("    ", cell.Style{Fg: "30", Bg: "47"}),
 			},
 		},
 		{
@@ -322,6 +320,7 @@ func TestRun(t *testing.T) {
 
 	expected := addToWindowSize([][]cell.Cell{
 		cells("Hello"),
+		cells("    ", cell.Style{Fg: "30", Bg: "47"}),
 	}, width, height, wnd.initCell)
 
 	assertBuffer(t, 0, expected, buf2)

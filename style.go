@@ -114,6 +114,7 @@ func (s Style) String() string {
 	return "\x1b[" + strings.Join(codesString, ";") + "m"
 }
 
+// ConvertToCellStyle конвертирует tui.Style в cell.Style.
 func ConvertToCellStyle(s Style) cell.Style {
 	var cs cell.Style
 	fg := int(s & 0x1F)
