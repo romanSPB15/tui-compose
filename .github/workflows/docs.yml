@@ -37,10 +37,8 @@ jobs:
       - name: Generate API docs
         run: |
           mkdir -p docs/api
-          gomarkdoc --heading-level 2 \
-                    --output docs/api/index.md .
-          gomarkdoc --heading-level 2 \
-                    --output 'docs/api/{{.Dir}}.md' ./...
+          gomarkdoc --output docs/api/index.md .
+          gomarkdoc --output 'docs/api/{{.Dir}}.md' ./...
 
       - name: Commit if changed
         run: |
