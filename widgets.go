@@ -127,10 +127,10 @@ func (btn *Button) Render(buf [][]cell.Cell) {
 	switch {
 	case btn.IsDisabled():
 		s = btn.styleD
-	case btn.focused:
-		s = btn.styleF
 	case btn.hovered && btn.styleH != (cell.Style{}):
 		s = btn.styleH
+	case btn.focused:
+		s = btn.styleF
 	default:
 		s = btn.style
 	}
@@ -230,8 +230,8 @@ func (btn *Button) Send(ev Event) {
 			if btn.OnClicked != nil {
 				btn.OnClicked()
 			}
-			if !btn.focused {
-				btn.Send(FocusEvent{true})
+			if !btn.focused && btn.wnd != nil {
+				btn.wnd.Focus().SetFocus(btn)
 			}
 		}
 	case *input.KeyboardEvent:
