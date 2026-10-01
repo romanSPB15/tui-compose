@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/romanSPB15/tui-compose/v4/cell"
+	"github.com/romanSPB15/acell"
 )
 
 // Style — битовая маска стиля виджета.
@@ -38,7 +38,6 @@ const (
 	Underline Style = 1 << 12
 	Blink     Style = 1 << 13
 	Reverse   Style = 1 << 14
-	Reset     Style = 1 << 15
 )
 
 const (
@@ -101,9 +100,6 @@ func (s Style) String() string {
 	if s&Reverse != 0 {
 		codes = append(codes, 7)
 	}
-	if s&Reset != 0 {
-		codes = []int{0}
-	}
 
 	codesString := []string{}
 
@@ -114,9 +110,9 @@ func (s Style) String() string {
 	return "\x1b[" + strings.Join(codesString, ";") + "m"
 }
 
-// ConvertToCellStyle конвертирует tui.Style в cell.Style.
-func ConvertToCellStyle(s Style) cell.Style {
-	var cs cell.Style
+// ConvertToCellStyle конвертирует tui.Style в acell.Style.
+func ConvertToCellStyle(s Style) acell.Style {
+	var cs acell.Style
 	fg := int(s & 0x1F)
 	if fg != 0 {
 		if fg <= 8 {
@@ -135,22 +131,19 @@ func ConvertToCellStyle(s Style) cell.Style {
 	}
 
 	if s&Bold != 0 {
-		cs.Args |= cell.Bold
+		cs.Args |= acell.Bold
 	}
 	if s&Italic != 0 {
-		cs.Args |= cell.Italic
+		cs.Args |= acell.Italic
 	}
 	if s&Underline != 0 {
-		cs.Args |= cell.Underline
+		cs.Args |= acell.Underline
 	}
 	if s&Blink != 0 {
-		cs.Args |= cell.Blink
+		cs.Args |= acell.Blink
 	}
 	if s&Reverse != 0 {
-		cs.Args |= cell.Reverse
-	}
-	if s&Reset != 0 {
-		cs.Args |= cell.Reset
+		cs.Args |= acell.Reverse
 	}
 	return cs
 }

@@ -1,6 +1,8 @@
 package tui
 
-import "github.com/romanSPB15/tui-compose/v4/cell"
+import (
+	"github.com/romanSPB15/acell"
+)
 
 // VBox — вертикальный компоновщик виджетов.
 // Добавлено в TUI 3.0.0.
@@ -45,7 +47,7 @@ func (v *VBox) layout() {
 	}
 }
 
-func (v *VBox) Render([][]cell.Cell) {
+func (v *VBox) Render([][]acell.Cell) {
 }
 
 func (v *VBox) Width() int {
@@ -130,7 +132,7 @@ func (v *HBox) WithGap(gap int) *HBox {
 	return v
 }
 
-func (v *HBox) Render([][]cell.Cell) {
+func (v *HBox) Render([][]acell.Cell) {
 }
 
 func (v *HBox) Width() int {

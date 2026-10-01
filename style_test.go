@@ -3,8 +3,8 @@ package tui_test
 import (
 	"testing"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 func TestStyleString(t *testing.T) {
@@ -20,12 +20,6 @@ func TestStyleString(t *testing.T) {
 		},
 		{Style: tui.Underline | tui.Reverse,
 			Expected: "\x1b[4;7m",
-		},
-		{Style: tui.Reset,
-			Expected: "\x1b[0m",
-		},
-		{Style: tui.Reset | tui.Blink,
-			Expected: "\x1b[0m",
 		},
 		{Style: tui.Blink,
 			Expected: "\x1b[5m",
@@ -50,36 +44,30 @@ func TestStyleString(t *testing.T) {
 func TestConvertToCellStyle(t *testing.T) {
 	tt := []struct {
 		Style    tui.Style
-		Expected cell.Style
+		Expected acell.Style
 	}{
 		{Style: tui.Style(0),
-			Expected: cell.Style{},
+			Expected: acell.Style{},
 		},
 		{Style: tui.Italic | tui.Bold,
-			Expected: cell.Style{Args: cell.Italic | cell.Bold},
+			Expected: acell.Style{Args: acell.Italic | acell.Bold},
 		},
 		{Style: tui.Underline | tui.Reverse,
-			Expected: cell.Style{Args: cell.Underline | cell.Reverse},
-		},
-		{Style: tui.Reset,
-			Expected: cell.Style{Args: cell.Reset},
-		},
-		{Style: tui.Reset | tui.Blink,
-			Expected: cell.Style{Args: cell.Reset | cell.Blink},
+			Expected: acell.Style{Args: acell.Underline | acell.Reverse},
 		},
 		{Style: tui.Blink,
-			Expected: cell.Style{Args: cell.Blink},
+			Expected: acell.Style{Args: acell.Blink},
 		},
 		{Style: tui.BgRed | tui.FrBlack,
-			Expected: cell.Style{Bg: "41", Fg: "30"},
+			Expected: acell.Style{Bg: "41", Fg: "30"},
 		},
 		{
 			Style:    tui.BgBrightRed | tui.FrBrightBlack,
-			Expected: cell.Style{Fg: "90", Bg: "101"},
+			Expected: acell.Style{Fg: "90", Bg: "101"},
 		},
 		{
 			Style:    tui.BgBrightRed | tui.FrBrightCyan | tui.Blink,
-			Expected: cell.Style{Fg: "96", Bg: "101", Args: cell.Blink},
+			Expected: acell.Style{Fg: "96", Bg: "101", Args: acell.Blink},
 		},
 	}
 	for i, test := range tt {

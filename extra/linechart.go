@@ -3,8 +3,8 @@ package extra
 import (
 	"strconv"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type AxisRunes struct {
@@ -72,7 +72,7 @@ func (bc *LineChart) Height() int {
 }
 
 // алгоритм Брезенхема
-func (bc *LineChart) drawLine(x1, y1, x2, y2 int, cells [][]cell.Cell, c cell.Cell) {
+func (bc *LineChart) drawLine(x1, y1, x2, y2 int, cells [][]acell.Cell, c acell.Cell) {
 	dx := abs(x2 - x1)
 	dy := abs(y2 - y1)
 	sx := 1
@@ -131,7 +131,7 @@ func lenNumber(n int) (i int) {
 	return
 }
 
-func (bc *LineChart) Render(cells [][]cell.Cell) {
+func (bc *LineChart) Render(cells [][]acell.Cell) {
 	if len(bc.Data) == 0 {
 		return
 	}
@@ -164,7 +164,7 @@ func (bc *LineChart) Render(cells [][]cell.Cell) {
 	h := bc.Height()
 
 	axisStyle := tui.ConvertToCellStyle(bc.AxisStyle)
-	var axisLabelStyle cell.Style
+	var axisLabelStyle acell.Style
 	if bc.AxisLabelStyle != 0 {
 		axisLabelStyle = tui.ConvertToCellStyle(bc.AxisLabelStyle)
 	} else {
@@ -177,7 +177,7 @@ func (bc *LineChart) Render(cells [][]cell.Cell) {
 
 	if len(bc.YLabels) > 0 {
 		for y := 0; y < h; y++ {
-			cells[y][offsetX-1] = cell.Cell{Char: bc.AxisRunes.Ver, Style: axisStyle}
+			cells[y][offsetX-1] = acell.Cell{Char: bc.AxisRunes.Ver, Style: axisStyle}
 		}
 		for _, v := range bc.YLabels {
 			y := h - int(float64(v)/bc.div) - 1
@@ -191,7 +191,7 @@ func (bc *LineChart) Render(cells [][]cell.Cell) {
 			for j, r := range []rune(txt) {
 				x := offsetX - 2 - j
 				if x >= 0 {
-					cells[y][x] = cell.Cell{Char: r, Style: axisLabelStyle}
+					cells[y][x] = acell.Cell{Char: r, Style: axisLabelStyle}
 				}
 			}
 		}
@@ -199,7 +199,7 @@ func (bc *LineChart) Render(cells [][]cell.Cell) {
 
 	if len(bc.XLabels) > 0 {
 		for x := offsetX; x < w; x++ {
-			cells[h-2][x] = cell.Cell{Char: bc.AxisRunes.Hor, Style: axisStyle}
+			cells[h-2][x] = acell.Cell{Char: bc.AxisRunes.Hor, Style: axisStyle}
 		}
 		for i, v := range bc.XLabels {
 			x := offsetX + 1 + i*bc.PointDistance - len(v)/2
@@ -211,14 +211,14 @@ func (bc *LineChart) Render(cells [][]cell.Cell) {
 				x -= end - w + 1
 			}
 			for j, r := range []rune(v) {
-				cells[h-1][x+j] = cell.Cell{Char: r, Style: axisLabelStyle}
+				cells[h-1][x+j] = acell.Cell{Char: r, Style: axisLabelStyle}
 			}
 		}
 	}
 
 	if len(bc.XLabels) > 0 && len(bc.YLabels) > 0 {
-		cells[h-2][offsetX-1] = cell.Cell{Char: bc.AxisRunes.Corner, Style: axisStyle}
-		cells[h-1][offsetX-1] = cell.Cell{Char: ' ', Style: axisStyle}
+		cells[h-2][offsetX-1] = acell.Cell{Char: bc.AxisRunes.Corner, Style: axisStyle}
+		cells[h-1][offsetX-1] = acell.Cell{Char: ' ', Style: axisStyle}
 	}
 
 	for _, s := range bc.Data {
@@ -238,7 +238,7 @@ func (bc *LineChart) Render(cells [][]cell.Cell) {
 			if y2 < 0 {
 				y2 = 0
 			}
-			bc.drawLine(x1, y1, x2, y2, cells, cell.Cell{Char: bc.LineRune, Style: lineStyle})
+			bc.drawLine(x1, y1, x2, y2, cells, acell.Cell{Char: bc.LineRune, Style: lineStyle})
 		}
 
 		if bc.DisplayPoints {
@@ -249,11 +249,11 @@ func (bc *LineChart) Render(cells [][]cell.Cell) {
 					y = 0
 				}
 				if y < h && x < w {
-					var st cell.Style
+					var st acell.Style
 					if s.PointStyle != nil {
 						st = tui.ConvertToCellStyle(s.PointStyle(i, v))
 					}
-					cells[y][x] = cell.Cell{Char: bc.PointRune, Style: st}
+					cells[y][x] = acell.Cell{Char: bc.PointRune, Style: st}
 				}
 			}
 		}

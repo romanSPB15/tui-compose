@@ -1,9 +1,8 @@
 package extra
 
 import (
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
-	"github.com/romanSPB15/tui-compose/v4/input"
 )
 
 // TabPosition — позиция панели с заголовками вкладок.
@@ -29,9 +28,9 @@ func (tp *tabsTopPanel) Send(ev tui.Event) {
 		e.Result = true
 	case *tui.FocusEvent:
 		tp.focused = e.Focused
-	case *input.KeyboardEvent:
+	case *acell.KeyboardEvent:
 		switch e.Key {
-		case input.KeyArrowRight, input.KeyEnter, input.KeyPgDown:
+		case acell.KeyArrowRight, acell.KeyEnter, acell.KeyPgDown:
 			if tp.t.current < len(tp.t.tabs)-1 {
 				tp.t.current++
 				if tp.wnd != nil {
@@ -39,7 +38,7 @@ func (tp *tabsTopPanel) Send(ev tui.Event) {
 					tp.wnd.Redraw()
 				}
 			}
-		case input.KeyArrowLeft, input.KeyBackspace, input.KeyPgUp:
+		case acell.KeyArrowLeft, acell.KeyBackspace, acell.KeyPgUp:
 			if tp.t.current > 0 {
 				tp.t.current--
 				if tp.wnd != nil {
@@ -47,7 +46,7 @@ func (tp *tabsTopPanel) Send(ev tui.Event) {
 					tp.wnd.Redraw()
 				}
 			}
-		case input.KeyHome:
+		case acell.KeyHome:
 			if tp.t.current != 0 {
 				tp.t.current = 0
 				if tp.wnd != nil {
@@ -55,7 +54,7 @@ func (tp *tabsTopPanel) Send(ev tui.Event) {
 					tp.wnd.Redraw()
 				}
 			}
-		case input.KeyEnd:
+		case acell.KeyEnd:
 			if tp.t.current != len(tp.t.tabs)-1 {
 				tp.t.current = len(tp.t.tabs) - 1
 				if tp.wnd != nil {
@@ -64,8 +63,8 @@ func (tp *tabsTopPanel) Send(ev tui.Event) {
 				}
 			}
 		}
-	case *input.MouseEvent:
-		if e.Action == input.MousePress {
+	case *acell.MouseEvent:
+		if e.Action == acell.MousePress {
 			w := 0
 			for i, v := range tp.t.tabs {
 				if e.Pos.X >= w && e.Pos.X < w+len(v.Title) {
@@ -82,7 +81,7 @@ func (tp *tabsTopPanel) Send(ev tui.Event) {
 	}
 }
 
-func (tp *tabsTopPanel) Render(buf [][]cell.Cell) {
+func (tp *tabsTopPanel) Render(buf [][]acell.Cell) {
 	x := 0
 	for i, v := range tp.t.tabs {
 		s := tui.ConvertToCellStyle(v.TitleStyle)
@@ -91,10 +90,10 @@ func (tp *tabsTopPanel) Render(buf [][]cell.Cell) {
 		}
 		runes := []rune(v.Title)
 		for j, r := range runes {
-			buf[0][j+x] = cell.Cell{Char: r, Style: s}
+			buf[0][j+x] = acell.Cell{Char: r, Style: s}
 		}
 		if tp.focused && i != len(tp.t.tabs)-1 {
-			buf[0][x+len(runes)] = cell.Cell{Char: '_'}
+			buf[0][x+len(runes)] = acell.Cell{Char: '_'}
 		}
 		x += len(runes) + 1
 	}
@@ -147,7 +146,7 @@ func NewTabs(t []Tab) *Tabs {
 	return tabs
 }
 
-func (acc *Tabs) Render([][]cell.Cell) {}
+func (acc *Tabs) Render([][]acell.Cell) {}
 
 func (acc *Tabs) Child() []tui.Widget {
 	return []tui.Widget{&acc.topPanel, acc.tabs[acc.current].Content}

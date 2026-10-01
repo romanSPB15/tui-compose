@@ -3,8 +3,8 @@ package extra
 import (
 	"unicode/utf8"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 // Tree — виджет древовидного списка.
@@ -39,7 +39,7 @@ func NewTree(nodes []TreeNode) *Tree {
 	}
 }
 
-func (t *Tree) Render(buf [][]cell.Cell) {
+func (t *Tree) Render(buf [][]acell.Cell) {
 	var verticalCols []int
 	for i, node := range t.nodes {
 		d := (node.Depth) * t.Offset
@@ -63,16 +63,16 @@ func (t *Tree) Render(buf [][]cell.Cell) {
 		if node.Depth > 0 {
 			for _, col := range verticalCols {
 				if col < d {
-					buf[i][col] = cell.Cell{Char: t.Vertical, Style: cell.Style{}}
+					buf[i][col] = acell.Cell{Char: t.Vertical, Style: acell.Style{}}
 				}
 			}
 			lineEndChar := t.DepthEnd
 			if !lastAtDepth {
 				lineEndChar = t.Continue
 			}
-			buf[i][d] = cell.Cell{Char: lineEndChar, Style: cell.Style{}}
+			buf[i][d] = acell.Cell{Char: lineEndChar, Style: acell.Style{}}
 			for x := d + 1; x < d+t.Offset; x++ {
-				buf[i][x] = cell.Cell{Char: t.Horizontal, Style: cell.Style{}}
+				buf[i][x] = acell.Cell{Char: t.Horizontal, Style: acell.Style{}}
 			}
 		}
 
@@ -84,7 +84,7 @@ func (t *Tree) Render(buf [][]cell.Cell) {
 		}
 		for j, r := range labelRunes {
 			if startX+j < len(buf[i]) {
-				buf[i][startX+j] = cell.Cell{Char: r, Style: style}
+				buf[i][startX+j] = acell.Cell{Char: r, Style: style}
 			}
 		}
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 // PieData — сектор круговой диаграммы.
@@ -106,7 +106,7 @@ func (pc *PieChart) Height() int {
 
 // Render реализует интерфейс Widget.
 // Добавлено в TUI v4.0.0.
-func (pc *PieChart) Render(cells [][]cell.Cell) {
+func (pc *PieChart) Render(cells [][]acell.Cell) {
 	if len(pc.data) == 0 {
 		return
 	}
@@ -140,7 +140,7 @@ func (pc *PieChart) Render(cells [][]cell.Cell) {
 
 	// Получаем цвет пикселя в точке x, y
 
-	getColor := func(x, y int) cell.Style {
+	getColor := func(x, y int) acell.Style {
 		// Считаем угол от центра к этой точке
 
 		dx := float64(x - cx)
@@ -148,7 +148,7 @@ func (pc *PieChart) Render(cells [][]cell.Cell) {
 		dist2 := dx*dx + dy*dy
 
 		if dist2 > float64(pc.radius*pc.radius) {
-			return cell.Style{}
+			return acell.Style{}
 		}
 
 		angle := math.Atan2(dy, dx) // Atan2 вовзращает угол в радианах направления из 0, 0 к точке x, y
@@ -165,7 +165,7 @@ func (pc *PieChart) Render(cells [][]cell.Cell) {
 				return tui.ConvertToCellStyle(pc.data[i].Color)
 			}
 		}
-		return cell.Style{}
+		return acell.Style{}
 	}
 
 	// Рисуем на матрице
@@ -173,8 +173,8 @@ func (pc *PieChart) Render(cells [][]cell.Cell) {
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
 			s := getColor(x, y)
-			if s != (cell.Style{}) {
-				cells[y][x] = cell.Cell{Char: '█', Style: s}
+			if s != (acell.Style{}) {
+				cells[y][x] = acell.Cell{Char: '█', Style: s}
 			}
 		}
 	}
@@ -184,7 +184,7 @@ func (pc *PieChart) Render(cells [][]cell.Cell) {
 			l := len(str)
 			sx := cx - l/2 // начало текста
 			for i, v := range []rune(str) {
-				cells[cy][sx+i] = cell.Cell{Char: v, Style: tui.ConvertToCellStyle(pc.valueStyle)}
+				cells[cy][sx+i] = acell.Cell{Char: v, Style: tui.ConvertToCellStyle(pc.valueStyle)}
 			}
 		}
 
@@ -214,9 +214,9 @@ func (pc *PieChart) Render(cells [][]cell.Cell) {
 
 			for i, v := range []rune(str) {
 				if i == 0 {
-					cells[j][i+legendStartX] = cell.Cell{Char: v, Style: tui.ConvertToCellStyle(pc.data[j].Color)}
+					cells[j][i+legendStartX] = acell.Cell{Char: v, Style: tui.ConvertToCellStyle(pc.data[j].Color)}
 				} else {
-					cells[j][i+legendStartX] = cell.Cell{Char: v, Style: tui.ConvertToCellStyle(pc.legendStyle)}
+					cells[j][i+legendStartX] = acell.Cell{Char: v, Style: tui.ConvertToCellStyle(pc.legendStyle)}
 				}
 
 			}

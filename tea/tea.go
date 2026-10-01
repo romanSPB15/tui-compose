@@ -4,9 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
-	"github.com/romanSPB15/tui-compose/v4/input"
 )
 
 // Msg — сообщение, которое обрабатывается моделью.
@@ -97,11 +96,11 @@ func (p *Program) Run() {
 	p.window = tui.NewWindow()
 	p.window.SetContent(p.model.View())
 
-	p.window.RegisterClickHandler(func(ev *input.MouseEvent) {
+	p.window.RegisterClickHandler(func(ev *acell.MouseEvent) {
 		p.Send(*ev)
 	})
 
-	p.window.RegisterKeyHandler(func(ev *input.KeyboardEvent) {
+	p.window.RegisterKeyHandler(func(ev *acell.KeyboardEvent) {
 		p.Send(*ev)
 	})
 
@@ -173,8 +172,8 @@ type stringView struct {
 	text string
 }
 
-func (sv *stringView) Render(buf [][]cell.Cell) {
-	p := cell.ParseMultiline(sv.text)
+func (sv *stringView) Render(buf [][]acell.Cell) {
+	p := acell.ParseMultiline(sv.text)
 	copy(buf, p)
 }
 

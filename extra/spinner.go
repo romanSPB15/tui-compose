@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 // Типы спиннеров.
@@ -26,7 +26,7 @@ const (
 type Spinner struct {
 	typ       int
 	i         int
-	style     cell.Style
+	style     acell.Style
 	wnd       tui.Window
 	wndReady  chan struct{}
 	wndOnce   sync.Once
@@ -62,82 +62,82 @@ func (bc *Spinner) Height() int {
 	return 1
 }
 
-func (bc *Spinner) Render(buf [][]cell.Cell) {
+func (bc *Spinner) Render(buf [][]acell.Cell) {
 	switch bc.typ {
 	case 0:
 		switch bc.i {
 		case 0:
-			buf[0][0] = cell.Cell{Char: '_', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '_', Style: bc.style}
 		case 1:
-			buf[0][0] = cell.Cell{Char: ' ', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: ' ', Style: bc.style}
 		}
 	case 1:
 		switch bc.i {
 		case 0:
-			buf[0][0] = cell.Cell{Char: '⣾', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣾', Style: bc.style}
 		case 1:
-			buf[0][0] = cell.Cell{Char: '⣽', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣽', Style: bc.style}
 		case 2:
-			buf[0][0] = cell.Cell{Char: '⣻', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣻', Style: bc.style}
 		case 3:
-			buf[0][0] = cell.Cell{Char: '⢿', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⢿', Style: bc.style}
 		case 4:
-			buf[0][0] = cell.Cell{Char: '⡿', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⡿', Style: bc.style}
 		case 5:
-			buf[0][0] = cell.Cell{Char: '⣟', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣟', Style: bc.style}
 		case 6:
-			buf[0][0] = cell.Cell{Char: '⣯', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣯', Style: bc.style}
 		case 7:
-			buf[0][0] = cell.Cell{Char: '⣷', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣷', Style: bc.style}
 		}
 	case 2:
 		switch bc.i {
 		case 0:
-			buf[0][0] = cell.Cell{Char: '∙', Style: bc.style}
-			buf[0][1] = cell.Cell{Char: '∙', Style: bc.style}
-			buf[0][2] = cell.Cell{Char: '∙', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '∙', Style: bc.style}
+			buf[0][1] = acell.Cell{Char: '∙', Style: bc.style}
+			buf[0][2] = acell.Cell{Char: '∙', Style: bc.style}
 		case 1:
-			buf[0][0] = cell.Cell{Char: '●', Style: bc.style}
-			buf[0][1] = cell.Cell{Char: '∙', Style: bc.style}
-			buf[0][2] = cell.Cell{Char: '∙', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '●', Style: bc.style}
+			buf[0][1] = acell.Cell{Char: '∙', Style: bc.style}
+			buf[0][2] = acell.Cell{Char: '∙', Style: bc.style}
 		case 2:
-			buf[0][0] = cell.Cell{Char: '∙', Style: bc.style}
-			buf[0][1] = cell.Cell{Char: '●', Style: bc.style}
-			buf[0][2] = cell.Cell{Char: '∙', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '∙', Style: bc.style}
+			buf[0][1] = acell.Cell{Char: '●', Style: bc.style}
+			buf[0][2] = acell.Cell{Char: '∙', Style: bc.style}
 		case 3:
-			buf[0][0] = cell.Cell{Char: '∙', Style: bc.style}
-			buf[0][1] = cell.Cell{Char: '∙', Style: bc.style}
-			buf[0][2] = cell.Cell{Char: '●', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '∙', Style: bc.style}
+			buf[0][1] = acell.Cell{Char: '∙', Style: bc.style}
+			buf[0][2] = acell.Cell{Char: '●', Style: bc.style}
 		}
 	case 3:
 		switch bc.i {
 		case 0:
-			buf[0][0] = cell.Cell{Char: '|', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '|', Style: bc.style}
 		case 1:
-			buf[0][0] = cell.Cell{Char: '/', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '/', Style: bc.style}
 		case 2:
-			buf[0][0] = cell.Cell{Char: '-', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '-', Style: bc.style}
 		case 3:
-			buf[0][0] = cell.Cell{Char: '\\', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '\\', Style: bc.style}
 		}
 	case 4:
 		switch bc.i {
 		case 7:
-			buf[0][0] = cell.Cell{Char: '⣾', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣾', Style: bc.style}
 		case 6:
-			buf[0][0] = cell.Cell{Char: '⣽', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣽', Style: bc.style}
 		case 5:
-			buf[0][0] = cell.Cell{Char: '⣻', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣻', Style: bc.style}
 		case 4:
-			buf[0][0] = cell.Cell{Char: '⢿', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⢿', Style: bc.style}
 		case 3:
-			buf[0][0] = cell.Cell{Char: '⡿', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⡿', Style: bc.style}
 		case 2:
-			buf[0][0] = cell.Cell{Char: '⣟', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣟', Style: bc.style}
 		case 1:
-			buf[0][0] = cell.Cell{Char: '⣯', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣯', Style: bc.style}
 		case 0:
-			buf[0][0] = cell.Cell{Char: '⣷', Style: bc.style}
+			buf[0][0] = acell.Cell{Char: '⣷', Style: bc.style}
 		}
 	}
 }

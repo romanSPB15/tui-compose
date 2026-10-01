@@ -1,8 +1,8 @@
 package extra
 
 import (
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 // Sparkline — виджет мини-графика (спарклайна).
@@ -70,11 +70,11 @@ func (bc *Sparkline) Height() int {
 }
 
 // Render рисует спарклайн в буфер.
-func (bc *Sparkline) Render(cells [][]cell.Cell) {
+func (bc *Sparkline) Render(cells [][]acell.Cell) {
 	h := bc.Height()
 
 	for i, v := range bc.values {
-		var s cell.Style
+		var s acell.Style
 		if bc.BarStyle != nil {
 			s = tui.ConvertToCellStyle(bc.BarStyle(i, v))
 		}
@@ -87,24 +87,24 @@ func (bc *Sparkline) Render(cells [][]cell.Cell) {
 				continue
 			}
 
-			cells[h-z-1][i] = cell.Cell{Char: bc.Fill8, Style: s}
+			cells[h-z-1][i] = acell.Cell{Char: bc.Fill8, Style: s}
 		}
 		yLast := h - (vDivided8) - 1
 		switch vDivided % 8 {
 		case 1:
-			cells[yLast][i] = cell.Cell{Char: bc.Fill1, Style: s}
+			cells[yLast][i] = acell.Cell{Char: bc.Fill1, Style: s}
 		case 2:
-			cells[yLast][i] = cell.Cell{Char: bc.Fill2, Style: s}
+			cells[yLast][i] = acell.Cell{Char: bc.Fill2, Style: s}
 		case 3:
-			cells[yLast][i] = cell.Cell{Char: bc.Fill3, Style: s}
+			cells[yLast][i] = acell.Cell{Char: bc.Fill3, Style: s}
 		case 4:
-			cells[yLast][i] = cell.Cell{Char: bc.Fill4, Style: s}
+			cells[yLast][i] = acell.Cell{Char: bc.Fill4, Style: s}
 		case 5:
-			cells[yLast][i] = cell.Cell{Char: bc.Fill5, Style: s}
+			cells[yLast][i] = acell.Cell{Char: bc.Fill5, Style: s}
 		case 6:
-			cells[yLast][i] = cell.Cell{Char: bc.Fill6, Style: s}
+			cells[yLast][i] = acell.Cell{Char: bc.Fill6, Style: s}
 		case 7:
-			cells[yLast][i] = cell.Cell{Char: bc.Fill7, Style: s}
+			cells[yLast][i] = acell.Cell{Char: bc.Fill7, Style: s}
 		}
 	}
 }

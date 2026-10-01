@@ -1,9 +1,9 @@
 package react
 
 import (
+	"github.com/romanSPB15/acell"
+	"github.com/romanSPB15/acell/term"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
-	"github.com/romanSPB15/tui-compose/v4/input"
 )
 
 // App — реактивная обёртка над Window.
@@ -81,7 +81,7 @@ func (a *App[T]) RegisterKeyHandler(h tui.KeyboardEventHandler) {
 }
 
 // RegisterClickHandler регистрирует глобальный обработчик мыши.
-func (a *App[T]) RegisterClickHandler(h func(ev *input.MouseEvent)) {
+func (a *App[T]) RegisterClickHandler(h func(ev *acell.MouseEvent)) {
 	a.wnd.RegisterClickHandler(h)
 }
 
@@ -122,7 +122,7 @@ func (a *App[T]) SetTitle(title string) {
 
 // CopyToClipboard копирует текст в буфер обмена.
 func (a *App[T]) CopyToClipboard(text string) {
-	a.wnd.CopyToClipboard(text)
+	term.CopyToClipboard(text)
 }
 
 // Focus возвращает менеджер фокуса.
@@ -131,7 +131,7 @@ func (a *App[T]) Focus() tui.FocusManager {
 }
 
 // SetInitCell устанавливает ячейку по умолчанию.
-func (a *App[T]) SetInitCell(c cell.Cell) {
+func (a *App[T]) SetInitCell(c acell.Cell) {
 	a.wnd.SetInitCell(c)
 }
 

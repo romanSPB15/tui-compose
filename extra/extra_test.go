@@ -3,20 +3,20 @@ package extra
 import (
 	"testing"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
-func newBuf(w, h int) [][]cell.Cell {
+func newBuf(w, h int) [][]acell.Cell {
 	if w < 1 {
 		w = 1
 	}
 	if h < 1 {
 		h = 1
 	}
-	buf := make([][]cell.Cell, h)
+	buf := make([][]acell.Cell, h)
 	for i := range buf {
-		buf[i] = make([]cell.Cell, w)
+		buf[i] = make([]acell.Cell, w)
 	}
 	return buf
 }

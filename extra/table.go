@@ -1,8 +1,8 @@
 package extra
 
 import (
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 // TableCellAlign — выравнивание текста в ячейке таблицы.
@@ -162,30 +162,30 @@ func (pc *Table) WithData(tc [][]TableCell) *Table {
 	return pc
 }
 
-func (t *Table) Render(buf [][]cell.Cell) {
+func (t *Table) Render(buf [][]acell.Cell) {
 	if len(t.data) == 0 {
 		return
 	}
 	h := t.Height()
 
-	style := func(s tui.Style) cell.Style {
+	style := func(s tui.Style) acell.Style {
 		return tui.ConvertToCellStyle(s)
 	}
 
 	if t.hor == EverywhereHorSeparator {
-		buf[0][0] = cell.Cell{Char: t.s.TopLeft, Style: cell.Style{}}
+		buf[0][0] = acell.Cell{Char: t.s.TopLeft, Style: acell.Style{}}
 		x := 1
 		for col, width := range t.widths {
 			for i := 0; i < width+2; i++ {
-				buf[0][x] = cell.Cell{Char: t.s.Hor, Style: cell.Style{}}
+				buf[0][x] = acell.Cell{Char: t.s.Hor, Style: acell.Style{}}
 				x++
 			}
 			if col < len(t.widths)-1 {
-				buf[0][x] = cell.Cell{Char: t.s.PlusTop, Style: cell.Style{}}
+				buf[0][x] = acell.Cell{Char: t.s.PlusTop, Style: acell.Style{}}
 				x++
 			}
 		}
-		buf[0][x] = cell.Cell{Char: t.s.TopRight, Style: cell.Style{}}
+		buf[0][x] = acell.Cell{Char: t.s.TopRight, Style: acell.Style{}}
 	}
 
 	rowY := 0
@@ -196,7 +196,7 @@ func (t *Table) Render(buf [][]cell.Cell) {
 	for rowIdx, row := range t.data {
 		x := 0
 
-		buf[rowY][x] = cell.Cell{Char: t.s.Ver, Style: cell.Style{}}
+		buf[rowY][x] = acell.Cell{Char: t.s.Ver, Style: acell.Style{}}
 		x++
 
 		for colIdx, cellData := range row {
@@ -216,65 +216,65 @@ func (t *Table) Render(buf [][]cell.Cell) {
 				rightPad = colWidth - textLen - leftPad
 			}
 
-			buf[rowY][x] = cell.Cell{Char: ' ', Style: style(cellData.Style)}
+			buf[rowY][x] = acell.Cell{Char: ' ', Style: style(cellData.Style)}
 			x++
 
 			for i := 0; i < leftPad; i++ {
-				buf[rowY][x] = cell.Cell{Char: ' ', Style: style(cellData.Style)}
+				buf[rowY][x] = acell.Cell{Char: ' ', Style: style(cellData.Style)}
 				x++
 			}
 
 			for _, r := range textRunes {
-				buf[rowY][x] = cell.Cell{Char: r, Style: style(cellData.Style)}
+				buf[rowY][x] = acell.Cell{Char: r, Style: style(cellData.Style)}
 				x++
 			}
 
 			for i := 0; i < rightPad; i++ {
-				buf[rowY][x] = cell.Cell{Char: ' ', Style: style(cellData.Style)}
+				buf[rowY][x] = acell.Cell{Char: ' ', Style: style(cellData.Style)}
 				x++
 			}
 
-			buf[rowY][x] = cell.Cell{Char: ' ', Style: style(cellData.Style)}
+			buf[rowY][x] = acell.Cell{Char: ' ', Style: style(cellData.Style)}
 			x++
 
-			buf[rowY][x] = cell.Cell{Char: t.s.Ver, Style: cell.Style{}}
+			buf[rowY][x] = acell.Cell{Char: t.s.Ver, Style: acell.Style{}}
 			x++
 		}
 
 		rowY++
 
 		if rowIdx < len(t.data)-1 && t.hor >= BetweenHorSeparator {
-			buf[rowY][0] = cell.Cell{Char: t.s.PlusLeft, Style: cell.Style{}}
+			buf[rowY][0] = acell.Cell{Char: t.s.PlusLeft, Style: acell.Style{}}
 			x := 1
 			for col, width := range t.widths {
 				for i := 0; i < width+2; i++ {
-					buf[rowY][x] = cell.Cell{Char: t.s.Hor, Style: cell.Style{}}
+					buf[rowY][x] = acell.Cell{Char: t.s.Hor, Style: acell.Style{}}
 					x++
 				}
 				if col < len(t.widths)-1 {
-					buf[rowY][x] = cell.Cell{Char: t.s.Plus, Style: cell.Style{}}
+					buf[rowY][x] = acell.Cell{Char: t.s.Plus, Style: acell.Style{}}
 					x++
 				}
 			}
-			buf[rowY][x] = cell.Cell{Char: t.s.PlusRight, Style: cell.Style{}}
+			buf[rowY][x] = acell.Cell{Char: t.s.PlusRight, Style: acell.Style{}}
 			rowY++
 		}
 	}
 
 	if t.hor == EverywhereHorSeparator {
-		buf[h-1][0] = cell.Cell{Char: t.s.BottomLeft, Style: cell.Style{}}
+		buf[h-1][0] = acell.Cell{Char: t.s.BottomLeft, Style: acell.Style{}}
 		x := 1
 		for col, width := range t.widths {
 			for i := 0; i < width+2; i++ {
-				buf[h-1][x] = cell.Cell{Char: t.s.Hor, Style: cell.Style{}}
+				buf[h-1][x] = acell.Cell{Char: t.s.Hor, Style: acell.Style{}}
 				x++
 			}
 			if col < len(t.widths)-1 {
-				buf[h-1][x] = cell.Cell{Char: t.s.PlusBottom, Style: cell.Style{}}
+				buf[h-1][x] = acell.Cell{Char: t.s.PlusBottom, Style: acell.Style{}}
 				x++
 			}
 		}
-		buf[h-1][x] = cell.Cell{Char: t.s.BottomRight, Style: cell.Style{}}
+		buf[h-1][x] = acell.Cell{Char: t.s.BottomRight, Style: acell.Style{}}
 	}
 }
 

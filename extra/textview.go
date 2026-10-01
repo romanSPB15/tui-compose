@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/romanSPB15/tui-compose/v4/cell"
+	"github.com/romanSPB15/acell"
 )
 
 // TextView — виджет многострочного текста с поддержкой тегов стилей.
@@ -99,7 +99,7 @@ func NewTextView(h int) *TextView {
 	}
 }
 
-func (tv *TextView) Render(buf [][]cell.Cell) {
+func (tv *TextView) Render(buf [][]acell.Cell) {
 	start := tv.offset
 	end := start + tv.height
 	if end > len(tv.lines) {
@@ -110,7 +110,7 @@ func (tv *TextView) Render(buf [][]cell.Cell) {
 		w = tv.Width()
 	}
 
-	var cellBuf []cell.Cell
+	var cellBuf []acell.Cell
 
 	for y, lineIdx := start, 0; y < end && y < len(buf); y, lineIdx = y+1, lineIdx+1 {
 		line := tv.lines[lineIdx]
@@ -120,7 +120,7 @@ func (tv *TextView) Render(buf [][]cell.Cell) {
 			ansiLine = strings.ReplaceAll(ansiLine, "["+k+"]", "\033["+v+"m")
 		}
 
-		cells, _ := cell.ParseFromTo(ansiLine, &cellBuf, cell.Style{})
+		cells, _ := acell.ParseFromTo(ansiLine, &cellBuf, acell.Style{})
 
 		row := buf[y]
 		for i, c := range cells {
@@ -131,7 +131,7 @@ func (tv *TextView) Render(buf [][]cell.Cell) {
 		}
 
 		for i := len(cells); i < w && i < len(row); i++ {
-			row[i] = cell.Cell{Char: ' ', Style: cell.Style{}}
+			row[i] = acell.Cell{Char: ' ', Style: acell.Style{}}
 		}
 	}
 }

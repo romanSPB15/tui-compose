@@ -1,8 +1,8 @@
 package extra
 
 import (
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 // PageIndicator — это виджет индикатора страниц.
@@ -13,7 +13,7 @@ type PageIndicator struct {
 	current  int
 	active   rune
 	inactive rune
-	style    cell.Style
+	style    acell.Style
 }
 
 // NewPageIndicator создаёт индикатор с указанным количеством страниц.
@@ -78,17 +78,17 @@ func (p *PageIndicator) Height() int {
 
 // Render реализует интерфейс Widget.
 // Добавлено в TUI v4.0.0.
-func (p *PageIndicator) Render(buf [][]cell.Cell) {
+func (p *PageIndicator) Render(buf [][]acell.Cell) {
 	for i := 0; i < p.total; i++ {
 		var ch rune
-		var style cell.Style
+		var style acell.Style
 		if i == p.current {
 			ch = p.active
 			style = p.style
 		} else {
 			ch = p.inactive
-			style = cell.Style{}
+			style = acell.Style{}
 		}
-		buf[0][i] = cell.Cell{Char: ch, Style: style}
+		buf[0][i] = acell.Cell{Char: ch, Style: style}
 	}
 }

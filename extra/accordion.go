@@ -3,8 +3,8 @@ package extra
 import (
 	"fmt"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 // Accordion — виджет раскрывающегося списка.
@@ -52,12 +52,12 @@ func NewAccordion(label string, content tui.Widget) *Accordion {
 		}
 	}).WithPaddings(0, 0)
 
-	acc.label.Send(&tui.MouseEvent{})
+	acc.label.Send(&acell.MouseEvent{Action: acell.MousePress})
 
 	return acc
 }
 
-func (acc *Accordion) Render([][]cell.Cell) {}
+func (acc *Accordion) Render([][]acell.Cell) {}
 
 func (acc *Accordion) Child() []tui.Widget {
 	if acc.opened {

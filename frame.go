@@ -1,8 +1,6 @@
 package tui
 
-import (
-	"github.com/romanSPB15/tui-compose/v4/cell"
-)
+import "github.com/romanSPB15/acell"
 
 type TitlePosition int
 
@@ -36,7 +34,7 @@ type border struct {
 	borderStyle Style
 	titles      []Title
 
-	bg cell.Cell
+	bg acell.Cell
 }
 
 // NewFrame создаёт рамку.
@@ -48,7 +46,7 @@ func NewFrame(content Widget) *Frame {
 			h: '─', v: '│',
 			ph: 1,
 			pv: 0,
-			bg: cell.Cell{Char: ' '},
+			bg: acell.Cell{Char: ' '},
 		},
 	}
 }
@@ -139,27 +137,27 @@ func (b *Frame) Height() int {
 	return b.border.Height()
 }
 
-func (b *border) Render(cells [][]cell.Cell) {
+func (b *border) Render(cells [][]acell.Cell) {
 	w := b.Width()
 	h := b.Height()
 
 	borderStyle := ConvertToCellStyle(b.borderStyle)
 
 	// углы
-	cells[0][0] = cell.Cell{b.tl, borderStyle}     // верхний левый
-	cells[0][w-1] = cell.Cell{b.tr, borderStyle}   // верхний правый
-	cells[h-1][0] = cell.Cell{b.bl, borderStyle}   // нижний левый
-	cells[h-1][w-1] = cell.Cell{b.br, borderStyle} // нижний правый
+	cells[0][0] = acell.Cell{b.tl, borderStyle}     // верхний левый
+	cells[0][w-1] = acell.Cell{b.tr, borderStyle}   // верхний правый
+	cells[h-1][0] = acell.Cell{b.bl, borderStyle}   // нижний левый
+	cells[h-1][w-1] = acell.Cell{b.br, borderStyle} // нижний правый
 
 	// линии
 	for i := 1; i < w-1; i++ {
-		cells[0][i] = cell.Cell{b.h, borderStyle}
-		cells[h-1][i] = cell.Cell{b.h, borderStyle}
+		cells[0][i] = acell.Cell{b.h, borderStyle}
+		cells[h-1][i] = acell.Cell{b.h, borderStyle}
 	}
 
 	for i := 1; i < h-1; i++ {
-		cells[i][0] = cell.Cell{b.v, borderStyle}
-		cells[i][w-1] = cell.Cell{b.v, borderStyle}
+		cells[i][0] = acell.Cell{b.v, borderStyle}
+		cells[i][w-1] = acell.Cell{b.v, borderStyle}
 	}
 
 	for _, t := range b.titles {
@@ -178,7 +176,7 @@ func (b *border) Render(cells [][]cell.Cell) {
 
 		drawTitle := func(x, y int) {
 			for i, r := range titleRunes {
-				cells[y][x+i] = cell.Cell{r, titleStyle}
+				cells[y][x+i] = acell.Cell{r, titleStyle}
 			}
 		}
 
@@ -206,7 +204,7 @@ func (b *Frame) WithPaddings(v, h int) *Frame {
 	return b
 }
 
-func (b *Frame) Render([][]cell.Cell) {}
+func (b *Frame) Render([][]acell.Cell) {}
 
 func (b *Frame) Child() []Widget {
 	return []Widget{&b.border, b.border.content}
@@ -220,13 +218,13 @@ func (b *Frame) Pos(i int) Pos {
 }
 
 // WithInitCell задаёт ячейку фона рамки.
-func (b *Frame) WithInitCell(c cell.Cell) *Frame {
+func (b *Frame) WithInitCell(c acell.Cell) *Frame {
 	b.border.bg = c
 	return b
 }
 
 // WithBackground задаёт фон рамки.
 func (b *Frame) WithBackground(s Style) *Frame {
-	b.border.bg = cell.Cell{Char: ' ', Style: ConvertToCellStyle(s)}
+	b.border.bg = acell.Cell{Char: ' ', Style: ConvertToCellStyle(s)}
 	return b
 }

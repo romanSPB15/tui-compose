@@ -9,7 +9,7 @@ import "github.com/romanSPB15/tui-compose/v3"
 ## Index
 
 - [Constants](<#constants>)
-- [func ConvertToCellStyle\(s Style\) cell.Style](<#ConvertToCellStyle>)
+- [func ConvertToCellStyle\(s Style\) acell.Style](<#ConvertToCellStyle>)
 - [func DownscaleImage\(img image.Image, newWidth, newHeight int\) \*image.RGBA](<#DownscaleImage>)
 - [func ScaleToHeight\(img image.Image, targetHeight int\) \*image.RGBA](<#ScaleToHeight>)
 - [func ScaleToWidth\(img image.Image, targetWidth int\) \*image.RGBA](<#ScaleToWidth>)
@@ -22,7 +22,7 @@ import "github.com/romanSPB15/tui-compose/v3"
   - [func \(btn \*Button\) OnBlur\(\)](<#Button.OnBlur>)
   - [func \(btn \*Button\) OnClick\(\)](<#Button.OnClick>)
   - [func \(btn \*Button\) OnFocus\(\)](<#Button.OnFocus>)
-  - [func \(btn \*Button\) OnKeyPress\(ev \*input.KeyboardEvent\)](<#Button.OnKeyPress>)
+  - [func \(btn \*Button\) OnKeyPress\(ev \*acell.KeyboardEvent\)](<#Button.OnKeyPress>)
   - [func \(btn \*Button\) WithDisabledStyle\(s Style\) \*Button](<#Button.WithDisabledStyle>)
   - [func \(btn \*Button\) WithFocusedStyle\(s Style\) \*Button](<#Button.WithFocusedStyle>)
   - [func \(btn \*Button\) WithHandler\(h func\(\)\) \*Button](<#Button.WithHandler>)
@@ -58,7 +58,7 @@ import "github.com/romanSPB15/tui-compose/v3"
   - [func \(c \*Check\) OnBlur\(\)](<#Check.OnBlur>)
   - [func \(c \*Check\) OnClick\(\)](<#Check.OnClick>)
   - [func \(c \*Check\) OnFocus\(\)](<#Check.OnFocus>)
-  - [func \(c \*Check\) OnKeyPress\(ev \*input.KeyboardEvent\)](<#Check.OnKeyPress>)
+  - [func \(c \*Check\) OnKeyPress\(ev \*acell.KeyboardEvent\)](<#Check.OnKeyPress>)
   - [func \(c \*Check\) SetState\(b bool\)](<#Check.SetState>)
   - [func \(c \*Check\) State\(\) bool](<#Check.State>)
   - [func \(c \*Check\) WithCheckedStyle\(s Style\) \*Check](<#Check.WithCheckedStyle>)
@@ -103,7 +103,7 @@ import "github.com/romanSPB15/tui-compose/v3"
   - [func \(b \*Frame\) RoundedDashed\(\) \*Frame](<#Frame.RoundedDashed>)
   - [func \(b \*Frame\) WithBackground\(s Style\) \*Frame](<#Frame.WithBackground>)
   - [func \(b \*Frame\) WithBorderStyle\(s Style\) \*Frame](<#Frame.WithBorderStyle>)
-  - [func \(b \*Frame\) WithInitCell\(c cell.Cell\) \*Frame](<#Frame.WithInitCell>)
+  - [func \(b \*Frame\) WithInitCell\(c acell.Cell\) \*Frame](<#Frame.WithInitCell>)
   - [func \(b \*Frame\) WithPaddings\(v, h int\) \*Frame](<#Frame.WithPaddings>)
   - [func \(b \*Frame\) WithTitle\(t Title\) \*Frame](<#Frame.WithTitle>)
 - [type Gauge](<#Gauge>)
@@ -120,10 +120,10 @@ import "github.com/romanSPB15/tui-compose/v3"
   - [func \(p \*Gauge\) WithLabel\(lbl string\) \*Gauge](<#Gauge.WithLabel>)
   - [func \(p \*Gauge\) WithLabelFunc\(fn func\(float64\) string\) \*Gauge](<#Gauge.WithLabelFunc>)
   - [func \(p \*Gauge\) WithLabelStyle\(s Style\) \*Gauge](<#Gauge.WithLabelStyle>)
-  - [func \(p \*Gauge\) WithOffCell\(c cell.Cell\) \*Gauge](<#Gauge.WithOffCell>)
+  - [func \(p \*Gauge\) WithOffCell\(c acell.Cell\) \*Gauge](<#Gauge.WithOffCell>)
   - [func \(p \*Gauge\) WithOffChar\(r rune\) \*Gauge](<#Gauge.WithOffChar>)
   - [func \(p \*Gauge\) WithOffStyle\(c Style\) \*Gauge](<#Gauge.WithOffStyle>)
-  - [func \(p \*Gauge\) WithOnCell\(c cell.Cell\) \*Gauge](<#Gauge.WithOnCell>)
+  - [func \(p \*Gauge\) WithOnCell\(c acell.Cell\) \*Gauge](<#Gauge.WithOnCell>)
   - [func \(p \*Gauge\) WithOnChar\(r rune\) \*Gauge](<#Gauge.WithOnChar>)
   - [func \(p \*Gauge\) WithOnStyle\(c Style\) \*Gauge](<#Gauge.WithOnStyle>)
   - [func \(p \*Gauge\) WithValue\(f float64\) \*Gauge](<#Gauge.WithValue>)
@@ -151,7 +151,7 @@ import "github.com/romanSPB15/tui-compose/v3"
   - [func \(f \*InputField\) MaxWidth\(\) int](<#InputField.MaxWidth>)
   - [func \(f \*InputField\) OnBlur\(\)](<#InputField.OnBlur>)
   - [func \(f \*InputField\) OnFocus\(\)](<#InputField.OnFocus>)
-  - [func \(f \*InputField\) OnKeyPress\(ev \*input.KeyboardEvent\)](<#InputField.OnKeyPress>)
+  - [func \(f \*InputField\) OnKeyPress\(ev \*acell.KeyboardEvent\)](<#InputField.OnKeyPress>)
   - [func \(f \*InputField\) WithCursorStyle\(s Style\) \*InputField](<#InputField.WithCursorStyle>)
   - [func \(f \*InputField\) WithFocusedStyle\(s Style\) \*InputField](<#InputField.WithFocusedStyle>)
   - [func \(f \*InputField\) WithOnChanged\(h func\(string\)\) \*InputField](<#InputField.WithOnChanged>)
@@ -234,7 +234,7 @@ const DEBUG = false
 ## func ConvertToCellStyle
 
 ```go
-func ConvertToCellStyle(s Style) cell.Style
+func ConvertToCellStyle(s Style) acell.Style
 ```
 
 
@@ -356,7 +356,7 @@ func (btn *Button) OnFocus()
 ### func \(\*Button\) OnKeyPress
 
 ```go
-func (btn *Button) OnKeyPress(ev *input.KeyboardEvent)
+func (btn *Button) OnKeyPress(ev *acell.KeyboardEvent)
 ```
 
 
@@ -697,7 +697,7 @@ OnFocus реализует интерфейс Focusable.
 ### func \(\*Check\) OnKeyPress
 
 ```go
-func (c *Check) OnKeyPress(ev *input.KeyboardEvent)
+func (c *Check) OnKeyPress(ev *acell.KeyboardEvent)
 ```
 
 
@@ -1178,7 +1178,7 @@ WithBorderStyle устанавливает стиль рамки.
 ### func \(\*Frame\) WithInitCell
 
 ```go
-func (b *Frame) WithInitCell(c cell.Cell) *Frame
+func (b *Frame) WithInitCell(c acell.Cell) *Frame
 ```
 
 WithInitCell задаёт ячейку фона рамки.
@@ -1334,7 +1334,7 @@ WithLabel устанавливает стиль метки.
 ### func \(\*Gauge\) WithOffCell
 
 ```go
-func (p *Gauge) WithOffCell(c cell.Cell) *Gauge
+func (p *Gauge) WithOffCell(c acell.Cell) *Gauge
 ```
 
 
@@ -1361,7 +1361,7 @@ func (p *Gauge) WithOffStyle(c Style) *Gauge
 ### func \(\*Gauge\) WithOnCell
 
 ```go
-func (p *Gauge) WithOnCell(c cell.Cell) *Gauge
+func (p *Gauge) WithOnCell(c acell.Cell) *Gauge
 ```
 
 
@@ -1491,7 +1491,7 @@ func (v *HBox) WithGap(gap int) *HBox
 
 
 ```go
-type Image [][]cell.Cell
+type Image [][]acell.Cell
 ```
 
 <a name="NewImage"></a>
@@ -1622,7 +1622,7 @@ OnFocus реализует интерфейс Focusable. Добавлено в T
 ### func \(\*InputField\) OnKeyPress
 
 ```go
-func (f *InputField) OnKeyPress(ev *input.KeyboardEvent)
+func (f *InputField) OnKeyPress(ev *acell.KeyboardEvent)
 ```
 
 OnKeyPress реализует интерфейс TextInput. Добавлено в TUI v3.0.0
@@ -1707,7 +1707,7 @@ WithText устанавливает текст поля. Добавлено в T
 ```go
 type KeyReceiver interface {
     Focusable
-    OnKeyPress(ev *input.KeyboardEvent)
+    OnKeyPress(ev *acell.KeyboardEvent)
 }
 ```
 
@@ -1717,7 +1717,7 @@ type KeyReceiver interface {
 
 
 ```go
-type KeyboardEventHandler func(*input.KeyboardEvent)
+type KeyboardEventHandler func(*acell.KeyboardEvent)
 ```
 
 <a name="Label"></a>
@@ -1929,7 +1929,7 @@ const (
 
 
 ```go
-type MouseEventHandler func(*input.MouseEvent)
+type MouseEventHandler func(*acell.MouseEvent)
 ```
 
 <a name="Page"></a>
@@ -2372,7 +2372,7 @@ type Window interface {
     OnQuit() <-chan struct{} // Run возвращает канал сигнализации о выходе.
 
     RegisterKeyHandler(KeyboardEventHandler)         // RegisterKeyHandler регистрирует обработчик событий клавиатуры.
-    RegisterClickHandler(func(ev *input.MouseEvent)) // RegisterClickHandler регистрирует обрабочик событий мыши.
+    RegisterClickHandler(func(ev *acell.MouseEvent)) // RegisterClickHandler регистрирует обрабочик событий мыши.
 
     LogInfo(message string, args ...any)  // LogInfo логирует сообщение подобно fmt.Printf в файл, если включен debug режим.
     LogFatal(message string, args ...any) // LogFatal логирует сообщение подобно fmt.Printf в файл, если включен debug режим, и завершает приложение.
@@ -2392,7 +2392,7 @@ type Window interface {
 
     Focus() FocusManager
 
-    SetInitCell(cell.Cell) // SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
+    SetInitCell(acell.Cell) // SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
     SetBackground(Style)   // SetBackground устанавливает стиль пустых позиций окна.
 
     Index() // Index обновляет кеши фокуса и кликабельных виджетов. Используется при динамическом обновлении дерева виджетов.

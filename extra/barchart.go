@@ -3,8 +3,8 @@ package extra
 import (
 	"strconv"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 type BarChart struct {
@@ -57,11 +57,11 @@ func (bc *BarChart) Height() int {
 	return bc.DataHeight
 }
 
-func (bc *BarChart) Render(cells [][]cell.Cell) {
+func (bc *BarChart) Render(cells [][]acell.Cell) {
 	h := bc.Height()
 
 	for i, v := range bc.values {
-		var s cell.Style
+		var s acell.Style
 		if bc.BarStyle != nil {
 			s = tui.ConvertToCellStyle(bc.BarStyle(i, v))
 		}
@@ -71,7 +71,7 @@ func (bc *BarChart) Render(cells [][]cell.Cell) {
 				continue
 			}
 			for j := range bc.BarWidth {
-				cells[h-z-1][i*(bc.BarWidth+bc.Space)+j] = cell.Cell{Char: bc.FillRune, Style: s}
+				cells[h-z-1][i*(bc.BarWidth+bc.Space)+j] = acell.Cell{Char: bc.FillRune, Style: s}
 			}
 		}
 
@@ -87,11 +87,11 @@ func (bc *BarChart) Render(cells [][]cell.Cell) {
 		if bc.TextStyle != nil {
 			s = tui.ConvertToCellStyle(bc.TextStyle(i, v))
 		} else {
-			s = cell.Style{}
+			s = acell.Style{}
 		}
 
 		for i, r := range []rune(txt) {
-			cells[y][x+i] = cell.Cell{Char: r, Style: s}
+			cells[y][x+i] = acell.Cell{Char: r, Style: s}
 		}
 	}
 }

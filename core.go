@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,13 +16,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/romanSPB15/acell"
+	"github.com/romanSPB15/acell/terminfo"
 	"github.com/romanSPB15/tui-compose/v4/ansi"
-	"github.com/romanSPB15/tui-compose/v4/builder"
-	"github.com/romanSPB15/tui-compose/v4/cell"
-	"github.com/romanSPB15/tui-compose/v4/input"
-	termL "github.com/romanSPB15/tui-compose/v4/term"
-	"golang.org/x/term"
 )
+
+var capture bool
 
 // ColorRGB — это цвет в RGB.
 type ColorRGB struct {
@@ -29,8 +29,8 @@ type ColorRGB struct {
 }
 
 type (
-	MouseEventHandler    func(*input.MouseEvent)
-	KeyboardEventHandler func(*input.KeyboardEvent)
+	MouseEventHandler    func(*acell.MouseEvent)
+	KeyboardEventHandler func(*acell.KeyboardEvent)
 	ResizeHandler        func(width, height int)
 )
 
@@ -52,18 +52,13 @@ type eventHandlerWithPos struct {
 }
 
 type windowStats struct {
-	frames       atomic.Int64 // количество успешных Redraw
-	renderNanos  atomic.Int64 // накопленное время render()
-	makeStrNanos atomic.Int64 // накопленное время diff + ANSI
-	writeNanos   atomic.Int64 // накопленное время write в терминал
-	tasksDone    atomic.Int64 // количество выполненных задач
-	redrawCount  atomic.Int64 // счётчик для периодической проверки isWorker
+	frames      atomic.Int64
+	redrawCount atomic.Int64
 }
 
 type window struct {
 	focusableWidgets []eventHandlerWithPos
 	wgt              []eventHandlerWithPos
-	f                io.Writer
 	focusIndex       int
 	stopCh           chan struct{}
 
@@ -81,40 +76,22 @@ type window struct {
 
 	hovered map[EventHandler]struct{}
 
-	cellBuf       []cell.Cell
 	maxWidgetSize Pos
 
-	content     Widget
-	initCell    cell.Cell
-	bufferPool  *sync.Pool
-	builderPool sync.Pool
-	subBuf      [][]cell.Cell
-	buf         [][]cell.Cell
-	quitOnce    sync.Once
-
-	stdout *os.File
-	stderr *os.File
-	stdin  *os.File
-
-	oldMode   *term.State
-	last      cell.Style
-	cursorPos Pos
-	altScreen bool
+	content  Widget
+	initCell acell.Cell
+	subBuf   [][]acell.Cell
+	quitOnce sync.Once
 
 	stats      windowStats
 	lastReport time.Time
 
-	width   int
-	height  int
-	in      io.Reader
-	skipRaw bool
-}
+	t *acell.Terminal
 
-func (wnd *window) SetAltScreenEnable(v bool) {
-	if DEBUG && !wnd.isWorker() {
-		wnd.LogFatal("SetAltScreenEnable called outside worker goroutine: data race")
-	}
-	wnd.altScreen = v
+	width  int
+	height int
+
+	capture bool
 }
 
 func (wnd *window) indexWgt(wgt Widget, offset Pos) {
@@ -130,15 +107,9 @@ func (wnd *window) indexWgt(wgt Widget, offset Pos) {
 
 	if evh, ok := wgt.(EventHandler); ok {
 		evh.Send(&WindowEvent{Window: wnd})
-		wnd.wgt = append(wnd.wgt, eventHandlerWithPos{
-			EventHandler: evh,
-			p:            offset,
-		})
+		wnd.wgt = append(wnd.wgt, eventHandlerWithPos{EventHandler: evh, p: offset})
 		if isFocusable(evh) {
-			wnd.focusableWidgets = append(wnd.focusableWidgets, eventHandlerWithPos{
-				EventHandler: evh,
-				p:            offset,
-			})
+			wnd.focusableWidgets = append(wnd.focusableWidgets, eventHandlerWithPos{EventHandler: evh, p: offset})
 		}
 	}
 }
@@ -169,7 +140,7 @@ func (wnd *window) Index() {
 	wnd.applyStyles(wnd.content)
 }
 
-func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
+func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]acell.Cell) {
 	if wgt == nil {
 		return
 	}
@@ -209,15 +180,15 @@ func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
 	if currentH < h || currentW < w {
 		newH := max(currentH, h)
 		newW := max(currentW, w)
-		newBuf := make([][]cell.Cell, newH)
+		newBuf := make([][]acell.Cell, newH)
 		for i := range newBuf {
-			newBuf[i] = make([]cell.Cell, newW)
+			newBuf[i] = make([]acell.Cell, newW)
 		}
 		wnd.subBuf = newBuf
 	} else if currentH > h*2 || currentW > w*2 {
-		newBuf := make([][]cell.Cell, h)
+		newBuf := make([][]acell.Cell, h)
 		for i := range newBuf {
-			newBuf[i] = make([]cell.Cell, w)
+			newBuf[i] = make([]acell.Cell, w)
 		}
 		wnd.subBuf = newBuf
 	}
@@ -225,7 +196,7 @@ func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]cell.Cell) {
 	subBuf := wnd.subBuf[:h]
 	for y := range subBuf {
 		if len(subBuf[y]) < w {
-			subBuf[y] = append(subBuf[y], make([]cell.Cell, w-len(subBuf[y]))...)
+			subBuf[y] = append(subBuf[y], make([]acell.Cell, w-len(subBuf[y]))...)
 		}
 		for x := range w {
 			subBuf[y][x] = wnd.initCell
@@ -274,197 +245,34 @@ func (wnd *window) calcMaxWidgetSize(wgt Widget, w, h int) (int, int) {
 		}
 		return w, h
 	}
-
 	return max(w, wgt.Width()), max(h, wgt.Height())
 }
 
-func (wnd *window) render() [][]cell.Cell {
+func (wnd *window) render() {
 	h := wnd.Height()
 	w := wnd.Width()
+	if h <= 0 || w <= 0 {
+		return
+	}
 
-	buf := wnd.newBuffer(h, w)
+	wnd.t.Fill(wnd.initCell)
 
 	if wnd.content == nil {
-		return buf
+		return
 	}
 
 	ww, hw := wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line
 	if ww == 0 && hw == 0 {
 		wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line = wnd.calcMaxWidgetSize(wnd.content, 0, 0)
-		ww, hw = wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line
 	}
 
-	wnd.draw(wnd.content, [2]Pos{{Line: 0, Col: 0}, {Line: h, Col: w}}, buf)
-
-	return buf
-}
-
-func (wnd *window) newBuffer(h, w int) [][]cell.Cell {
-	if h <= 0 || w <= 0 {
-		return nil
-	}
-
-	buf, _ := wnd.bufferPool.Get().([][]cell.Cell)
-
-	if len(buf) == h && len(buf) > 0 && len(buf[0]) == w {
-		for y := 0; y < h; y++ {
-			row := buf[y]
-			for x := 0; x < w; x++ {
-				row[x] = wnd.initCell
-			}
-		}
-		return buf
-	}
-
-	if buf != nil {
-		wnd.bufferPool.Put(buf)
-	}
-
-	buf = make([][]cell.Cell, h)
-	for i := range buf {
-		buf[i] = make([]cell.Cell, w)
-		for x := 0; x < w; x++ {
-			buf[i][x] = wnd.initCell
-		}
-	}
-	return buf
-}
-
-func (wnd *window) newEmptyBuffer(h, w int) [][]cell.Cell {
-	buf := make([][]cell.Cell, h)
-	for i := range buf {
-		buf[i] = make([]cell.Cell, w)
-		for x := 0; x < w; x++ {
-			buf[i][x] = cell.Cell{Char: ' '}
-		}
-	}
-	return buf
-}
-
-func (wnd *window) releaseBuffer(buf [][]cell.Cell) {
-	if wnd.bufferPool != nil && buf != nil {
-		wnd.bufferPool.Put(buf)
-	}
-}
-
-var capture bool
-
-func reflow(old [][]cell.Cell, newW, newH int, initCell cell.Cell) [][]cell.Cell {
-	if len(old) == 0 {
-		return emptyBuffer(newW, newH, initCell)
-	}
-
-	oldW := len(old[0])
-	if oldW == 0 {
-		return emptyBuffer(newW, newH, initCell)
-	}
-
-	var lines [][]cell.Cell
-	if oldW == newW {
-		lines = old
-	} else {
-		var stream []cell.Cell
-		stream = make([]cell.Cell, 0, oldW*len(old))
-		for y := range old {
-			stream = append(stream, old[y]...)
-		}
-
-		newLineCount := (len(stream) + newW - 1) / newW
-		lines = make([][]cell.Cell, newLineCount)
-		for y := range newLineCount {
-			lines[y] = make([]cell.Cell, newW)
-			for x := range newW {
-				idx := y*newW + x
-				if idx < len(stream) {
-					lines[y][x] = stream[idx]
-				} else {
-					lines[y][x] = cell.Cell{Char: ' ', Style: initCell.Style}
-				}
-			}
-		}
-	}
-
-	result := make([][]cell.Cell, newH)
-	if len(lines) >= newH {
-		start := len(lines) - newH
-		for y := range newH {
-			result[y] = lines[start+y]
-		}
-	} else {
-		copy(result, lines)
-
-		for y := len(lines); y < newH; y++ {
-			result[y] = emptyRow(newW, initCell)
-		}
-	}
-
-	return result
-}
-
-func emptyBuffer(w, h int, initCell cell.Cell) [][]cell.Cell {
-	buf := make([][]cell.Cell, h)
-	for y := range buf {
-		buf[y] = emptyRow(w, initCell)
-	}
-	return buf
-}
-
-func emptyRow(w int, initCell cell.Cell) []cell.Cell {
-	row := make([]cell.Cell, w)
-	for x := range row {
-		row[x] = initCell
-	}
-	return row
-}
-
-func resizeBuf(old [][]cell.Cell, newW, newH int, initCell cell.Cell, anchorTop bool) [][]cell.Cell {
-	if newW <= 0 || newH <= 0 {
-		return nil
-	}
-	if len(old) == 0 || len(old[0]) == 0 {
-		return emptyBuffer(newW, newH, initCell)
-	}
-
-	oldH := len(old)
-	oldW := len(old[0])
-
-	buf := make([][]cell.Cell, newH)
-	for y := range buf {
-		buf[y] = emptyRow(newW, initCell)
-	}
-
-	copyW := oldW
-	if newW < copyW {
-		copyW = newW
-	}
-
-	var srcY, copyH int
-	if anchorTop {
-		srcY = 0
-		if newH < oldH {
-			copyH = newH
-		} else {
-			copyH = oldH
-		}
-	} else {
-		if newH <= oldH {
-			srcY = oldH - newH
-			copyH = newH
-		} else {
-			srcY = 0
-			copyH = oldH
-		}
-	}
-
-	for y := 0; y < copyH; y++ {
-		copy(buf[y][:copyW], old[srcY+y][:copyW])
-	}
-
-	return buf
+	wnd.draw(wnd.content, [2]Pos{{Line: 0, Col: 0}, {Line: h, Col: w}}, wnd.t.Buf)
 }
 
 func (wnd *window) Redraw() {
-	renderStart := time.Now()
+	if !wnd.runned {
+		return
+	}
 
 	if DEBUG {
 		wnd.stats.redrawCount.Add(1)
@@ -473,110 +281,15 @@ func (wnd *window) Redraw() {
 		}
 	}
 
-	if !wnd.runned {
+	wnd.render()
+
+	if wnd.capture {
+		json.NewEncoder(wnd.t).Encode(wnd.t.Buf)
 		return
 	}
 
-	h := wnd.Height()
-	w := wnd.Width()
-
-	if h <= 0 || w <= 0 {
-		return
-	}
-
-	newBuf := wnd.render()
-	if newBuf == nil {
-		return
-	}
-
-	if wnd.buf == nil || len(wnd.buf) != h || (len(wnd.buf) > 0 && len(wnd.buf[0]) != w) {
-		if wnd.buf != nil {
-			wnd.buf = resizeBuf(wnd.buf, w, h, wnd.initCell, wnd.altScreen)
-			wnd.cursorPos = Pos{-1, -1}
-		} else {
-			wnd.buf = wnd.newEmptyBuffer(h, w)
-		}
-	}
-
-	oldBuf := wnd.buf
-
-	b := wnd.builderPool.Get().(*builder.Builder)
-	b.Reset()
-
-	if !capture {
-		b.WriteString("\033[?2026h")
-	}
-
-	defer func() {
-		wnd.releaseBuffer(newBuf)
-		wnd.builderPool.Put(b)
-	}()
-
-	if capture {
-		json.NewEncoder(b).Encode(newBuf)
-		b.Copy(wnd.f)
-		return
-	}
-
-	renderDur := time.Since(renderStart)
-	makeStringStart := time.Now()
-
-	for y := range h {
-		if len(newBuf[y]) < w {
-			continue
-		}
-		for x := range w {
-			if newBuf[y][x] != oldBuf[y][x] {
-				if wnd.cursorPos.Line != y || wnd.cursorPos.Col != x {
-					b.WriteString("\033[")
-					b.WriteInt(y + 1)
-					b.WriteByte(';')
-					b.WriteInt(x + 1)
-					b.WriteByte('H')
-				}
-
-				newBuf[y][x].Style.WriteANSI(wnd.last, b)
-				wnd.last = newBuf[y][x].Style
-
-				if newBuf[y][x].Char == 0 {
-					wnd.LogInfo("null rune detected at [%d, %d]", x, y)
-					b.WriteRune(' ')
-				} else {
-					b.WriteRune(newBuf[y][x].Char)
-				}
-
-				oldBuf[y][x] = newBuf[y][x]
-
-				x2, y2 := x+1, y
-
-				if x2 == w {
-					x2 = 0
-					y2++
-				}
-
-				wnd.cursorPos = Pos{
-					Line: y2,
-					Col:  x2,
-				}
-			}
-		}
-	}
-
-	b.WriteString("\033[?2026l")
-
-	makeStringDur := time.Since(makeStringStart)
-
-	writeStart := time.Now()
-
-	b.Copy(wnd.f)
-
-	writeDur := time.Since(writeStart)
-
+	wnd.t.Flush()
 	wnd.stats.frames.Add(1)
-	wnd.stats.renderNanos.Add(int64(renderDur))
-	wnd.stats.makeStrNanos.Add(int64(makeStringDur))
-	wnd.stats.writeNanos.Add(int64(writeDur))
-
 	wnd.maybeReport()
 }
 
@@ -584,7 +297,6 @@ func (wnd *window) maybeReport() {
 	if !DEBUG {
 		return
 	}
-
 	now := time.Now()
 	elapsed := now.Sub(wnd.lastReport)
 	if elapsed < time.Second {
@@ -596,27 +308,16 @@ func (wnd *window) maybeReport() {
 	if frames == 0 {
 		return
 	}
-	r := wnd.stats.renderNanos.Swap(0)
-	m := wnd.stats.makeStrNanos.Swap(0)
-	wrt := wnd.stats.writeNanos.Swap(0)
-	tasks := wnd.stats.tasksDone.Swap(0)
+	wnd.LogInfo("FPS: %.0f", float64(frames)/elapsed.Seconds())
+}
 
-	avgRender := time.Duration(r / frames)
-	avgMake := time.Duration(m / frames)
-	avgWrite := time.Duration(wrt / frames)
-
-	fpsCPU := float64(frames) / elapsed.Seconds()
-
-	var fpsIO float64
-	totalNanos := r + m + wrt
-	if totalNanos > 0 {
-		fpsIO = float64(frames) / (float64(totalNanos) / float64(time.Second))
+func getEnvInt(name string, def int) int {
+	if v := os.Getenv(name); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
 	}
-
-	wnd.LogInfo(
-		"FPS: %.0f (cpu) / %.0f (io), frames=%d tasks=%d, avg render=%s makeString=%s write=%s",
-		fpsCPU, fpsIO, frames, tasks, avgRender, avgMake, avgWrite,
-	)
+	return def
 }
 
 func (wnd *window) Run() {
@@ -624,83 +325,57 @@ func (wnd *window) Run() {
 		if err := recover(); err != nil {
 			wnd.LogFatal("tui: Произошла паника: %v", err)
 		}
+		if wnd.t != nil {
+			wnd.t.Close()
+		}
 		if DEBUG && wnd.log != nil {
 			wnd.log.Close()
 		}
 	}()
 
-	if !capture && !wnd.skipRaw {
-		if wnd.stdin != nil && term.IsTerminal(int(wnd.stdin.Fd())) {
-			if err := termL.MakeRawFile(wnd.stdin); err != nil {
-				wnd.LogInfo("tui: Cannot make raw: %s", err)
-			}
+	if wnd.capture {
+		w := wnd.width
+		h := wnd.height
+		if w == 0 {
+			w = getEnvInt("TUI_WIDTH", 80)
 		}
+		if h == 0 {
+			h = getEnvInt("TUI_HEIGHT", 24)
+		}
+		wnd.width, wnd.height = w, h
+		wnd.t = acell.NewWithTerm(&fakeRawTerminal{width: w, height: h})
+		wnd.t.Buf = acell.NewBuf(w, h)
+		wnd.runned = true
+		wnd.Index()
+		wnd.Redraw()
+		return
 	}
 
-	if !capture {
-		fmt.Fprint(wnd.f, "\033[37m")
-		wnd.last = cell.Style{Fg: "37"}
+	wnd.t = acell.New(acell.TTY())
 
-		b := wnd.builderPool.Get().(*builder.Builder)
-		b.Reset()
-		b.WriteString("\033[0m\033[?25l\033[?1003h\033[?1006h")
-		if wnd.altScreen {
-			b.WriteString("\033[?1049h")
-		}
-		b.WriteString("\033[2J")
-		b.Copy(wnd.f)
-		wnd.builderPool.Put(b)
+	w, h := wnd.t.Size()
+	if wnd.width > 0 {
+		w = wnd.width
 	}
+	if wnd.height > 0 {
+		h = wnd.height
+	}
+	wnd.t.Buf = acell.NewBuf(w, h)
 
 	go wnd.startStopSignalCatcher()
-	go wnd.startScreenResizeChecker()
 	go wnd.startInputCatcher()
 
 	wnd.runned = true
-
 	wnd.Redraw()
-
 	wnd.runWorker()
-
 	wnd.runned = false
-
-	wnd.restoreOut()
-
-	if !capture {
-		if wnd.skipRaw == false && wnd.stdout != nil {
-			termL.Restore()
-		}
-
-		if wnd.last != (cell.Style{}) {
-			fmt.Fprint(wnd.f, "\033[0m")
-		}
-
-		b := wnd.builderPool.Get().(*builder.Builder)
-		b.Reset()
-		b.WriteString("\033[2J\033[?25h\033[?1003l\033[?1000l")
-		if wnd.altScreen {
-			b.WriteString("\033[?1049l")
-		}
-		b.Copy(wnd.f)
-		wnd.builderPool.Put(b)
-	}
-}
-
-func (wnd *window) restoreOut() {
-	if wnd.stdout == nil {
-		return
-	}
-	os.Stdout = wnd.stdout
-	os.Stderr = wnd.stderr
 }
 
 func (wnd *window) Quit() {
 	wnd.quitOnce.Do(func() { close(wnd.stopCh) })
 }
 
-func (wnd *window) OnQuit() <-chan struct{} {
-	return wnd.stopCh
-}
+func (wnd *window) OnQuit() <-chan struct{} { return wnd.stopCh }
 
 func (wnd *window) IsRunned() bool {
 	if DEBUG && !wnd.isWorker() {
@@ -711,81 +386,37 @@ func (wnd *window) IsRunned() bool {
 
 // Options — настройки окна.
 type Options struct {
-	In          io.Reader
-	Out         io.Writer
-	Err         io.Writer
-	Width       int
-	Height      int
-	SkipRawMode bool
-	AltScreen   bool
+	Terminal *acell.Terminal
 }
 
 type Option func(*Options)
 
-func WithIO(in io.Reader, out, err io.Writer) Option {
-	return func(o *Options) { o.In, o.Out, o.Err = in, out, err }
-}
-
-func WithSize(w, h int) Option {
-	return func(o *Options) { o.Width, o.Height = w, h }
-}
-
-func WithSkipRawMode(v bool) Option {
-	return func(o *Options) { o.SkipRawMode = v }
-}
-
-func WithAltScreen(v bool) Option {
-	return func(o *Options) { o.AltScreen = v }
+func WithTerminal(t *acell.Terminal) Option {
+	return func(o *Options) { o.Terminal = t }
 }
 
 const taskBufSize = 32
 
 func NewWindow(opts ...Option) Window {
-	o := Options{
-		In:        os.Stdin,
-		Out:       os.Stdout,
-		Err:       os.Stderr,
-		AltScreen: true,
-	}
+	o := Options{}
 	for _, opt := range opts {
 		opt(&o)
 	}
 
+	if o.Terminal == nil {
+		o.Terminal = acell.New(acell.TTY())
+	}
+
 	wnd := &window{
-		f:           o.Out,
-		in:          o.In,
-		width:       o.Width,
-		height:      o.Height,
-		skipRaw:     o.SkipRawMode,
-		altScreen:   o.AltScreen,
+		t:           o.Terminal,
 		stopCh:      make(chan struct{}),
 		keyHandlers: []KeyboardEventHandler{},
 		work:        make(chan *task, taskBufSize),
 		focusIndex:  -1,
 		focusChange: true,
-		cellBuf:     make([]cell.Cell, 0, 256),
-		initCell:    cell.Cell{Char: ' '},
-		builderPool: sync.Pool{
-			New: func() any { return &builder.Builder{} },
-		},
-		cursorPos:  Pos{-1, -1},
-		lastReport: time.Now(),
-		bufferPool: &sync.Pool{
-			New: func() any { return [][]cell.Cell(nil) },
-		},
-		hovered: make(map[EventHandler]struct{}),
-	}
-
-	if f, ok := o.In.(*os.File); ok {
-		wnd.stdin = f
-	}
-	if f, ok := o.Out.(*os.File); ok {
-		wnd.stdout = f
-		if e, ok := o.Err.(*os.File); ok {
-			wnd.stderr = e
-		} else {
-			wnd.stderr = f
-		}
+		initCell:    acell.Cell{Char: ' '},
+		lastReport:  time.Now(),
+		hovered:     make(map[EventHandler]struct{}),
 	}
 
 	if DEBUG {
@@ -794,10 +425,6 @@ func NewWindow(opts ...Option) Window {
 			log.Fatal(err)
 		}
 		wnd.log = f
-	}
-	termL.EnableANSIWindowsFile(wnd.stdout)
-	if DEBUG {
-		wnd.worker.Store(getGorID())
 	}
 	return wnd
 }
@@ -815,7 +442,6 @@ func (wnd *window) RegisterKeyHandler(keh KeyboardEventHandler) {
 
 func (wnd *window) Do(f func()) {
 	defer recover()
-
 	select {
 	case <-wnd.stopCh:
 		return
@@ -825,11 +451,11 @@ func (wnd *window) Do(f func()) {
 
 func (wnd *window) DoAndWait(f func()) {
 	defer recover()
-
-	tsk := &task{
-		f:    f,
-		done: make(chan struct{}),
+	if DEBUG && wnd.isWorker() {
+		f()
+		return
 	}
+	tsk := &task{f: f, done: make(chan struct{})}
 	select {
 	case <-wnd.stopCh:
 		return
@@ -840,39 +466,17 @@ func (wnd *window) DoAndWait(f func()) {
 
 func (wnd *window) doWithMessage(f func(), msg string) {
 	defer recover()
-
 	select {
 	case <-wnd.stopCh:
 		return
-	case wnd.work <- &task{
-		f:   f,
-		msg: msg,
-	}:
-	}
-}
-
-func (wnd *window) doWithMessageAndWait(f func(), msg string) {
-	defer recover()
-
-	tsk := &task{
-		f:    f,
-		done: make(chan struct{}),
-		msg:  msg,
-	}
-	select {
-	case <-wnd.stopCh:
-		return
-	case wnd.work <- tsk:
-		<-tsk.done
+	case wnd.work <- &task{f: f, msg: msg}:
 	}
 }
 
 func getGorID() int32 {
 	var buf [128]byte
 	n := runtime.Stack(buf[:], false)
-	line := string(buf[:n])
-
-	parts := strings.SplitN(line, " ", 3)
+	parts := strings.SplitN(string(buf[:n]), " ", 3)
 	if len(parts) < 2 {
 		return -1
 	}
@@ -898,21 +502,13 @@ func (wnd *window) runWorker() {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
-						if tsk.msg != "" {
-							wnd.LogInfo("Задача '%s' вызвала панику: %v", tsk.msg, r)
-						} else {
-							wnd.LogInfo("Задача вызвала панику: %v", r)
-						}
+						wnd.LogInfo("Задача вызвала панику: %v", r)
 					}
 				}()
 				tsk.f()
 			}()
-			wnd.stats.tasksDone.Add(1)
 			if tsk.done != nil {
 				close(tsk.done)
-			}
-			if tsk.msg != "" {
-				wnd.LogInfo("Завершена задача: '%s'", tsk.msg)
 			}
 		}
 	}
@@ -922,16 +518,8 @@ func (wnd *window) Width() int {
 	if wnd.width > 0 {
 		return wnd.width
 	}
-	if capture {
-		if w := os.Getenv("TUI_WIDTH"); w != "" {
-			if val, err := strconv.Atoi(w); err == nil && val > 0 {
-				return val
-			}
-		}
-		return 80
-	}
-	if wnd.stdout != nil {
-		w, _ := termL.SizeFd(wnd.stdout.Fd())
+	if wnd.t != nil {
+		w, _ := wnd.t.Size()
 		return w
 	}
 	return 80
@@ -941,16 +529,8 @@ func (wnd *window) Height() int {
 	if wnd.height > 0 {
 		return wnd.height
 	}
-	if capture {
-		if h := os.Getenv("TUI_HEIGHT"); h != "" {
-			if val, err := strconv.Atoi(h); err == nil && val > 0 {
-				return val
-			}
-		}
-		return 24
-	}
-	if wnd.stdout != nil {
-		_, h := termL.SizeFd(wnd.stdout.Fd())
+	if wnd.t != nil {
+		_, h := wnd.t.Size()
 		return h
 	}
 	return 24
@@ -959,6 +539,10 @@ func (wnd *window) Height() int {
 func (wnd *window) SetSize(w, h int) {
 	wnd.Do(func() {
 		wnd.width, wnd.height = w, h
+		if wnd.t != nil {
+			wnd.t.Buf = acell.NewBuf(w, h)
+			wnd.t.Invalidate()
+		}
 		wnd.Redraw()
 	})
 }
@@ -975,7 +559,7 @@ func (wnd *window) startStopSignalCatcher() {
 	}
 }
 
-func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
+func (wnd *window) handleMouseEvent(ev *acell.MouseEvent) {
 	if wnd.wgt == nil {
 		return
 	}
@@ -988,17 +572,17 @@ func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
 		}
 	}
 
-	if ev.Action == input.MouseMove {
+	if ev.Action == acell.MouseMove {
 		wnd.updateHover(under, ev.Pos)
 	}
 
 	for _, cl := range under {
 		cl := cl
 		wnd.doWithMessage(func() {
-			cl.Send(&input.MouseEvent{
+			cl.Send(&acell.MouseEvent{
 				Action: ev.Action,
 				Button: ev.Button,
-				Pos: input.Point{
+				Pos: acell.Point{
 					X: ev.Pos.X - cl.p.Col,
 					Y: ev.Pos.Y - cl.p.Line,
 				},
@@ -1015,7 +599,7 @@ func (wnd *window) handleMouseEvent(ev *input.MouseEvent) {
 	}
 }
 
-func (wnd *window) updateHover(under []eventHandlerWithPos, pos input.Point) {
+func (wnd *window) updateHover(under []eventHandlerWithPos, pos acell.Point) {
 	now := make(map[EventHandler]struct{}, len(under))
 	for _, cl := range under {
 		now[cl.EventHandler] = struct{}{}
@@ -1025,11 +609,10 @@ func (wnd *window) updateHover(under []eventHandlerWithPos, pos input.Point) {
 		if _, still := now[h]; still {
 			continue
 		}
-
 		p := wnd.posOf(h)
 		ev := &MouseHoverEvent{
 			Entered: false,
-			Pos:     input.Point{X: pos.X - p.Col, Y: pos.Y - p.Line},
+			Pos:     acell.Point{X: pos.X - p.Col, Y: pos.Y - p.Line},
 		}
 		h := h
 		wnd.doWithMessage(func() { h.Send(ev) }, "mouse leave")
@@ -1042,10 +625,7 @@ func (wnd *window) updateHover(under []eventHandlerWithPos, pos input.Point) {
 		}
 		ev := &MouseHoverEvent{
 			Entered: true,
-			Pos: input.Point{
-				X: pos.X - cl.p.Col,
-				Y: pos.Y - cl.p.Line,
-			},
+			Pos:     acell.Point{X: pos.X - cl.p.Col, Y: pos.Y - cl.p.Line},
 		}
 		wnd.doWithMessage(func() { h.Send(ev) }, "mouse enter")
 	}
@@ -1076,13 +656,9 @@ func (wnd *window) RegisterResizeHandler(h ResizeHandler) {
 	wnd.resizeHandlers = append(wnd.resizeHandlers, h)
 }
 
-func (wnd *window) CopyToClipboard(text string) {
-	termL.CopyToClipboard(text)
-}
-
 func (wnd *window) startInputCatcher() {
 	wnd.Do(func() {
-		wnd.RegisterKeyHandler(func(ke *input.KeyboardEvent) {
+		wnd.RegisterKeyHandler(func(ke *acell.KeyboardEvent) {
 			if wnd.focusIndex != -1 {
 				wnd.focusableWidgets[wnd.focusIndex].Send(ke)
 			}
@@ -1090,35 +666,45 @@ func (wnd *window) startInputCatcher() {
 				return
 			}
 			switch ke.Key {
-			case input.KeyTab:
+			case acell.KeyTab:
 				wnd.NextFocus()
-			case input.KeyShiftTab:
+			case acell.KeyShiftTab:
 				wnd.BeforeFocus()
-			case input.KeyCtrlC:
+			case acell.KeyCtrlC:
 				wnd.Quit()
 			}
 		})
 	})
 
-	mouse, keyboard := input.Start(wnd.in, 1)
 	for {
 		select {
 		case <-wnd.stopCh:
-			input.Stop()
 			return
-		case ev := <-keyboard:
-			wnd.doWithMessage(func() {
-				for _, h := range wnd.keyHandlers {
-					wnd.doWithMessage(func() {
-						h(ev)
-					}, "keyboard handler")
-				}
-			}, "key handler")
-		case ev := <-mouse:
-			ev2 := ev
-			wnd.doWithMessage(func() {
-				wnd.handleMouseEvent(ev2)
-			}, "mouse dispatch")
+		case ev, ok := <-wnd.t.Events():
+			if !ok {
+				return
+			}
+			switch e := ev.(type) {
+			case *acell.KeyboardEvent:
+				key := e
+				wnd.doWithMessage(func() {
+					for _, h := range wnd.keyHandlers {
+						h(key)
+					}
+				}, "key handler")
+			case *acell.MouseEvent:
+				mouse := e
+				wnd.doWithMessage(func() { wnd.handleMouseEvent(mouse) }, "mouse dispatch")
+			case *acell.ResizeEvent:
+				wnd.Do(func() {
+					wnd.t.Buf = acell.NewBuf(e.Width, e.Height)
+					wnd.t.Invalidate()
+					for _, h := range wnd.resizeHandlers {
+						h(e.Width, e.Height)
+					}
+					wnd.Redraw()
+				})
+			}
 		}
 	}
 }
@@ -1133,17 +719,18 @@ func (wnd *window) SetContent(w Widget) {
 }
 
 func (wnd *window) SetTitle(title string) {
-	if !capture {
-		title = ansi.Strip(title)
-		wnd.Do(func() {
-			fmt.Fprintf(wnd.f, "\033]0;%s\033\\", title)
-		})
+	if wnd.capture {
+		return
 	}
+	title = ansi.Strip(title)
+	wnd.Do(func() {
+		if wnd.t != nil {
+			wnd.t.SetTitle(title)
+		}
+	})
 }
 
-func (wnd *window) Focus() FocusManager {
-	return wnd
-}
+func (wnd *window) Focus() FocusManager { return wnd }
 
 func (wnd *window) Commit(f func()) {
 	wnd.Do(func() {
@@ -1153,13 +740,14 @@ func (wnd *window) Commit(f func()) {
 }
 
 // SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
-// Обычно используется для установки фона.
-func (wnd *window) SetInitCell(c cell.Cell) {
+func (wnd *window) SetInitCell(c acell.Cell) {
 	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("SetInitCell called outside worker goroutine: data race")
 	}
 	wnd.initCell = c
-	wnd.buf = nil
+	if wnd.t != nil {
+		wnd.t.Invalidate()
+	}
 }
 
 // SetBackground устанавливает фон пустых позиций окна.
@@ -1167,7 +755,7 @@ func (wnd *window) SetBackground(s Style) {
 	if DEBUG && !wnd.isWorker() {
 		wnd.LogFatal("SetBackground called outside worker goroutine: data race")
 	}
-	wnd.SetInitCell(cell.Cell{Char: ' ', Style: ConvertToCellStyle(s)})
+	wnd.SetInitCell(acell.Cell{Char: ' ', Style: ConvertToCellStyle(s)})
 }
 
 // SetStyleFunc устанавливает функцию для стилизации виджетов.
@@ -1176,4 +764,33 @@ func (wnd *window) SetStyleFunc(fn func(Widget)) {
 		wnd.LogFatal("SetStyleFunc called outside worker goroutine: data race")
 	}
 	wnd.styleFunc = fn
+}
+
+type fakeRawTerminal struct {
+	width, height int
+	events        chan any
+	out           bytes.Buffer
+	mu            sync.Mutex
+}
+
+func (f *fakeRawTerminal) Write(p []byte) (int, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.out.Write(p)
+}
+func (f *fakeRawTerminal) Read(p []byte) (int, error) { return 0, io.EOF }
+func (f *fakeRawTerminal) MakeRaw() error             { return nil }
+func (f *fakeRawTerminal) Restore() error             { return nil }
+func (f *fakeRawTerminal) EnableANSI() error          { return nil }
+func (f *fakeRawTerminal) Events() <-chan any         { return f.events }
+func (f *fakeRawTerminal) Close() error               { return nil }
+func (f *fakeRawTerminal) Size() (int, int)           { return f.width, f.height }
+func (f *fakeRawTerminal) StartInput()                {}
+func (f *fakeRawTerminal) Info() terminfo.Info        { return terminfo.Info{} }
+
+// Reset очищает буфер между итерациями теста.
+func (f *fakeRawTerminal) Reset() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.out.Reset()
 }

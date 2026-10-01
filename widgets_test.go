@@ -6,19 +6,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/romanSPB15/tui-compose/v4/cell"
+	"github.com/romanSPB15/acell"
 )
 
-func newBuf(w, h int) [][]cell.Cell {
+func newBuf(w, h int) [][]acell.Cell {
 	if w < 1 {
 		w = 1
 	}
 	if h < 1 {
 		h = 1
 	}
-	buf := make([][]cell.Cell, h)
+	buf := make([][]acell.Cell, h)
 	for i := range buf {
-		buf[i] = make([]cell.Cell, w)
+		buf[i] = make([]acell.Cell, w)
 	}
 	return buf
 }
@@ -225,8 +225,8 @@ func TestGauge(t *testing.T) {
 	renderOK(t, g.BlocksFull())
 	renderOK(t, g.BlocksGrid())
 
-	g.WithOnCell(cell.Cell{Char: '#'})
-	g.WithOffCell(cell.Cell{Char: '-'})
+	g.WithOnCell(acell.Cell{Char: '#'})
+	g.WithOffCell(acell.Cell{Char: '-'})
 	renderOK(t, g)
 
 	g.WithOnStyle(FrRed).WithOffStyle(FrBlue)
@@ -287,7 +287,7 @@ func TestFrame(t *testing.T) {
 	f.WithTitle(Title{Text: "BotCenter", Pos: TitleBottomCenter, Style: FrRed})
 	renderFrame(t, f)
 
-	f.WithInitCell(cell.Cell{Char: '.'})
+	f.WithInitCell(acell.Cell{Char: '.'})
 	f.WithBackground(BgRed)
 	renderFrame(t, f)
 
@@ -319,7 +319,7 @@ func TestImage(t *testing.T) {
 
 	img = make(Image, 3)
 	for i := range img {
-		img[i] = make([]cell.Cell, 5)
+		img[i] = make([]acell.Cell, 5)
 	}
 	if img.Width() != 5 {
 		t.Fatalf("Width: got %d, want 5", img.Width())

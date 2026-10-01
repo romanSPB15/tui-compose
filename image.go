@@ -5,14 +5,14 @@ import (
 	"image/color"
 	"strconv"
 
-	"github.com/romanSPB15/tui-compose/v4/builder"
-	"github.com/romanSPB15/tui-compose/v4/cell"
+	"github.com/romanSPB15/acell"
+	"github.com/romanSPB15/acell/builder"
 )
 
 // Image — виджет изображения.
 // Хранит матрицу ячеек, готовую к рендерингу в терминал.
 // Добавлено в TUI v3.4.0.
-type Image [][]cell.Cell
+type Image [][]acell.Cell
 
 // NewImage создаёт пустой виджет изображения.
 // Добавлено в TUI v3.4.0.
@@ -20,7 +20,7 @@ func NewImage() Image {
 	return nil
 }
 
-func (iw Image) Render(buf [][]cell.Cell) {
+func (iw Image) Render(buf [][]acell.Cell) {
 	copy(buf, iw)
 }
 
@@ -171,7 +171,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 	case PaletteTrueColor | HalfSymbol:
 		iw = make(Image, img.Bounds().Dy()/2)
 		for i := range iw {
-			iw[i] = make([]cell.Cell, img.Bounds().Dx())
+			iw[i] = make([]acell.Cell, img.Bounds().Dx())
 		}
 		for y := range img.Bounds().Dy() / 2 {
 			for x := range img.Bounds().Dx() {
@@ -204,7 +204,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 				}
 
 				iw[y][x].Char = '▀'
-				iw[y][x].Style = cell.Style{
+				iw[y][x].Style = acell.Style{
 					Bg: makeRGBANSIBg(uint8(rB), uint8(gB), uint8(bB), sb),
 					Fg: makeRGBANSIFg(uint8(rT), uint8(gT), uint8(bT), sb),
 				}
@@ -213,7 +213,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 	case PaletteTrueColor | OneSymbol:
 		iw = make(Image, img.Bounds().Dy())
 		for i := range iw {
-			iw[i] = make([]cell.Cell, img.Bounds().Dx())
+			iw[i] = make([]acell.Cell, img.Bounds().Dx())
 		}
 		for y := range img.Bounds().Dy() {
 			for x := range img.Bounds().Dx() {
@@ -232,7 +232,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 				}
 
 				iw[y][x].Char = ' '
-				iw[y][x].Style = cell.Style{
+				iw[y][x].Style = acell.Style{
 					Bg: makeRGBANSIBg(uint8(r), uint8(g), uint8(b), sb),
 				}
 			}
@@ -240,7 +240,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 	case PaletteTrueColor | TwoSymbol:
 		iw = make(Image, img.Bounds().Dy())
 		for i := range iw {
-			iw[i] = make([]cell.Cell, img.Bounds().Dx()*2)
+			iw[i] = make([]acell.Cell, img.Bounds().Dx()*2)
 		}
 		for y := range img.Bounds().Dy() {
 			for x := range img.Bounds().Dx() {
@@ -261,12 +261,12 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 				bg := makeRGBANSIBg(uint8(r), uint8(g), uint8(b), sb)
 
 				iw[y][x*2].Char = ' '
-				iw[y][x*2].Style = cell.Style{
+				iw[y][x*2].Style = acell.Style{
 					Bg: bg,
 				}
 
 				iw[y][x*2+1].Char = ' '
-				iw[y][x*2+1].Style = cell.Style{
+				iw[y][x*2+1].Style = acell.Style{
 					Bg: bg,
 				}
 			}
@@ -279,7 +279,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 	case Palette16Color | HalfSymbol:
 		iw = make(Image, img.Bounds().Dy()/2)
 		for i := range iw {
-			iw[i] = make([]cell.Cell, img.Bounds().Dx())
+			iw[i] = make([]acell.Cell, img.Bounds().Dx())
 		}
 		for y := range img.Bounds().Dy() / 2 {
 			for x := range img.Bounds().Dx() {
@@ -312,7 +312,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 				}
 
 				iw[y][x].Char = '▀'
-				iw[y][x].Style = cell.Style{
+				iw[y][x].Style = acell.Style{
 					Bg: nearestANSI16Bg(uint8(rB), uint8(gB), uint8(bB)),
 					Fg: nearestANSI16Fg(uint8(rT), uint8(gT), uint8(bT)),
 				}
@@ -322,7 +322,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 	case Palette16Color | OneSymbol:
 		iw = make(Image, img.Bounds().Dy())
 		for i := range iw {
-			iw[i] = make([]cell.Cell, img.Bounds().Dx())
+			iw[i] = make([]acell.Cell, img.Bounds().Dx())
 		}
 		for y := range img.Bounds().Dy() {
 			for x := range img.Bounds().Dx() {
@@ -341,7 +341,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 				}
 
 				iw[y][x].Char = ' '
-				iw[y][x].Style = cell.Style{
+				iw[y][x].Style = acell.Style{
 					Bg: nearestANSI16Bg(uint8(r), uint8(g), uint8(b)),
 				}
 			}
@@ -349,7 +349,7 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 	case Palette16Color | TwoSymbol:
 		iw = make(Image, img.Bounds().Dy())
 		for i := range iw {
-			iw[i] = make([]cell.Cell, img.Bounds().Dx()*2)
+			iw[i] = make([]acell.Cell, img.Bounds().Dx()*2)
 		}
 		for y := range img.Bounds().Dy() {
 			for x := range img.Bounds().Dx() {
@@ -370,12 +370,12 @@ func (iw Image) LoadImage(img image.Image, pal LoadMode) Image {
 				bg := nearestANSI16Bg(uint8(r), uint8(g), uint8(b))
 
 				iw[y][x*2].Char = ' '
-				iw[y][x*2].Style = cell.Style{
+				iw[y][x*2].Style = acell.Style{
 					Bg: bg,
 				}
 
 				iw[y][x*2+1].Char = ' '
-				iw[y][x*2+1].Style = cell.Style{
+				iw[y][x*2+1].Style = acell.Style{
 					Bg: bg,
 				}
 			}
@@ -510,7 +510,7 @@ func (iw Image) LoadBraille(data [][]bool, style Style) Image {
 
 	iw = make(Image, rows)
 	for y := 0; y < rows; y++ {
-		iw[y] = make([]cell.Cell, cols)
+		iw[y] = make([]acell.Cell, cols)
 		for x := 0; x < cols; x++ {
 			var block [4][2]bool
 			for dy := 0; dy < 4; dy++ {
@@ -518,7 +518,7 @@ func (iw Image) LoadBraille(data [][]bool, style Style) Image {
 					block[dy][dx] = data[y*4+dy][x*2+dx]
 				}
 			}
-			iw[y][x] = cell.Cell{
+			iw[y][x] = acell.Cell{
 				Char:  brailleChar(block),
 				Style: s,
 			}

@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/romanSPB15/acell/builder"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/builder"
 	"github.com/romanSPB15/tui-compose/v4/extra"
 )
 

@@ -3,8 +3,8 @@ package extra
 import (
 	"time"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
 )
 
 // BlinkLabel — это виджет мигающей метки.
@@ -71,7 +71,7 @@ func (b *BlinkLabel) Stop() {
 
 // Render реализует интерфейс Widget.
 // Добавлено в TUI v4.0.0.
-func (b *BlinkLabel) Render(buf [][]cell.Cell) {
+func (b *BlinkLabel) Render(buf [][]acell.Cell) {
 	if b.visible {
 		b.label.Render(buf)
 	}

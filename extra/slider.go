@@ -3,9 +3,8 @@ package extra
 import (
 	"math"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
-	"github.com/romanSPB15/tui-compose/v4/input"
 )
 
 // Slider — горизонтальный слайдер.
@@ -21,9 +20,9 @@ type Slider struct {
 
 	trackRune, fillRune, thumbRune rune
 
-	trackStyle, fillStyle, thumbStyle cell.Style
-	focusStyle, hoverStyle            cell.Style
-	labelStyle                        cell.Style
+	trackStyle, fillStyle, thumbStyle acell.Style
+	focusStyle, hoverStyle            acell.Style
+	labelStyle                        acell.Style
 
 	focused    bool
 	hovered    bool
@@ -50,11 +49,11 @@ func NewSlider(width int) *Slider {
 		trackRune:  '─',
 		fillRune:   '━',
 		thumbRune:  '●',
-		trackStyle: cell.Style{Fg: "90"},
-		fillStyle:  cell.Style{Fg: "36"},
-		thumbStyle: cell.Style{Fg: "36"},
-		focusStyle: cell.Style{Fg: "33", Bg: "236"},
-		hoverStyle: cell.Style{Fg: "96"},
+		trackStyle: acell.Style{Fg: "90"},
+		fillStyle:  acell.Style{Fg: "36"},
+		thumbStyle: acell.Style{Fg: "36"},
+		focusStyle: acell.Style{Fg: "33", Bg: "236"},
+		hoverStyle: acell.Style{Fg: "96"},
 		dragButton: -1,
 	}
 }
@@ -153,7 +152,7 @@ func (s *Slider) Width() int { return s.width }
 
 func (s *Slider) Height() int { return 1 }
 
-func (s *Slider) Render(buf [][]cell.Cell) {
+func (s *Slider) Render(buf [][]acell.Cell) {
 	if len(buf) == 0 || len(buf[0]) == 0 {
 		return
 	}
@@ -168,20 +167,20 @@ func (s *Slider) Render(buf [][]cell.Cell) {
 	pos := s.thumbPos()
 	thumbStyle := s.thumbStyle
 	switch {
-	case s.focused && s.focusStyle != (cell.Style{}):
+	case s.focused && s.focusStyle != (acell.Style{}):
 		thumbStyle = s.focusStyle
-	case s.hovered && s.hoverStyle != (cell.Style{}):
+	case s.hovered && s.hoverStyle != (acell.Style{}):
 		thumbStyle = s.hoverStyle
 	}
 
 	for x := 0; x < w; x++ {
 		switch {
 		case x < pos:
-			buf[0][x] = cell.Cell{Char: s.fillRune, Style: s.fillStyle}
+			buf[0][x] = acell.Cell{Char: s.fillRune, Style: s.fillStyle}
 		case x == pos:
-			buf[0][x] = cell.Cell{Char: s.thumbRune, Style: thumbStyle}
+			buf[0][x] = acell.Cell{Char: s.thumbRune, Style: thumbStyle}
 		default:
-			buf[0][x] = cell.Cell{Char: s.trackRune, Style: s.trackStyle}
+			buf[0][x] = acell.Cell{Char: s.trackRune, Style: s.trackStyle}
 		}
 	}
 
@@ -193,7 +192,7 @@ func (s *Slider) Render(buf [][]cell.Cell) {
 			if x < 0 || x >= w {
 				continue
 			}
-			buf[0][x] = cell.Cell{Char: r, Style: s.labelStyle}
+			buf[0][x] = acell.Cell{Char: r, Style: s.labelStyle}
 		}
 	}
 }
@@ -215,16 +214,16 @@ func (s *Slider) Send(ev tui.Event) {
 		if s.wnd != nil {
 			s.wnd.Redraw()
 		}
-	case *input.KeyboardEvent:
+	case *acell.KeyboardEvent:
 		s.handleKey(e)
-	case *input.MouseEvent:
+	case *acell.MouseEvent:
 		s.handleMouse(e)
 	}
 }
 
-func (s *Slider) handleMouse(e *input.MouseEvent) {
+func (s *Slider) handleMouse(e *acell.MouseEvent) {
 	switch e.Action {
-	case input.MousePress:
+	case acell.MousePress:
 		if e.Button != 0 {
 			return
 		}
@@ -235,13 +234,13 @@ func (s *Slider) handleMouse(e *input.MouseEvent) {
 			s.wnd.Focus().SetFocus(s)
 		}
 
-	case input.MouseMove:
+	case acell.MouseMove:
 		if !s.dragging {
 			return
 		}
 		s.jumpTo(e.Pos.X)
 
-	case input.MouseRelease:
+	case acell.MouseRelease:
 		if !s.dragging {
 			return
 		}
@@ -254,23 +253,23 @@ func (s *Slider) handleMouse(e *input.MouseEvent) {
 	}
 }
 
-func (s *Slider) handleKey(e *input.KeyboardEvent) {
+func (s *Slider) handleKey(e *acell.KeyboardEvent) {
 	step := s.step
 	if step <= 0 {
 		step = (s.max - s.min) / 100
 	}
 	switch e.Key {
-	case input.KeyArrowLeft:
+	case acell.KeyArrowLeft:
 		s.setValue(s.value - step)
-	case input.KeyArrowRight:
+	case acell.KeyArrowRight:
 		s.setValue(s.value + step)
-	case input.KeyHome:
+	case acell.KeyHome:
 		s.setValue(s.min)
-	case input.KeyEnd:
+	case acell.KeyEnd:
 		s.setValue(s.max)
-	case input.KeyPgUp:
+	case acell.KeyPgUp:
 		s.setValue(s.value + 10*step)
-	case input.KeyPgDown:
+	case acell.KeyPgDown:
 		s.setValue(s.value - 10*step)
 	default:
 		return

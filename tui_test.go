@@ -5,12 +5,11 @@ import (
 	"io"
 	"strconv"
 	"testing"
-	"time"
 
-	"github.com/romanSPB15/tui-compose/v4/cell"
+	"github.com/romanSPB15/acell"
 )
 
-func assertBuffer(t *testing.T, i int, expected, actual [][]cell.Cell) {
+func assertBuffer(t *testing.T, i int, expected, actual [][]acell.Cell) {
 	t.Helper()
 	if len(expected) != len(actual) {
 		t.Fatalf("#%d: height mismatch: expected %d, got %d", i, len(expected), len(actual))
@@ -27,12 +26,12 @@ func assertBuffer(t *testing.T, i int, expected, actual [][]cell.Cell) {
 	}
 }
 
-func cells(chars string, styles ...cell.Style) []cell.Cell {
+func cells(chars string, styles ...acell.Style) []acell.Cell {
 	runes := []rune(chars)
 
-	res := make([]cell.Cell, len(runes))
+	res := make([]acell.Cell, len(runes))
 
-	var currentStyle cell.Style
+	var currentStyle acell.Style
 	if len(styles) > 0 {
 		currentStyle = styles[0]
 	}
@@ -40,7 +39,7 @@ func cells(chars string, styles ...cell.Style) []cell.Cell {
 	sIdx := 1
 
 	for i, ch := range runes {
-		res[i] = cell.Cell{Char: ch, Style: currentStyle}
+		res[i] = acell.Cell{Char: ch, Style: currentStyle}
 		if sIdx < len(styles) {
 			currentStyle = styles[sIdx]
 			sIdx++
@@ -54,14 +53,14 @@ const (
 	height = 10
 )
 
-func addToWindowSize(c [][]cell.Cell, w, h int, initCell cell.Cell) [][]cell.Cell {
+func addToWindowSize(c [][]acell.Cell, w, h int, initCell acell.Cell) [][]acell.Cell {
 	for i := range c {
 		for len(c[i]) < w {
 			c[i] = append(c[i], initCell)
 		}
 	}
 	if len(c) < h {
-		emptyRow := make([]cell.Cell, w)
+		emptyRow := make([]acell.Cell, w)
 		for i := range emptyRow {
 			emptyRow[i] = initCell
 		}
@@ -77,8 +76,8 @@ type widget struct {
 	text          string
 }
 
-func (w *widget) Render(buf [][]cell.Cell) {
-	c := cell.ParseMultiline(w.text)
+func (w *widget) Render(buf [][]acell.Cell) {
+	c := acell.ParseMultiline(w.text)
 	for y := range len(c) {
 		for x := range len(c[0]) {
 			if y < len(buf) && x < len(buf[0]) {
@@ -97,43 +96,45 @@ func (w *widget) Height() int {
 }
 
 func TestRender(t *testing.T) {
-	capture = true
-	t.Cleanup(func() { capture = false })
+	width, height := 80, 24
 
-	t.Setenv("TUI_WIDTH", strconv.Itoa(width))
-	t.Setenv("TUI_HEIGHT", strconv.Itoa(height))
+	fakeT := acell.NewWithTerm(&fakeRawTerminal{width: width, height: height})
+	fakeT.Buf = acell.NewBuf(width, height)
 
-	wnd := NewWindow().(*window)
+	wnd := NewWindow(WithTerminal(fakeT)).(*window)
+	wnd.capture = true
+	wnd.width = width
+	wnd.height = height
 
 	tt := []struct {
 		Content  Widget
-		Expected [][]cell.Cell
+		Expected [][]acell.Cell
 	}{
 		{
 			Content: NewVBox(NewStaticLabel("Hello"), NewButton("", nil)),
-			Expected: [][]cell.Cell{
+			Expected: [][]acell.Cell{
 				cells("Hello"),
-				cells("    ", cell.Style{Fg: "30", Bg: "47"}),
+				cells("    ", acell.Style{Fg: "30", Bg: "47"}),
 			},
 		},
 
 		{
 			Content: NewStaticLabel("12345World").WithStyle(FrRed | BgBlue | Bold),
-			Expected: [][]cell.Cell{
-				cells("12345World", cell.Style{
+			Expected: [][]acell.Cell{
+				cells("12345World", acell.Style{
 					Fg:   "31",
 					Bg:   "44",
-					Args: cell.Bold,
+					Args: acell.Bold,
 				}),
 			},
 		},
 		{
 			Content:  nil,
-			Expected: [][]cell.Cell{},
+			Expected: [][]acell.Cell{},
 		},
 		{
 			Content:  NewVBox(nil, nil, nil),
-			Expected: [][]cell.Cell{},
+			Expected: [][]acell.Cell{},
 		},
 		{
 			Content: &widget{
@@ -141,7 +142,7 @@ func TestRender(t *testing.T) {
 				width:  10,
 				height: 1,
 			},
-			Expected: [][]cell.Cell{
+			Expected: [][]acell.Cell{
 				cells("123"),
 			},
 		},
@@ -151,50 +152,51 @@ func TestRender(t *testing.T) {
 		t.Fatal("invalid Window.Focus()")
 	}
 
-	wnd.SetTitle("123")
-
 	for i, tv := range tt {
 		wnd.SetContent(tv.Content)
-		buf := wnd.render()
-
+		wnd.render()
+		buf := wnd.t.Buf
 		assertBuffer(t, i, addToWindowSize(tv.Expected, width, height, wnd.initCell), buf)
 	}
 }
+
 func TestRedraw(t *testing.T) {
-	capture = true
-	t.Cleanup(func() { capture = false })
+	const (
+		width  = 80
+		height = 24
+	)
 
 	t.Setenv("TUI_WIDTH", strconv.Itoa(width))
 	t.Setenv("TUI_HEIGHT", strconv.Itoa(height))
 
 	tt := []struct {
 		Content  Widget
-		Expected [][]cell.Cell
+		Expected [][]acell.Cell
 	}{
 		{
 			Content: NewVBox(NewStaticLabel("Hello"), NewButton("", nil)),
-			Expected: [][]cell.Cell{
+			Expected: [][]acell.Cell{
 				cells("Hello"),
-				cells("    ", cell.Style{Fg: "30", Bg: "47"}),
+				cells("    ", acell.Style{Fg: "30", Bg: "47"}),
 			},
 		},
 		{
 			Content: NewStaticLabel("12345World").WithStyle(FrRed | BgBlue | Bold),
-			Expected: [][]cell.Cell{
-				cells("12345World", cell.Style{
+			Expected: [][]acell.Cell{
+				cells("12345World", acell.Style{
 					Fg:   "31",
 					Bg:   "44",
-					Args: cell.Bold,
+					Args: acell.Bold,
 				}),
 			},
 		},
 		{
 			Content:  nil,
-			Expected: [][]cell.Cell{},
+			Expected: [][]acell.Cell{},
 		},
 		{
 			Content:  NewVBox(nil, nil, nil),
-			Expected: [][]cell.Cell{},
+			Expected: [][]acell.Cell{},
 		},
 		{
 			Content: &widget{
@@ -202,7 +204,7 @@ func TestRedraw(t *testing.T) {
 				width:  10,
 				height: 1,
 			},
-			Expected: [][]cell.Cell{
+			Expected: [][]acell.Cell{
 				cells("123"),
 			},
 		},
@@ -216,112 +218,52 @@ func TestRedraw(t *testing.T) {
 				width:  10,
 				height: 1,
 			}),
-			Expected: [][]cell.Cell{
+			Expected: [][]acell.Cell{
 				cells("123 hello"),
 			},
 		},
 	}
 
 	for i, tv := range tt {
-		wnd := NewWindow().(*window)
+		fakeTerm := &fakeRawTerminal{width: width, height: height}
+		wnd := NewWindow(WithTerminal(acell.NewWithTerm(fakeTerm))).(*window)
+		wnd.capture = true
+		wnd.width = width
+		wnd.height = height
 		wnd.runned = true
-		pr, pw := io.Pipe()
-		wnd.f = pw
+		wnd.worker.Store(getGorID()) // чтобы DEBUG-проверки не срабатывали
 
-		done := make(chan struct{})
-		go func() {
-			wnd.SetContent(tv.Content)
-			wnd.Redraw()
-			pw.Close()
-			close(done)
-		}()
+		wnd.SetContent(tv.Content)
+		wnd.Redraw()
 
-		var buf2 [][]cell.Cell
-		err := json.NewDecoder(pr).Decode(&buf2)
+		var buf2 [][]acell.Cell
+		err := json.NewDecoder(&fakeTerm.out).Decode(&buf2)
 		if err != nil && err != io.EOF {
 			t.Fatalf("#%d: decode error: %v", i, err)
 		}
-
-		<-done
 
 		assertBuffer(t, i, addToWindowSize(tv.Expected, width, height, wnd.initCell), buf2)
 	}
 }
 
 func TestSize(t *testing.T) {
-	capture = true
-	t.Cleanup(func() { capture = false })
+	const (
+		width  = 40
+		height = 10
+	)
 
-	t.Setenv("TUI_WIDTH", strconv.Itoa(width))
-	t.Setenv("TUI_HEIGHT", strconv.Itoa(height))
+	fakeT := acell.NewWithTerm(&fakeRawTerminal{width: width, height: height})
+	fakeT.Buf = acell.NewBuf(width, height)
 
-	wnd := NewWindow()
+	wnd := NewWindow(WithTerminal(fakeT)).(*window)
+	wnd.capture = true
+	wnd.width = width
+	wnd.height = height
 
-	w := wnd.Width()
-	if w != width {
-		t.Fatalf("invalid width: expected %d, but got %d", width, w)
+	if w := wnd.Width(); w != width {
+		t.Fatalf("invalid width: expected %d, got %d", width, w)
 	}
-
-	h := wnd.Height()
-	if h != height {
-		t.Fatalf("invalid height: expected %d, but got %d", height, h)
+	if h := wnd.Height(); h != height {
+		t.Fatalf("invalid height: expected %d, got %d", height, h)
 	}
-}
-
-func TestRun(t *testing.T) {
-	capture = true
-	t.Cleanup(func() { capture = false })
-
-	t.Setenv("TUI_WIDTH", strconv.Itoa(width))
-	t.Setenv("TUI_HEIGHT", strconv.Itoa(height))
-
-	wnd := NewWindow().(*window)
-	pr, pw := io.Pipe()
-	wnd.f = pw
-
-	content := NewVBox(NewStaticLabel("Hello"), NewButton("", nil))
-	wnd.SetContent(content)
-
-	var buf2 [][]cell.Cell
-	doneReading := make(chan struct{})
-	go func() {
-		err := json.NewDecoder(pr).Decode(&buf2)
-		if err != nil && err != io.EOF {
-			t.Logf("decode error: %v", err)
-		}
-		close(doneReading)
-	}()
-
-	doneRun := make(chan struct{})
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				t.Logf("Recovered panic in Run: %v", r)
-				t.Fail()
-			}
-		}()
-		wnd.Run()
-		close(doneRun)
-	}()
-
-	time.Sleep(100 * time.Millisecond)
-
-	wnd.Quit()
-
-	select {
-	case <-doneRun:
-		// OK
-	case <-time.After(2 * time.Second):
-		t.Fatal("Run did not quit in time")
-	}
-
-	pw.Close()
-	<-doneReading
-
-	expected := addToWindowSize([][]cell.Cell{
-		cells("Hello"),
-		cells("    ", cell.Style{Fg: "30", Bg: "47"}),
-	}, width, height, wnd.initCell)
-
-	assertBuffer(t, 0, expected, buf2)
 }

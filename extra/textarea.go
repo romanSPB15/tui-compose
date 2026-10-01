@@ -6,9 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
-	"github.com/romanSPB15/tui-compose/v4/input"
 )
 
 const tabWidth = 4
@@ -30,9 +29,9 @@ type TextArea struct {
 	hovered   bool
 	overwrite bool
 
-	style, styleF, styleH cell.Style
-	cursorStyle           cell.Style
-	lineNumStyle          cell.Style
+	style, styleF, styleH acell.Style
+	cursorStyle           acell.Style
+	lineNumStyle          acell.Style
 
 	showLineNumbers bool
 
@@ -60,8 +59,8 @@ func NewTextArea(width, height int) *TextArea {
 		lines:         []string{""},
 		width:         width,
 		height:        height,
-		cursorStyle:   cell.Style{Bg: "47", Fg: "34"},
-		lineNumStyle:  cell.Style{Fg: "90"},
+		cursorStyle:   acell.Style{Bg: "47", Fg: "34"},
+		lineNumStyle:  acell.Style{Fg: "90"},
 		cursorVisible: true,
 		blinkEnabled:  true,
 		blinkInterval: 500 * time.Millisecond,
@@ -328,7 +327,7 @@ func (ta *TextArea) clampOffsetOnly(totalRows int) {
 // ---------- рендер ----------
 
 // Render рисует поле в буфер.
-func (ta *TextArea) Render(buf [][]cell.Cell) {
+func (ta *TextArea) Render(buf [][]acell.Cell) {
 	if len(buf) == 0 {
 		return
 	}
@@ -337,7 +336,7 @@ func (ta *TextArea) Render(buf [][]cell.Cell) {
 	switch {
 	case ta.focused:
 		fieldStyle = ta.styleF
-	case ta.hovered && ta.styleH != (cell.Style{}):
+	case ta.hovered && ta.styleH != (acell.Style{}):
 		fieldStyle = ta.styleH
 	}
 
@@ -358,7 +357,7 @@ func (ta *TextArea) Render(buf [][]cell.Cell) {
 
 	for row := 0; row < ta.height && row < len(buf); row++ {
 		for x := 0; x < totalW; x++ {
-			buf[row][x] = cell.Cell{Char: ' ', Style: fieldStyle}
+			buf[row][x] = acell.Cell{Char: ' ', Style: fieldStyle}
 		}
 
 		vr := ta.offsetTop + row
@@ -372,12 +371,12 @@ func (ta *TextArea) Render(buf [][]cell.Cell) {
 			numStr := strconv.Itoa(r.line + 1)
 			pad := numWidth - len(numStr)
 			for i := 0; i < pad; i++ {
-				buf[row][i] = cell.Cell{Char: ' ', Style: ta.lineNumStyle}
+				buf[row][i] = acell.Cell{Char: ' ', Style: ta.lineNumStyle}
 			}
 			for i, ch := range numStr {
-				buf[row][pad+i] = cell.Cell{Char: ch, Style: ta.lineNumStyle}
+				buf[row][pad+i] = acell.Cell{Char: ch, Style: ta.lineNumStyle}
 			}
-			buf[row][numWidth] = cell.Cell{Char: ' ', Style: ta.lineNumStyle}
+			buf[row][numWidth] = acell.Cell{Char: ' ', Style: ta.lineNumStyle}
 		}
 
 		// сегмент текста
@@ -387,7 +386,7 @@ func (ta *TextArea) Render(buf [][]cell.Cell) {
 			if x >= totalW {
 				break
 			}
-			buf[row][x] = cell.Cell{Char: seg[i], Style: fieldStyle}
+			buf[row][x] = acell.Cell{Char: seg[i], Style: fieldStyle}
 		}
 
 		// курсор
@@ -400,7 +399,7 @@ func (ta *TextArea) Render(buf [][]cell.Cell) {
 						ch = seg[cVc]
 					}
 					under := buf[row][cursorX]
-					buf[row][cursorX] = cell.Cell{
+					buf[row][cursorX] = acell.Cell{
 						Char:  ch,
 						Style: ta.cursorStyle.Merge(under.Style),
 					}
@@ -430,15 +429,15 @@ func (ta *TextArea) Send(ev tui.Event) {
 		if ta.wnd != nil {
 			ta.wnd.Redraw()
 		}
-	case *input.KeyboardEvent:
+	case *acell.KeyboardEvent:
 		ta.handleKey(e)
-	case *input.MouseEvent:
+	case *acell.MouseEvent:
 		switch e.Action {
-		case input.MousePress:
+		case acell.MousePress:
 			ta.handleClick(e)
-		case input.MouseWheelUp:
+		case acell.MouseWheelUp:
 			ta.scrollBy(-1)
-		case input.MouseWheelDown:
+		case acell.MouseWheelDown:
 			ta.scrollBy(1)
 		}
 	}
@@ -462,55 +461,55 @@ func (ta *TextArea) scrollBy(delta int) {
 	}
 }
 
-func (ta *TextArea) handleKey(ev *input.KeyboardEvent) {
+func (ta *TextArea) handleKey(ev *acell.KeyboardEvent) {
 	line := []rune(ta.lines[ta.cursorLine])
 	changed := false
 	rows := ta.buildVisualRows()
 
 	switch ev.Key {
-	case input.KeyArrowUp:
+	case acell.KeyArrowUp:
 		vr, vc := findCursorVisual(rows, ta.cursorLine, ta.cursorCol)
 		if vr > 0 {
 			ta.setCursorFromVisual(rows, vr-1, vc)
 		}
-	case input.KeyArrowDown:
+	case acell.KeyArrowDown:
 		vr, vc := findCursorVisual(rows, ta.cursorLine, ta.cursorCol)
 		if vr >= 0 && vr < len(rows)-1 {
 			ta.setCursorFromVisual(rows, vr+1, vc)
 		}
-	case input.KeyArrowLeft:
+	case acell.KeyArrowLeft:
 		if ta.cursorCol > 0 {
 			ta.cursorCol--
 		} else if ta.cursorLine > 0 {
 			ta.cursorLine--
 			ta.cursorCol = len([]rune(ta.lines[ta.cursorLine]))
 		}
-	case input.KeyArrowRight:
+	case acell.KeyArrowRight:
 		if ta.cursorCol < len(line) {
 			ta.cursorCol++
 		} else if ta.cursorLine < len(ta.lines)-1 {
 			ta.cursorLine++
 			ta.cursorCol = 0
 		}
-	case input.KeyPgUp:
+	case acell.KeyPgUp:
 		vr, vc := findCursorVisual(rows, ta.cursorLine, ta.cursorCol)
 		vr -= ta.height
 		if vr < 0 {
 			vr = 0
 		}
 		ta.setCursorFromVisual(rows, vr, vc)
-	case input.KeyPgDown:
+	case acell.KeyPgDown:
 		vr, vc := findCursorVisual(rows, ta.cursorLine, ta.cursorCol)
 		vr += ta.height
 		if vr >= len(rows) {
 			vr = len(rows) - 1
 		}
 		ta.setCursorFromVisual(rows, vr, vc)
-	case input.KeyHome:
+	case acell.KeyHome:
 		ta.cursorCol = 0
-	case input.KeyEnd:
+	case acell.KeyEnd:
 		ta.cursorCol = len(line)
-	case input.KeyBackspace:
+	case acell.KeyBackspace:
 		if ta.cursorCol > 0 {
 			line = append(line[:ta.cursorCol-1], line[ta.cursorCol:]...)
 			ta.lines[ta.cursorLine] = string(line)
@@ -524,7 +523,7 @@ func (ta *TextArea) handleKey(ev *input.KeyboardEvent) {
 			ta.cursorCol = prevLen
 			changed = true
 		}
-	case input.KeyDelete:
+	case acell.KeyDelete:
 		if ta.cursorCol < len(line) {
 			line = append(line[:ta.cursorCol], line[ta.cursorCol+1:]...)
 			ta.lines[ta.cursorLine] = string(line)
@@ -534,7 +533,7 @@ func (ta *TextArea) handleKey(ev *input.KeyboardEvent) {
 			ta.lines = append(ta.lines[:ta.cursorLine+1], ta.lines[ta.cursorLine+2:]...)
 			changed = true
 		}
-	case input.KeyEnter:
+	case acell.KeyEnter:
 		before := string(line[:ta.cursorCol])
 		after := string(line[ta.cursorCol:])
 		ta.lines[ta.cursorLine] = before
@@ -543,7 +542,7 @@ func (ta *TextArea) handleKey(ev *input.KeyboardEvent) {
 		ta.cursorLine++
 		ta.cursorCol = 0
 		changed = true
-	case input.KeyInsert:
+	case acell.KeyInsert:
 		ta.overwrite = !ta.overwrite
 	default:
 		if ev.Rune != 0 {
@@ -572,7 +571,7 @@ func (ta *TextArea) handleKey(ev *input.KeyboardEvent) {
 	}
 }
 
-func (ta *TextArea) handleClick(ev *input.MouseEvent) {
+func (ta *TextArea) handleClick(ev *acell.MouseEvent) {
 	row := ev.Pos.Y
 	if row < 0 || row >= ta.height {
 		return

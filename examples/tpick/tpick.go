@@ -5,15 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/tui-compose/v4"
-	"github.com/romanSPB15/tui-compose/v4/cell"
-	"github.com/romanSPB15/tui-compose/v4/input"
 )
 
 const doubleClickWindow = 400 * time.Millisecond
@@ -161,7 +159,7 @@ func (p *Picker) matchRange(text string) (int, int) {
 	return start, end
 }
 
-func (p *Picker) Render(buf [][]cell.Cell) {
+func (p *Picker) Render(buf [][]acell.Cell) {
 	h := len(buf)
 	if h == 0 {
 		return
@@ -171,7 +169,7 @@ func (p *Picker) Render(buf [][]cell.Cell) {
 		return
 	}
 
-	empty := cell.Style{}
+	empty := acell.Style{}
 	ts := tui.ConvertToCellStyle(p.titleStyle)
 	bs := tui.ConvertToCellStyle(p.borderStyle)
 	ps := tui.ConvertToCellStyle(p.promptStyle)
@@ -186,7 +184,7 @@ func (p *Picker) Render(buf [][]cell.Cell) {
 	for y := 0; y < h; y++ {
 		row := buf[y]
 		for x := 0; x < w && x < len(row); x++ {
-			row[x] = cell.Cell{Char: ' ', Style: empty}
+			row[x] = acell.Cell{Char: ' ', Style: empty}
 		}
 	}
 
@@ -204,7 +202,7 @@ func (p *Picker) Render(buf [][]cell.Cell) {
 		for i, r := range titleRunes {
 			x := start + i
 			if x < w {
-				buf[0][x] = cell.Cell{Char: r, Style: ts}
+				buf[0][x] = acell.Cell{Char: r, Style: ts}
 			}
 		}
 	}
@@ -215,7 +213,7 @@ func (p *Picker) Render(buf [][]cell.Cell) {
 		if px >= w {
 			break
 		}
-		buf[filterY][px] = cell.Cell{Char: r, Style: ps}
+		buf[filterY][px] = acell.Cell{Char: r, Style: ps}
 		px++
 	}
 	for i, r := range p.query {
@@ -223,7 +221,7 @@ func (p *Picker) Render(buf [][]cell.Cell) {
 		if x >= w {
 			break
 		}
-		buf[filterY][x] = cell.Cell{Char: r, Style: qs}
+		buf[filterY][x] = acell.Cell{Char: r, Style: qs}
 	}
 	if p.focused {
 		cx := px + p.inputCur
@@ -232,20 +230,20 @@ func (p *Picker) Render(buf [][]cell.Cell) {
 			if p.inputCur < len(p.query) {
 				ch = p.query[p.inputCur]
 			}
-			buf[filterY][cx] = cell.Cell{Char: ch, Style: cs}
+			buf[filterY][cx] = acell.Cell{Char: ch, Style: cs}
 		}
 	}
 
 	div1Y := filterY + 1
 	if div1Y < h {
 		for x := 0; x < w && x < len(buf[div1Y]); x++ {
-			buf[div1Y][x] = cell.Cell{Char: '-', Style: bs}
+			buf[div1Y][x] = acell.Cell{Char: '-', Style: bs}
 		}
 	}
 	if h >= 3 {
 		div2Y := h - 2
 		for x := 0; x < w && x < len(buf[div2Y]); x++ {
-			buf[div2Y][x] = cell.Cell{Char: '-', Style: bs}
+			buf[div2Y][x] = acell.Cell{Char: '-', Style: bs}
 		}
 	}
 
@@ -269,11 +267,11 @@ func (p *Picker) Render(buf [][]cell.Cell) {
 			}
 
 			for x := 0; x < w && x < len(buf[row]); x++ {
-				buf[row][x] = cell.Cell{Char: ' ', Style: base}
+				buf[row][x] = acell.Cell{Char: ' ', Style: base}
 			}
 			for j, r := range prefix {
 				if j < w {
-					buf[row][j] = cell.Cell{Char: r, Style: base}
+					buf[row][j] = acell.Cell{Char: r, Style: base}
 				}
 			}
 
@@ -290,7 +288,7 @@ func (p *Picker) Render(buf [][]cell.Cell) {
 				if mStart >= 0 && j >= mStart && j < mEnd {
 					st = base.Merge(ms)
 				}
-				buf[row][x] = cell.Cell{Char: r, Style: st}
+				buf[row][x] = acell.Cell{Char: r, Style: st}
 			}
 		}
 	}
@@ -306,7 +304,7 @@ func (p *Picker) Render(buf [][]cell.Cell) {
 		for i, r := range runes {
 			x := start + i
 			if x >= 0 && x < w && x < len(buf[row]) {
-				buf[row][x] = cell.Cell{Char: r, Style: hs}
+				buf[row][x] = acell.Cell{Char: r, Style: hs}
 			}
 		}
 	}
@@ -315,7 +313,7 @@ func (p *Picker) Render(buf [][]cell.Cell) {
 	help := " ENTER, двойной клик - выбрать | стрелки, колесо мыши - навигация | ESC - отмена"
 	for i, r := range []rune(help) {
 		if i < w && i < len(buf[row]) {
-			buf[row][i] = cell.Cell{Char: r, Style: hs}
+			buf[row][i] = acell.Cell{Char: r, Style: hs}
 		}
 	}
 }
@@ -328,9 +326,9 @@ func (p *Picker) Send(ev tui.Event) {
 		e.Result = true
 	case *tui.FocusEvent:
 		p.focused = e.Focused
-	case *input.KeyboardEvent:
+	case *acell.KeyboardEvent:
 		p.handleKey(e)
-	case *input.MouseEvent:
+	case *acell.MouseEvent:
 		p.handleMouse(e)
 	case *tui.MouseHoverEvent:
 		if !e.Entered {
@@ -342,43 +340,43 @@ func (p *Picker) Send(ev tui.Event) {
 	}
 }
 
-func (p *Picker) handleKey(e *input.KeyboardEvent) {
+func (p *Picker) handleKey(e *acell.KeyboardEvent) {
 	switch e.Key {
-	case input.KeyEsc:
+	case acell.KeyEsc:
 		p.result = ""
 		p.wnd.Quit()
 		return
-	case input.KeyEnter:
+	case acell.KeyEnter:
 		if p.cursor >= 0 && p.cursor < len(p.filtered) {
 			p.result = p.filtered[p.cursor]
 		}
 		p.wnd.Quit()
 		return
-	case input.KeyArrowUp:
+	case acell.KeyArrowUp:
 		if p.cursor > 0 {
 			p.cursor--
 		}
 		p.clampOffset()
-	case input.KeyArrowDown:
+	case acell.KeyArrowDown:
 		if p.cursor < len(p.filtered)-1 {
 			p.cursor++
 		}
 		p.clampOffset()
-	case input.KeyHome:
+	case acell.KeyHome:
 		p.cursor = 0
 		p.clampOffset()
-	case input.KeyEnd:
+	case acell.KeyEnd:
 		if len(p.filtered) > 0 {
 			p.cursor = len(p.filtered) - 1
 		}
 		p.clampOffset()
-	case input.KeyPgUp:
+	case acell.KeyPgUp:
 		p.cursor -= p.listH()
 		if p.cursor < 0 {
 			p.cursor = 0
 		}
 		p.clampOffset()
-	case input.KeyPgDown:
+	case acell.KeyPgDown:
 		p.cursor += p.listH()
 		if p.cursor >= len(p.filtered) {
 			p.cursor = len(p.filtered) - 1
@@ -387,33 +385,33 @@ func (p *Picker) handleKey(e *input.KeyboardEvent) {
 			}
 		}
 		p.clampOffset()
-	case input.KeyBackspace:
+	case acell.KeyBackspace:
 		if p.inputCur > 0 {
 			p.query = append(p.query[:p.inputCur-1], p.query[p.inputCur:]...)
 			p.inputCur--
 			p.applyFilter()
 			p.clampOffset()
 		}
-	case input.KeyDelete:
+	case acell.KeyDelete:
 		if p.inputCur < len(p.query) {
 			p.query = append(p.query[:p.inputCur], p.query[p.inputCur+1:]...)
 			p.applyFilter()
 			p.clampOffset()
 		}
-	case input.KeyArrowLeft:
+	case acell.KeyArrowLeft:
 		if p.inputCur > 0 {
 			p.inputCur--
 		}
-	case input.KeyArrowRight:
+	case acell.KeyArrowRight:
 		if p.inputCur < len(p.query) {
 			p.inputCur++
 		}
-	case input.KeyCtrlU:
+	case acell.KeyCtrlU:
 		p.query = p.query[:0]
 		p.inputCur = 0
 		p.applyFilter()
 		p.clampOffset()
-	case input.KeyCtrlW:
+	case acell.KeyCtrlW:
 		for p.inputCur > 0 && p.query[p.inputCur-1] == ' ' {
 			p.query = append(p.query[:p.inputCur-1], p.query[p.inputCur:]...)
 			p.inputCur--
@@ -436,9 +434,9 @@ func (p *Picker) handleKey(e *input.KeyboardEvent) {
 	p.wnd.Redraw()
 }
 
-func (p *Picker) handleMouse(e *input.MouseEvent) {
+func (p *Picker) handleMouse(e *acell.MouseEvent) {
 	switch e.Action {
-	case input.MouseWheelUp:
+	case acell.MouseWheelUp:
 		p.cursor--
 		if p.cursor < 0 {
 			p.cursor = 0
@@ -446,7 +444,7 @@ func (p *Picker) handleMouse(e *input.MouseEvent) {
 		p.clampOffset()
 		p.wnd.Redraw()
 
-	case input.MouseWheelDown:
+	case acell.MouseWheelDown:
 		p.cursor++
 		if p.cursor >= len(p.filtered) {
 			p.cursor = len(p.filtered) - 1
@@ -457,14 +455,14 @@ func (p *Picker) handleMouse(e *input.MouseEvent) {
 		p.clampOffset()
 		p.wnd.Redraw()
 
-	case input.MouseMove:
+	case acell.MouseMove:
 		idx := p.rowToIndex(e.Pos.Y)
 		if idx != p.hovered {
 			p.hovered = idx
 			p.wnd.Redraw()
 		}
 
-	case input.MousePress:
+	case acell.MousePress:
 		idx := p.rowToIndex(e.Pos.Y)
 		if idx < 0 {
 			return
@@ -481,26 +479,6 @@ func (p *Picker) handleMouse(e *input.MouseEvent) {
 		p.clampOffset()
 		p.wnd.Redraw()
 	}
-}
-
-func openTTY() (*os.File, *os.File, error) {
-	if runtime.GOOS == "windows" {
-		in, err := os.OpenFile("CONIN$", os.O_RDWR, 0)
-		if err != nil {
-			return nil, nil, err
-		}
-		out, err := os.OpenFile("CONOUT$", os.O_RDWR, 0)
-		if err != nil {
-			in.Close()
-			return nil, nil, err
-		}
-		return in, out, nil
-	}
-	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
-	if err != nil {
-		return nil, nil, err
-	}
-	return tty, tty, nil
 }
 
 func main() {
@@ -536,12 +514,7 @@ func run() (int, string) {
 
 	origStdout := os.Stdout
 
-	ttyIn, ttyOut, err := openTTY()
-	if err != nil {
-		ttyIn, ttyOut = os.Stdin, os.Stdout
-	}
-
-	wnd := tui.NewWindow(tui.WithIO(ttyIn, ttyOut, ttyOut))
+	wnd := tui.NewWindow()
 	wnd.SetTitle("tpick")
 
 	picker := NewPicker(items, title)

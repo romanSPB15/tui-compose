@@ -1,12 +1,10 @@
 package tui
 
-import (
-	"github.com/romanSPB15/tui-compose/v4/cell"
-)
+import "github.com/romanSPB15/acell"
 
 // Widget — это интерфейс для TUI-виджетов.
 type Widget interface {
-	Render(buf [][]cell.Cell) // Render рисует в переданный буфер, начиная с координаты (0, 0). Буфер имеет размер Width × Height.
+	Render(buf [][]acell.Cell) // Render рисует в переданный буфер, начиная с координаты (0, 0). Буфер имеет размер Width × Height.
 
 	Width() int  // Ширина в символах
 	Height() int // Высота в символах
@@ -47,12 +45,11 @@ type Window interface {
 	Height() int // Height возвращает высоту окна в символах.
 
 	SetTitle(string)        // SetTitle устанавливает заголовок окна терминала.
-	CopyToClipboard(string) // CopyToClipboard копирует текст в буфер обмена.
 
 	Focus() FocusManager // Focus возвращает FocusManager окна.
 
-	SetInitCell(cell.Cell) // SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
-	SetBackground(Style)   // SetBackground устанавливает стиль пустых позиций окна.
+	SetInitCell(acell.Cell) // SetInitCell устанавливает ячейку по умолчанию для всех пустых позиций окна.
+	SetBackground(Style)    // SetBackground устанавливает стиль пустых позиций окна.
 
 	// Index обновляет кеши фокуса и кликабельных виджетов. Используется при динамическом обновлении дерева виджетов.
 	// Также вызывает SetStyleFunc для всех виджетов в дереве.
@@ -84,10 +81,6 @@ type Window interface {
 	//
 	// Добавлено в TUI v3.5.0.
 	SetStyleFunc(fn func(Widget))
-
-	// SetAltScreenEnable включает/выключает alt-screen.
-	// По умолчанию включен. Он сохраняет историю терминала.
-	SetAltScreenEnable(v bool)
 }
 
 // FocusManager — интерфейс менеджера фокуса.

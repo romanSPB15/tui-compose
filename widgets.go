@@ -9,10 +9,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/romanSPB15/tui-compose/v4/builder"
-	"github.com/romanSPB15/tui-compose/v4/cell"
-	"github.com/romanSPB15/tui-compose/v4/input"
-	"github.com/romanSPB15/tui-compose/v4/term"
+	"github.com/romanSPB15/acell"
+	"github.com/romanSPB15/acell/builder"
+	"github.com/romanSPB15/acell/term"
 )
 
 // DisableState хранит состояние disabled.
@@ -32,16 +31,16 @@ func (d *DisableState) IsDisabled() bool {
 
 // Label — текстовая метка.
 type Label struct {
-	style cell.Style
+	style acell.Style
 	Text  string
 	len   int
 }
 
 // Render рисует текст в буфер.
-func (l *Label) Render(buf [][]cell.Cell) {
+func (l *Label) Render(buf [][]acell.Cell) {
 	runes := []rune(l.Text)
 	for i := range utf8.RuneCountInString(l.Text) {
-		buf[0][i] = cell.Cell{Char: runes[i], Style: l.style}
+		buf[0][i] = acell.Cell{Char: runes[i], Style: l.style}
 	}
 }
 
@@ -98,8 +97,8 @@ func (l *Label) WithText(new string) *Label {
 type Button struct {
 	text                  string
 	OnClicked             func()
-	style, styleF, styleH cell.Style
-	styleD                cell.Style
+	style, styleF, styleH acell.Style
+	styleD                acell.Style
 	focused               bool
 	hovered               bool
 	paddingH, paddingV    int
@@ -109,25 +108,25 @@ type Button struct {
 
 // NewButton создаёт кнопку с текстом и обработчиком нажатия.
 func NewButton(text string, h func()) *Button {
-	whiteBg := cell.Style{Fg: "30", Bg: "47"}
+	whiteBg := acell.Style{Fg: "30", Bg: "47"}
 	return &Button{
 		text:      text,
 		OnClicked: h,
 		style:     whiteBg,
 		styleF:    whiteBg,
 		styleH:    whiteBg,
-		styleD:    cell.Style{Fg: "90"},
+		styleD:    acell.Style{Fg: "90"},
 		paddingH:  2,
 	}
 }
 
 // Render рисует кнопку в буфер.
-func (btn *Button) Render(buf [][]cell.Cell) {
-	var s cell.Style
+func (btn *Button) Render(buf [][]acell.Cell) {
+	var s acell.Style
 	switch {
 	case btn.IsDisabled():
 		s = btn.styleD
-	case btn.hovered && btn.styleH != (cell.Style{}):
+	case btn.hovered && btn.styleH != (acell.Style{}):
 		s = btn.styleH
 	case btn.focused:
 		s = btn.styleF
@@ -140,7 +139,7 @@ func (btn *Button) Render(buf [][]cell.Cell) {
 
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
-			buf[y][x] = cell.Cell{Char: ' ', Style: s}
+			buf[y][x] = acell.Cell{Char: ' ', Style: s}
 		}
 	}
 
@@ -149,7 +148,7 @@ func (btn *Button) Render(buf [][]cell.Cell) {
 	textY := (h - 1) / 2
 
 	for i, r := range textRunes {
-		buf[textY][textStartX+i] = cell.Cell{Char: r, Style: s}
+		buf[textY][textStartX+i] = acell.Cell{Char: r, Style: s}
 	}
 }
 
@@ -225,8 +224,8 @@ func (btn *Button) Send(ev Event) {
 		if btn.wnd != nil {
 			btn.wnd.Redraw()
 		}
-	case *input.MouseEvent:
-		if ev.Action == input.MousePress {
+	case *acell.MouseEvent:
+		if ev.Action == acell.MousePress {
 			if btn.OnClicked != nil {
 				btn.OnClicked()
 			}
@@ -234,8 +233,8 @@ func (btn *Button) Send(ev Event) {
 				btn.wnd.Focus().SetFocus(btn)
 			}
 		}
-	case *input.KeyboardEvent:
-		if (ev.Key == input.KeyEnter || ev.Key == input.KeySpace) && btn.OnClicked != nil {
+	case *acell.KeyboardEvent:
+		if (ev.Key == acell.KeyEnter || ev.Key == acell.KeySpace) && btn.OnClicked != nil {
 			btn.OnClicked()
 		}
 	}
@@ -249,7 +248,7 @@ type Check struct {
 	hovered      bool
 	OnChanged    func(bool)
 
-	style, styleF, styleC, styleH cell.Style
+	style, styleF, styleC, styleH acell.Style
 	wnd                           Window
 }
 
@@ -257,19 +256,19 @@ type Check struct {
 func NewCheck(text string) *Check {
 	return &Check{
 		text:   text,
-		styleF: cell.Style{Fg: "30", Bg: "47"},
-		styleC: cell.Style{Fg: "32"},
-		styleH: cell.Style{Fg: "30", Bg: "47"},
+		styleF: acell.Style{Fg: "30", Bg: "47"},
+		styleC: acell.Style{Fg: "32"},
+		styleH: acell.Style{Fg: "30", Bg: "47"},
 	}
 }
 
 // Render рисует чекбокс в буфер.
-func (c *Check) Render(buf [][]cell.Cell) {
-	var s cell.Style
+func (c *Check) Render(buf [][]acell.Cell) {
+	var s acell.Style
 	switch {
 	case c.focused:
 		s = c.styleF
-	case c.hovered && c.styleH != (cell.Style{}):
+	case c.hovered && c.styleH != (acell.Style{}):
 		s = c.styleH
 	case c.checkedState:
 		s = c.styleC
@@ -277,18 +276,18 @@ func (c *Check) Render(buf [][]cell.Cell) {
 		s = c.style
 	}
 
-	buf[0][0] = cell.Cell{Char: '[', Style: s}
+	buf[0][0] = acell.Cell{Char: '[', Style: s}
 	if c.checkedState {
-		buf[0][1] = cell.Cell{Char: 'x', Style: s}
+		buf[0][1] = acell.Cell{Char: 'x', Style: s}
 	} else {
-		buf[0][1] = cell.Cell{Char: ' ', Style: s}
+		buf[0][1] = acell.Cell{Char: ' ', Style: s}
 	}
-	buf[0][2] = cell.Cell{Char: ']', Style: s}
-	buf[0][3] = cell.Cell{Char: ' ', Style: s}
+	buf[0][2] = acell.Cell{Char: ']', Style: s}
+	buf[0][3] = acell.Cell{Char: ' ', Style: s}
 
 	runes := []rune(c.text)
 	for i := range utf8.RuneCountInString(c.text) {
-		buf[0][i+4] = cell.Cell{Char: runes[i], Style: s}
+		buf[0][i+4] = acell.Cell{Char: runes[i], Style: s}
 	}
 }
 
@@ -368,8 +367,8 @@ func (c *Check) Send(ev Event) {
 		if c.wnd != nil {
 			c.wnd.Redraw()
 		}
-	case *input.MouseEvent:
-		if ev.Action != input.MousePress {
+	case *acell.MouseEvent:
+		if ev.Action != acell.MousePress {
 			return
 		}
 		c.checkedState = !c.checkedState
@@ -379,8 +378,8 @@ func (c *Check) Send(ev Event) {
 		if c.OnChanged != nil {
 			c.OnChanged(c.checkedState)
 		}
-	case *input.KeyboardEvent:
-		if ev.Key == input.KeyEnter || ev.Key == input.KeySpace {
+	case *acell.KeyboardEvent:
+		if ev.Key == acell.KeyEnter || ev.Key == acell.KeySpace {
 			c.checkedState = !c.checkedState
 			if c.wnd != nil {
 				c.wnd.Redraw()
@@ -402,10 +401,10 @@ type InputField struct {
 	hovered   bool
 	overwrite bool
 
-	style, styleF, styleH cell.Style
-	cursorStyle           cell.Style
+	style, styleF, styleH acell.Style
+	cursorStyle           acell.Style
 	placeholder           string
-	placeholderStyle      cell.Style
+	placeholderStyle      acell.Style
 
 	OnChanged func(string)
 	OnEnter   func(string)
@@ -422,9 +421,9 @@ type InputField struct {
 func NewInputField(width int) *InputField {
 	return &InputField{
 		width:            width,
-		style:            cell.Style{Bg: "44"},
-		cursorStyle:      cell.Style{Bg: "47", Fg: "34"},
-		placeholderStyle: cell.Style{Fg: "90"},
+		style:            acell.Style{Bg: "44"},
+		cursorStyle:      acell.Style{Bg: "47", Fg: "34"},
+		placeholderStyle: acell.Style{Fg: "90"},
 		blinkEnabled:     true,
 		blinkInterval:    500 * time.Millisecond,
 		cursorVisible:    true,
@@ -522,17 +521,17 @@ func (f *InputField) IsOverwrite() bool {
 }
 
 // Render рисует поле ввода в буфер.
-func (f *InputField) Render(buf [][]cell.Cell) {
+func (f *InputField) Render(buf [][]acell.Cell) {
 	fieldStyle := f.style
 	switch {
 	case f.focused:
 		fieldStyle = f.styleF
-	case f.hovered && f.styleH != (cell.Style{}):
+	case f.hovered && f.styleH != (acell.Style{}):
 		fieldStyle = f.styleH
 	}
 
 	var displayText string
-	var textStyle cell.Style
+	var textStyle acell.Style
 	if !f.focused && f.Text == "" && f.placeholder != "" {
 		displayText = f.placeholder
 		textStyle = f.placeholderStyle.Merge(f.style)
@@ -548,7 +547,7 @@ func (f *InputField) Render(buf [][]cell.Cell) {
 
 	for i := 0; i < f.width; i++ {
 		var ch rune
-		var st cell.Style
+		var st acell.Style
 		if i < len(runes) {
 			ch = runes[i]
 			st = textStyle
@@ -556,7 +555,7 @@ func (f *InputField) Render(buf [][]cell.Cell) {
 			ch = ' '
 			st = fieldStyle
 		}
-		buf[0][i] = cell.Cell{Char: ch, Style: st}
+		buf[0][i] = acell.Cell{Char: ch, Style: st}
 	}
 
 	if f.focused && f.cursorVisible {
@@ -571,7 +570,7 @@ func (f *InputField) Render(buf [][]cell.Cell) {
 			} else {
 				cursorChar = ' '
 			}
-			buf[0][cursorPos] = cell.Cell{Char: cursorChar, Style: f.cursorStyle}
+			buf[0][cursorPos] = acell.Cell{Char: cursorChar, Style: f.cursorStyle}
 		}
 	}
 }
@@ -604,10 +603,10 @@ func (f *InputField) Send(ev Event) {
 		if f.wnd != nil {
 			f.wnd.Redraw()
 		}
-	case *input.KeyboardEvent:
+	case *acell.KeyboardEvent:
 		runes := []rune(f.Text)
 		switch ev.Key {
-		case input.KeyDelete:
+		case acell.KeyDelete:
 			if f.CursorPos < len(runes) {
 				runes = append(runes[:f.CursorPos], runes[f.CursorPos+1:]...)
 				f.Text = string(runes)
@@ -619,7 +618,7 @@ func (f *InputField) Send(ev Event) {
 					f.OnChanged(f.Text)
 				}
 			}
-		case input.KeyBackspace:
+		case acell.KeyBackspace:
 			if f.CursorPos <= 0 {
 				return
 			}
@@ -633,7 +632,7 @@ func (f *InputField) Send(ev Event) {
 			if f.OnChanged != nil {
 				f.OnChanged(f.Text)
 			}
-		case input.KeyArrowRight:
+		case acell.KeyArrowRight:
 			if f.CursorPos < len(runes) {
 				f.CursorPos++
 				f.cursorVisible = true
@@ -641,7 +640,7 @@ func (f *InputField) Send(ev Event) {
 					f.wnd.Redraw()
 				}
 			}
-		case input.KeyArrowLeft:
+		case acell.KeyArrowLeft:
 			if f.CursorPos > 0 {
 				f.CursorPos--
 				f.cursorVisible = true
@@ -649,11 +648,11 @@ func (f *InputField) Send(ev Event) {
 					f.wnd.Redraw()
 				}
 			}
-		case input.KeyEnter:
+		case acell.KeyEnter:
 			if f.OnEnter != nil {
 				f.OnEnter(f.Text)
 			}
-		case input.KeyInsert:
+		case acell.KeyInsert:
 			f.overwrite = !f.overwrite
 			f.cursorVisible = true
 			if f.wnd != nil {
@@ -687,8 +686,8 @@ func (f *InputField) Send(ev Event) {
 				}
 			}
 		}
-	case *input.MouseEvent:
-		if ev.Action == input.MousePress {
+	case *acell.MouseEvent:
+		if ev.Action == acell.MousePress {
 			runes := []rune(f.Text)
 			pos := ev.Pos.X
 			if pos > len(runes) {
@@ -762,9 +761,9 @@ func NewHyperlink(text, url string) *Button {
 type Gauge struct {
 	value           float64
 	size            int
-	cellOn, cellOff cell.Cell
+	cellOn, cellOff acell.Cell
 	LabelFunc       func(float64) string
-	labelStyle      cell.Style
+	labelStyle      acell.Style
 }
 
 // NewGauge создаёт шкалу заданной ширины (минимум 4).
@@ -774,8 +773,8 @@ func NewGauge(size int) *Gauge {
 	}
 	return &Gauge{
 		size:    size,
-		cellOn:  cell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBlue)},
-		cellOff: cell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBrightBlack)},
+		cellOn:  acell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBlue)},
+		cellOff: acell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBrightBlack)},
 	}
 }
 
@@ -802,7 +801,7 @@ func (p *Gauge) Height() int {
 }
 
 // Render рисует шкалу в буфер.
-func (p *Gauge) Render(cells [][]cell.Cell) {
+func (p *Gauge) Render(cells [][]acell.Cell) {
 	var i int
 	for ; i < int(math.Round(p.value*float64(p.size))); i++ {
 		cells[0][i] = p.cellOn
@@ -825,18 +824,18 @@ func (p *Gauge) Render(cells [][]cell.Cell) {
 		if x < 0 || x >= p.size {
 			continue
 		}
-		cells[0][x] = cell.Cell{Char: r, Style: p.labelStyle}
+		cells[0][x] = acell.Cell{Char: r, Style: p.labelStyle}
 	}
 }
 
 // WithOnCell задаёт ячейку заполненной части.
-func (p *Gauge) WithOnCell(c cell.Cell) *Gauge {
+func (p *Gauge) WithOnCell(c acell.Cell) *Gauge {
 	p.cellOn = c
 	return p
 }
 
 // WithOffCell задаёт ячейку пустой части.
-func (p *Gauge) WithOffCell(c cell.Cell) *Gauge {
+func (p *Gauge) WithOffCell(c acell.Cell) *Gauge {
 	p.cellOff = c
 	return p
 }

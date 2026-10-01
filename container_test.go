@@ -3,7 +3,7 @@ package tui
 import (
 	"testing"
 
-	"github.com/romanSPB15/tui-compose/v4/cell"
+	"github.com/romanSPB15/acell"
 )
 
 // stubWidget — минимальный Widget для тестов контейнеров.
@@ -11,9 +11,9 @@ type stubWidget struct {
 	w, h int
 }
 
-func (s *stubWidget) Render([][]cell.Cell) {}
-func (s *stubWidget) Width() int           { return s.w }
-func (s *stubWidget) Height() int          { return s.h }
+func (s *stubWidget) Render([][]acell.Cell) {}
+func (s *stubWidget) Width() int            { return s.w }
+func (s *stubWidget) Height() int           { return s.h }
 
 func TestVBoxLayout(t *testing.T) {
 	tt := []struct {
