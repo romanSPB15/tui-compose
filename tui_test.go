@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"strconv"
@@ -225,7 +226,7 @@ func TestRedraw(t *testing.T) {
 	}
 
 	for i, tv := range tt {
-		fakeTerm := &fakeRawTerminal{width: width, height: height}
+		fakeTerm := &fakeRawTerminal{width: width, height: height, out: &bytes.Buffer{}}
 		wnd := NewWindow(WithTerminal(acell.NewWithTerm(fakeTerm))).(*window)
 		wnd.capture = true
 		wnd.width = width
@@ -237,7 +238,7 @@ func TestRedraw(t *testing.T) {
 		wnd.Redraw()
 
 		var buf2 [][]acell.Cell
-		err := json.NewDecoder(&fakeTerm.out).Decode(&buf2)
+		err := json.NewDecoder(fakeTerm.out.(*bytes.Buffer)).Decode(&buf2)
 		if err != nil && err != io.EOF {
 			t.Fatalf("#%d: decode error: %v", i, err)
 		}

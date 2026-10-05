@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/romanSPB15/acell"
+	"github.com/romanSPB15/tcimages/compose"
 	"github.com/romanSPB15/tui-compose/v4"
 )
 
@@ -32,7 +34,7 @@ func init() {
 	}
 }
 
-func buildWorldBraille(wCells, hCells int, style tui.Style) tui.Image {
+func buildWorldBraille(wCells, hCells int, style tui.Style) compose.Image {
 	pixW := wCells * 2
 	pixH := hCells * 4
 	if pixW <= 0 || pixH <= 0 {
@@ -64,8 +66,10 @@ func buildWorldBraille(wCells, hCells int, style tui.Style) tui.Image {
 		}
 	}
 
-	var iw tui.Image
-	iw = iw.LoadBraille(data, style)
+	var iw compose.Image
+	iw = iw.LoadBraille(data, acell.Style{
+		Fg: acell.FgGreen,
+	})
 	return iw
 }
 

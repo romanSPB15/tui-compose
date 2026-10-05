@@ -20,3 +20,8 @@ type MouseHoverEvent struct {
 type WindowEvent struct {
 	Window Window
 }
+
+type MeasureEvent struct {
+	MaxWidth  int
+	MaxHeight int
+}

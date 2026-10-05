@@ -5,6 +5,7 @@ package tui
 import (
 	"fmt"
 	"math"
+	"strings"
 	"sync"
 	"time"
 	"unicode/utf8"
@@ -31,27 +32,60 @@ func (d *DisableState) IsDisabled() bool {
 
 // Label — текстовая метка.
 type Label struct {
-	style acell.Style
-	Text  string
-	len   int
+	style      acell.Style
+	Text       string
+	lines      []string
+	intrinsicW int
+	intrinsicH int
+	fixedW     int
+	width      int
+	height     int
 }
 
-// Render рисует текст в буфер.
-func (l *Label) Render(buf [][]acell.Cell) {
-	runes := []rune(l.Text)
-	for i := range utf8.RuneCountInString(l.Text) {
-		buf[0][i] = acell.Cell{Char: runes[i], Style: l.style}
+func splitLabelLines(s string) []string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	return strings.Split(s, "\n")
+}
+
+func maxLineWidth(lines []string) int {
+	w := 0
+	for _, l := range lines {
+		if n := utf8.RuneCountInString(l); n > w {
+			w = n
+		}
 	}
+	return w
 }
 
 // NewStaticLabel создаёт метку с шириной по тексту.
 func NewStaticLabel(txt string) *Label {
-	return &Label{Text: txt, len: utf8.RuneCountInString(txt)}
+	lines := splitLabelLines(txt)
+	if len(lines) == 0 {
+		lines = []string{""}
+	}
+	w := maxLineWidth(lines)
+	return &Label{
+		Text:       txt,
+		lines:      lines,
+		intrinsicW: w,
+		intrinsicH: len(lines),
+		width:      w,
+		height:     len(lines),
+	}
 }
 
 // NewDynamicLabel создаёт метку с зарезервированной шириной len.
 func NewDynamicLabel(txt string, len int) *Label {
-	return &Label{Text: txt, len: len}
+	return NewStaticLabel(txt).WithFixedWidth(len)
+}
+
+// WithFixedWidth фиксирует ширину метки, игнорируя длину текста.
+func (l *Label) WithFixedWidth(w int) *Label {
+	l.fixedW = w
+	l.intrinsicW = w
+	l.width = w
+	return l
 }
 
 // WithStyle применяет стиль.
@@ -74,23 +108,78 @@ func (lbl *Label) ColorizeForegroundRGB(clr ColorRGB) *Label {
 
 // Width возвращает ширину метки.
 func (lbl *Label) Width() int {
-	return lbl.len
+	return lbl.width
 }
 
 // Height возвращает высоту метки.
 func (l *Label) Height() int {
-	return 1
+	return l.height
 }
 
 // SetText устанавливает текст.
 func (l *Label) SetText(new string) {
 	l.Text = new
+	l.lines = splitLabelLines(new)
+	if len(l.lines) == 0 {
+		l.lines = []string{""}
+	}
+	if l.fixedW > 0 {
+		l.intrinsicW = l.fixedW
+	} else {
+		l.intrinsicW = maxLineWidth(l.lines)
+	}
+	l.intrinsicH = len(l.lines)
+	l.width = l.intrinsicW
+	l.height = l.intrinsicH
 }
 
 // WithText устанавливает текст и возвращает метку.
 func (l *Label) WithText(new string) *Label {
-	l.Text = new
+	l.SetText(new)
 	return l
+}
+
+// Render рисует текст в буфер.
+func (l *Label) Render(buf [][]acell.Cell) {
+	if len(buf) == 0 || len(buf[0]) == 0 {
+		return
+	}
+	bufW := len(buf[0])
+	for y := 0; y < len(buf) && y < len(l.lines); y++ {
+		line := []rune(l.lines[y])
+		n := len(line)
+		if n > l.width {
+			n = l.width
+		}
+		if n > bufW {
+			n = bufW
+		}
+		for i := 0; i < n; i++ {
+			buf[y][i] = acell.Cell{Char: line[i], Style: l.style}
+		}
+	}
+}
+
+func (l *Label) Send(ev Event) {
+	switch e := ev.(type) {
+	case *MeasureEvent:
+		w := l.intrinsicW
+		if w > e.MaxWidth {
+			w = e.MaxWidth
+		}
+		if w < 0 {
+			w = 0
+		}
+		h := l.intrinsicH
+		if h > e.MaxHeight {
+			h = e.MaxHeight
+		}
+		if h < 0 {
+			h = 0
+		}
+		l.width = w
+		l.height = h
+	}
 }
 
 // Button — виджет кнопки.
@@ -102,22 +191,36 @@ type Button struct {
 	focused               bool
 	hovered               bool
 	paddingH, paddingV    int
+	width, height         int
 	DisableState
 	wnd Window
 }
 
 // NewButton создаёт кнопку с текстом и обработчиком нажатия.
 func NewButton(text string, h func()) *Button {
-	whiteBg := acell.Style{Fg: "30", Bg: "47"}
-	return &Button{
+	blueBg := acell.Style{
+		Bg: acell.Bg16Blue,
+	}
+	whiteBg := acell.Style{
+		Bg: acell.Bg16White,
+		Fg: acell.FgLightBlue,
+	}
+	btn := &Button{
 		text:      text,
 		OnClicked: h,
-		style:     whiteBg,
+		style:     blueBg,
 		styleF:    whiteBg,
 		styleH:    whiteBg,
-		styleD:    acell.Style{Fg: "90"},
+		styleD:    acell.Style{Fg: acell.Fg16Grey},
 		paddingH:  2,
 	}
+	btn.recomputeSize()
+	return btn
+}
+
+func (btn *Button) recomputeSize() {
+	btn.width = utf8.RuneCountInString(btn.text) + 2*btn.paddingH
+	btn.height = 1 + 2*btn.paddingV
 }
 
 // Render рисует кнопку в буфер.
@@ -148,18 +251,22 @@ func (btn *Button) Render(buf [][]acell.Cell) {
 	textY := (h - 1) / 2
 
 	for i, r := range textRunes {
-		buf[textY][textStartX+i] = acell.Cell{Char: r, Style: s}
+		x := textStartX + i
+		if x < 0 || x >= w {
+			continue
+		}
+		buf[textY][x] = acell.Cell{Char: r, Style: s}
 	}
 }
 
 // Width возвращает ширину кнопки.
 func (btn *Button) Width() int {
-	return utf8.RuneCountInString(btn.text) + 2*btn.paddingH
+	return btn.width
 }
 
 // Height возвращает высоту кнопки.
 func (btn *Button) Height() int {
-	return 1 + 2*btn.paddingV
+	return btn.height
 }
 
 // GetText возвращает текст кнопки.
@@ -171,6 +278,7 @@ func (btn *Button) GetText() string {
 func (btn *Button) WithPaddings(h, v int) *Button {
 	btn.paddingH = h
 	btn.paddingV = v
+	btn.recomputeSize()
 	return btn
 }
 
@@ -201,6 +309,7 @@ func (btn *Button) WithDisabledStyle(s Style) *Button {
 // WithText устанавливает текст кнопки.
 func (btn *Button) WithText(text string) *Button {
 	btn.text = text
+	btn.recomputeSize()
 	return btn
 }
 
@@ -213,6 +322,23 @@ func (btn *Button) WithHandler(h func()) *Button {
 // Send обрабатывает событие.
 func (btn *Button) Send(ev Event) {
 	switch ev := ev.(type) {
+	case *MeasureEvent:
+		w := utf8.RuneCountInString(btn.text) + 2*btn.paddingH
+		h := 1 + 2*btn.paddingV
+		if w > ev.MaxWidth {
+			w = ev.MaxWidth
+		}
+		if h > ev.MaxHeight {
+			h = ev.MaxHeight
+		}
+		if w < 0 {
+			w = 0
+		}
+		if h < 0 {
+			h = 0
+		}
+		btn.width = w
+		btn.height = h
 	case *WindowEvent:
 		btn.wnd = ev.Window
 	case *CheckFocusableEvent:
@@ -247,6 +373,7 @@ type Check struct {
 	focused      bool
 	hovered      bool
 	OnChanged    func(bool)
+	width        int
 
 	style, styleF, styleC, styleH acell.Style
 	wnd                           Window
@@ -256,6 +383,7 @@ type Check struct {
 func NewCheck(text string) *Check {
 	return &Check{
 		text:   text,
+		width:  utf8.RuneCountInString(text) + 4,
 		styleF: acell.Style{Fg: "30", Bg: "47"},
 		styleC: acell.Style{Fg: "32"},
 		styleH: acell.Style{Fg: "30", Bg: "47"},
@@ -286,14 +414,22 @@ func (c *Check) Render(buf [][]acell.Cell) {
 	buf[0][3] = acell.Cell{Char: ' ', Style: s}
 
 	runes := []rune(c.text)
-	for i := range utf8.RuneCountInString(c.text) {
+	n := len(runes)
+	max := c.width - 4
+	if n > max {
+		n = max
+	}
+	if n < 0 {
+		n = 0
+	}
+	for i := 0; i < n; i++ {
 		buf[0][i+4] = acell.Cell{Char: runes[i], Style: s}
 	}
 }
 
 // Width возвращает ширину чекбокса.
 func (c *Check) Width() int {
-	return utf8.RuneCountInString(c.text) + 4
+	return c.width
 }
 
 // Height возвращает высоту чекбокса.
@@ -344,6 +480,7 @@ func (c *Check) WithCheckedStyle(s Style) *Check {
 // WithText устанавливает текст чекбокса.
 func (c *Check) WithText(text string) *Check {
 	c.text = text
+	c.width = utf8.RuneCountInString(text) + 4
 	return c
 }
 
@@ -356,6 +493,15 @@ func (c *Check) WithOnChanged(h func(bool)) *Check {
 // Send обрабатывает событие.
 func (c *Check) Send(ev Event) {
 	switch ev := ev.(type) {
+	case *MeasureEvent:
+		w := utf8.RuneCountInString(c.text) + 4
+		if w > ev.MaxWidth {
+			w = ev.MaxWidth
+		}
+		if w < 4 {
+			w = 4
+		}
+		c.width = w
 	case *WindowEvent:
 		c.wnd = ev.Window
 	case *CheckFocusableEvent:
@@ -396,6 +542,7 @@ type InputField struct {
 	Text      string
 	CursorPos int
 	width     int
+	intrinsic int
 
 	focused   bool
 	hovered   bool
@@ -421,6 +568,7 @@ type InputField struct {
 func NewInputField(width int) *InputField {
 	return &InputField{
 		width:            width,
+		intrinsic:        width,
 		style:            acell.Style{Bg: "44"},
 		cursorStyle:      acell.Style{Bg: "47", Fg: "34"},
 		placeholderStyle: acell.Style{Fg: "90"},
@@ -588,6 +736,14 @@ func (f *InputField) Height() int {
 // Send обрабатывает событие.
 func (f *InputField) Send(ev Event) {
 	switch ev := ev.(type) {
+	case *MeasureEvent:
+		f.width = f.intrinsic
+		if f.width > ev.MaxWidth {
+			f.width = ev.MaxWidth
+		}
+		if f.width < 0 {
+			f.width = 0
+		}
 	case *WindowEvent:
 		f.wnd = ev.Window
 	case *CheckFocusableEvent:
@@ -742,9 +898,11 @@ func (f *InputField) blinkLoop() {
 
 func init() {
 	var _ Widget = (*Label)(nil)
+	var _ EventHandler = (*Label)(nil)
 	var _ EventHandler = (*Button)(nil)
 	var _ EventHandler = (*Check)(nil)
 	var _ EventHandler = (*InputField)(nil)
+	var _ EventHandler = (*Gauge)(nil)
 }
 
 // NewHyperlink создаёт кликабельный текст, открывающий URL.
@@ -758,23 +916,53 @@ func NewHyperlink(text, url string) *Button {
 //
 // Значение задаётся в [0, 1] через WithValue. Поверх шкалы выводится
 // подпись: по умолчанию процент, либо результат LabelFunc.
+// Gauge — горизонтальная шкала прогресса.
 type Gauge struct {
 	value           float64
 	size            int
+	intrinsic       int
+	flexible        bool
 	cellOn, cellOff acell.Cell
 	LabelFunc       func(float64) string
 	labelStyle      acell.Style
 }
 
-// NewGauge создаёт шкалу заданной ширины (минимум 4).
-func NewGauge(size int) *Gauge {
-	if size < 4 {
-		size = 4
+// NewGauge создаёт шкалу. Без аргумента — гибкая (растягивается на доступную ширину).
+// С аргументом — фиксированной ширины (минимум 4).
+func NewGauge(size ...int) *Gauge {
+	if len(size) == 0 {
+		return &Gauge{
+			flexible: true,
+			cellOn:   acell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBlue)},
+			cellOff:  acell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBrightBlack)},
+		}
 	}
+	s := max(size[0], 4)
 	return &Gauge{
-		size:    size,
-		cellOn:  acell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBlue)},
-		cellOff: acell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBrightBlack)},
+		size:      s,
+		intrinsic: s,
+		cellOn:    acell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBlue)},
+		cellOff:   acell.Cell{Char: '∎', Style: ConvertToCellStyle(FrBrightBlack)},
+	}
+}
+
+func (p *Gauge) Send(ev Event) {
+	switch e := ev.(type) {
+	case *MeasureEvent:
+		if p.flexible {
+			p.size = e.MaxWidth
+			if p.size < 4 {
+				p.size = 4
+			}
+			return
+		}
+		p.size = p.intrinsic
+		if p.size > e.MaxWidth {
+			p.size = e.MaxWidth
+		}
+		if p.size < 4 {
+			p.size = 4
+		}
 	}
 }
 

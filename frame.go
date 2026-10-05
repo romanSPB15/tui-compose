@@ -31,6 +31,8 @@ type border struct {
 	h, v           rune
 	ph, pv         int
 
+	width, height int
+
 	borderStyle Style
 	titles      []Title
 
@@ -116,6 +118,9 @@ func (b *Frame) WithBorderStyle(s Style) *Frame {
 }
 
 func (b *border) Width() int {
+	if b.width > 0 {
+		return b.width
+	}
 	if b.content == nil {
 		return b.ph*2 + 2
 	}
@@ -123,6 +128,9 @@ func (b *border) Width() int {
 }
 
 func (b *border) Height() int {
+	if b.height > 0 {
+		return b.height
+	}
 	if b.content == nil {
 		return b.pv*2 + 2
 	}
@@ -140,16 +148,17 @@ func (b *Frame) Height() int {
 func (b *border) Render(cells [][]acell.Cell) {
 	w := b.Width()
 	h := b.Height()
+	if w <= 0 || h <= 0 {
+		return
+	}
 
 	borderStyle := ConvertToCellStyle(b.borderStyle)
 
-	// углы
-	cells[0][0] = acell.Cell{b.tl, borderStyle}     // верхний левый
-	cells[0][w-1] = acell.Cell{b.tr, borderStyle}   // верхний правый
-	cells[h-1][0] = acell.Cell{b.bl, borderStyle}   // нижний левый
-	cells[h-1][w-1] = acell.Cell{b.br, borderStyle} // нижний правый
+	cells[0][0] = acell.Cell{b.tl, borderStyle}
+	cells[0][w-1] = acell.Cell{b.tr, borderStyle}
+	cells[h-1][0] = acell.Cell{b.bl, borderStyle}
+	cells[h-1][w-1] = acell.Cell{b.br, borderStyle}
 
-	// линии
 	for i := 1; i < w-1; i++ {
 		cells[0][i] = acell.Cell{b.h, borderStyle}
 		cells[h-1][i] = acell.Cell{b.h, borderStyle}
@@ -162,8 +171,6 @@ func (b *border) Render(cells [][]acell.Cell) {
 
 	for _, t := range b.titles {
 		titleStyle := ConvertToCellStyle(t.Style)
-		// currentWindow.LogInfo("%s:%v", t.Text, titleStyle)
-
 		titleRunes := []rune(t.Text)
 
 		maxTitleW := w - 4
@@ -176,6 +183,9 @@ func (b *border) Render(cells [][]acell.Cell) {
 
 		drawTitle := func(x, y int) {
 			for i, r := range titleRunes {
+				if x+i < 0 || x+i >= w {
+					continue
+				}
 				cells[y][x+i] = acell.Cell{r, titleStyle}
 			}
 		}
@@ -228,3 +238,26 @@ func (b *Frame) WithBackground(s Style) *Frame {
 	b.border.bg = acell.Cell{Char: ' ', Style: ConvertToCellStyle(s)}
 	return b
 }
+
+func (b *Frame) Send(ev Event) {
+	switch e := ev.(type) {
+	case *MeasureEvent:
+		b.border.width = e.MaxWidth
+		b.border.height = e.MaxHeight
+
+		innerW := e.MaxWidth - 2 - 2*b.border.ph
+		innerH := e.MaxHeight - 2 - 2*b.border.pv
+		if innerW < 0 {
+			innerW = 0
+		}
+		if innerH < 0 {
+			innerH = 0
+		}
+		if evh, ok := b.border.content.(EventHandler); ok {
+			evh.Send(&MeasureEvent{MaxWidth: innerW, MaxHeight: innerH})
+		}
+	}
+}
+
+var _ EventHandler = (*Frame)(nil)
+var _ Container = (*Frame)(nil)

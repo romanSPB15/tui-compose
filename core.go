@@ -130,14 +130,37 @@ func (wnd *window) Index() {
 	if wnd.content == nil {
 		return
 	}
+
+	wnd.measure(wnd.content, wnd.Width(), wnd.Height())
+
+	var focusedWidget EventHandler
+	if wnd.focusIndex >= 0 && wnd.focusIndex < len(wnd.focusableWidgets) {
+		focusedWidget = wnd.focusableWidgets[wnd.focusIndex].EventHandler
+	}
+
 	wnd.focusableWidgets = nil
 	wnd.wgt = nil
+	wnd.hovered = make(map[EventHandler]struct{})
+	wnd.focusIndex = -1
 
 	wnd.indexWgt(wnd.content, Pos{0, 0})
 
-	wnd.maxWidgetSize.Col, wnd.maxWidgetSize.Line = wnd.calcMaxWidgetSize(wnd.content, 0, 0)
+	if focusedWidget != nil {
+		for i, w := range wnd.focusableWidgets {
+			if w.EventHandler == focusedWidget {
+				wnd.focusIndex = i
+				break
+			}
+		}
+	}
 
 	wnd.applyStyles(wnd.content)
+}
+
+func (wnd *window) measure(wgt Widget, maxW, maxH int) {
+	if evh, ok := wgt.(EventHandler); ok {
+		evh.Send(&MeasureEvent{MaxWidth: maxW, MaxHeight: maxH})
+	}
 }
 
 func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]acell.Cell) {
@@ -198,38 +221,42 @@ func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]acell.Cell) {
 		if len(subBuf[y]) < w {
 			subBuf[y] = append(subBuf[y], make([]acell.Cell, w-len(subBuf[y]))...)
 		}
-		for x := range w {
+		for x := 0; x < w; x++ {
 			subBuf[y][x] = wnd.initCell
 		}
 	}
 
 	wgt.Render(subBuf)
 
+	// Копируем с обрезкой по всем четырём сторонам.
 	for y := 0; y < h; y++ {
-		destY := y + rect[0].Line
-		if destY < 0 || destY >= len(buf) {
+		dstY := rect[0].Line + y
+		if dstY < 0 || dstY >= len(buf) {
 			continue
 		}
-		if destY >= rect[1].Line {
+		if dstY >= rect[1].Line {
 			break
 		}
 		srcRow := subBuf[y]
-		dstRow := buf[destY]
+		dstRow := buf[dstY]
 
+		// горизонтальная обрезка
+		xStart := 0
+		xEnd := w
 		if rect[0].Col < 0 {
+			xStart = -rect[0].Col
+		}
+		if rect[0].Col+xEnd > rect[1].Col {
+			xEnd = rect[1].Col - rect[0].Col
+		}
+		if rect[0].Col+xEnd > len(dstRow) {
+			xEnd = len(dstRow) - rect[0].Col
+		}
+		if xStart >= xEnd {
 			continue
 		}
-
-		copyLen := w
-		if rect[0].Col+copyLen > rect[1].Col {
-			copyLen = rect[1].Col - rect[0].Col
-		}
-		if rect[0].Col+copyLen > len(dstRow) {
-			copyLen = len(dstRow) - rect[0].Col
-		}
-		if copyLen > 0 {
-			copy(dstRow[rect[0].Col:rect[0].Col+copyLen], srcRow[:copyLen])
-		}
+		dstX := rect[0].Col + xStart
+		copy(dstRow[dstX:dstX+xEnd-xStart], srcRow[xStart:xEnd])
 	}
 }
 
@@ -284,7 +311,7 @@ func (wnd *window) Redraw() {
 	wnd.render()
 
 	if wnd.capture {
-		json.NewEncoder(wnd.t).Encode(wnd.t.Buf)
+		json.NewEncoder(os.Stdout).Encode(wnd.t.Buf)
 		return
 	}
 
@@ -334,24 +361,14 @@ func (wnd *window) Run() {
 	}()
 
 	if wnd.capture {
-		w := wnd.width
-		h := wnd.height
-		if w == 0 {
-			w = getEnvInt("TUI_WIDTH", 80)
-		}
-		if h == 0 {
-			h = getEnvInt("TUI_HEIGHT", 24)
-		}
+		w, h := wnd.t.Size()
 		wnd.width, wnd.height = w, h
-		wnd.t = acell.NewWithTerm(&fakeRawTerminal{width: w, height: h})
 		wnd.t.Buf = acell.NewBuf(w, h)
 		wnd.runned = true
 		wnd.Index()
 		wnd.Redraw()
 		return
 	}
-
-	wnd.t = acell.New(acell.TTY())
 
 	w, h := wnd.t.Size()
 	if wnd.width > 0 {
@@ -366,6 +383,7 @@ func (wnd *window) Run() {
 	go wnd.startInputCatcher()
 
 	wnd.runned = true
+	wnd.Index()
 	wnd.Redraw()
 	wnd.runWorker()
 	wnd.runned = false
@@ -403,7 +421,13 @@ func NewWindow(opts ...Option) Window {
 		opt(&o)
 	}
 
-	if o.Terminal == nil {
+	if capture {
+		o.Terminal = acell.NewWithTerm(&fakeRawTerminal{
+			width:  getEnvInt("TUI_WIDTH", 80),
+			height: getEnvInt("TUI_HEIGHT", 24),
+			out:    os.Stdout,
+		})
+	} else {
 		o.Terminal = acell.New(acell.TTY())
 	}
 
@@ -417,7 +441,10 @@ func NewWindow(opts ...Option) Window {
 		initCell:    acell.Cell{Char: ' '},
 		lastReport:  time.Now(),
 		hovered:     make(map[EventHandler]struct{}),
+		capture:     capture,
 	}
+
+	wnd.worker.Store(-1)
 
 	if DEBUG {
 		f, err := os.Create(fmt.Sprintf("debug_log_%d", time.Now().UnixMilli()))
@@ -430,7 +457,11 @@ func NewWindow(opts ...Option) Window {
 }
 
 func (wnd *window) isWorker() bool {
-	return wnd.worker.Load() == getGorID()
+	w := wnd.worker.Load()
+	if w == -1 {
+		return true
+	}
+	return w == getGorID()
 }
 
 func (wnd *window) RegisterKeyHandler(keh KeyboardEventHandler) {
@@ -576,9 +607,9 @@ func (wnd *window) handleMouseEvent(ev *acell.MouseEvent) {
 		wnd.updateHover(under, ev.Pos)
 	}
 
-	for _, cl := range under {
-		cl := cl
-		wnd.doWithMessage(func() {
+	if len(under) > 0 {
+		for _, cl := range under {
+			cl := cl
 			cl.Send(&acell.MouseEvent{
 				Action: ev.Action,
 				Button: ev.Button,
@@ -590,12 +621,11 @@ func (wnd *window) handleMouseEvent(ev *acell.MouseEvent) {
 				Alt:   ev.Alt,
 				Ctrl:  ev.Ctrl,
 			})
-		}, "mouse event")
+		}
 	}
 
 	for _, h := range wnd.mouseHandlers {
-		h := h
-		wnd.doWithMessage(func() { h(ev) }, "mouse handler")
+		h(ev)
 	}
 }
 
@@ -610,12 +640,10 @@ func (wnd *window) updateHover(under []eventHandlerWithPos, pos acell.Point) {
 			continue
 		}
 		p := wnd.posOf(h)
-		ev := &MouseHoverEvent{
+		h.Send(&MouseHoverEvent{
 			Entered: false,
 			Pos:     acell.Point{X: pos.X - p.Col, Y: pos.Y - p.Line},
-		}
-		h := h
-		wnd.doWithMessage(func() { h.Send(ev) }, "mouse leave")
+		})
 	}
 
 	for _, cl := range under {
@@ -623,11 +651,10 @@ func (wnd *window) updateHover(under []eventHandlerWithPos, pos acell.Point) {
 		if _, was := wnd.hovered[h]; was {
 			continue
 		}
-		ev := &MouseHoverEvent{
+		h.Send(&MouseHoverEvent{
 			Entered: true,
 			Pos:     acell.Point{X: pos.X - cl.p.Col, Y: pos.Y - cl.p.Line},
-		}
-		wnd.doWithMessage(func() { h.Send(ev) }, "mouse enter")
+		})
 	}
 
 	wnd.hovered = now
@@ -702,6 +729,7 @@ func (wnd *window) startInputCatcher() {
 					for _, h := range wnd.resizeHandlers {
 						h(e.Width, e.Height)
 					}
+					wnd.Index()
 					wnd.Redraw()
 				})
 			}
@@ -715,7 +743,6 @@ func (wnd *window) SetContent(w Widget) {
 	}
 	wnd.content = w
 	wnd.Index()
-	wnd.ClearFocus()
 }
 
 func (wnd *window) SetTitle(title string) {
@@ -769,15 +796,19 @@ func (wnd *window) SetStyleFunc(fn func(Widget)) {
 type fakeRawTerminal struct {
 	width, height int
 	events        chan any
-	out           bytes.Buffer
+	out           io.Writer // ← было bytes.Buffer
 	mu            sync.Mutex
 }
 
 func (f *fakeRawTerminal) Write(p []byte) (int, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.out == nil {
+		return len(p), nil
+	}
 	return f.out.Write(p)
 }
+
 func (f *fakeRawTerminal) Read(p []byte) (int, error) { return 0, io.EOF }
 func (f *fakeRawTerminal) MakeRaw() error             { return nil }
 func (f *fakeRawTerminal) Restore() error             { return nil }
@@ -786,11 +817,13 @@ func (f *fakeRawTerminal) Events() <-chan any         { return f.events }
 func (f *fakeRawTerminal) Close() error               { return nil }
 func (f *fakeRawTerminal) Size() (int, int)           { return f.width, f.height }
 func (f *fakeRawTerminal) StartInput()                {}
-func (f *fakeRawTerminal) Info() terminfo.Info        { return terminfo.Info{} }
+func (f *fakeRawTerminal) Info() terminfo.Info        { return terminfo.All }
 
-// Reset очищает буфер между итерациями теста.
+// Reset теперь no-op, если out — не bytes.Buffer.
 func (f *fakeRawTerminal) Reset() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.out.Reset()
+	if b, ok := f.out.(*bytes.Buffer); ok {
+		b.Reset()
+	}
 }

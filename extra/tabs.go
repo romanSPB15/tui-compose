@@ -15,9 +15,10 @@ const (
 )
 
 type tabsTopPanel struct {
-	t       *Tabs
-	focused bool
-	wnd     tui.Window
+	t            *Tabs
+	focused      bool
+	hoveredIndex int
+	wnd          tui.Window
 }
 
 func (tp *tabsTopPanel) Send(ev tui.Event) {
@@ -28,6 +29,15 @@ func (tp *tabsTopPanel) Send(ev tui.Event) {
 		e.Result = true
 	case *tui.FocusEvent:
 		tp.focused = e.Focused
+	case *tui.MouseHoverEvent:
+		if !e.Entered {
+			if tp.hoveredIndex != -1 {
+				tp.hoveredIndex = -1
+				if tp.wnd != nil {
+					tp.wnd.Redraw()
+				}
+			}
+		}
 	case *acell.KeyboardEvent:
 		switch e.Key {
 		case acell.KeyArrowRight, acell.KeyEnter, acell.KeyPgDown:
@@ -64,29 +74,49 @@ func (tp *tabsTopPanel) Send(ev tui.Event) {
 			}
 		}
 	case *acell.MouseEvent:
-		if e.Action == acell.MousePress {
-			w := 0
-			for i, v := range tp.t.tabs {
-				if e.Pos.X >= w && e.Pos.X < w+len(v.Title) {
-					tp.t.current = i
-					if tp.wnd != nil {
-						tp.wnd.Index()
-						tp.wnd.Redraw()
-					}
-					break
+		switch e.Action {
+		case acell.MouseMove:
+			idx := tp.tabAt(e.Pos.X)
+			if idx != tp.hoveredIndex {
+				tp.hoveredIndex = idx
+				if tp.wnd != nil {
+					tp.wnd.Redraw()
 				}
-				w += len(v.Title) + 1
+			}
+		case acell.MousePress:
+			idx := tp.tabAt(e.Pos.X)
+			if idx >= 0 {
+				tp.t.current = idx
+				if tp.wnd != nil {
+					tp.wnd.Index()
+					tp.wnd.Redraw()
+				}
 			}
 		}
 	}
+}
+
+func (tp *tabsTopPanel) tabAt(x int) int {
+	w := 0
+	for i, v := range tp.t.tabs {
+		titleLen := len([]rune(v.Title))
+		if x >= w && x < w+titleLen {
+			return i
+		}
+		w += titleLen + 1
+	}
+	return -1
 }
 
 func (tp *tabsTopPanel) Render(buf [][]acell.Cell) {
 	x := 0
 	for i, v := range tp.t.tabs {
 		s := tui.ConvertToCellStyle(v.TitleStyle)
-		if tp.t.current == i {
+		switch {
+		case tp.t.current == i:
 			s = tui.ConvertToCellStyle(tp.t.selected)
+		case i == tp.hoveredIndex && tp.t.hover != 0:
+			s = tui.ConvertToCellStyle(tp.t.hover)
 		}
 		runes := []rune(v.Title)
 		for j, r := range runes {
@@ -102,7 +132,7 @@ func (tp *tabsTopPanel) Render(buf [][]acell.Cell) {
 func (tp *tabsTopPanel) Width() int {
 	w := 0
 	for _, v := range tp.t.tabs {
-		w += len(v.Title) + 1
+		w += len([]rune(v.Title)) + 1
 	}
 	return w - 1
 }
@@ -130,6 +160,7 @@ type Tabs struct {
 	current  int
 	topPanel tabsTopPanel
 	selected tui.Style
+	hover    tui.Style
 	tp       TabPosition
 }
 
@@ -140,9 +171,10 @@ func NewTabs(t []Tab) *Tabs {
 	tabs := &Tabs{
 		tabs:     t,
 		selected: tui.BgBrightWhite,
+		hover:    tui.BgBrightBlack,
 		tp:       TabsTop,
 	}
-	tabs.topPanel = tabsTopPanel{t: tabs}
+	tabs.topPanel = tabsTopPanel{t: tabs, hoveredIndex: -1}
 	return tabs
 }
 
@@ -180,6 +212,12 @@ func (acc *Tabs) WithSelectedStyle(s tui.Style) *Tabs {
 	return acc
 }
 
+// WithHoverStyle устанавливает стиль заголовка при наведении.
+func (acc *Tabs) WithHoverStyle(s tui.Style) *Tabs {
+	acc.hover = s
+	return acc
+}
+
 // WithCurrent выбирает активную вкладку по индексу.
 // Значения вне допустимого диапазона игнорируются.
 // Добавлено в TUI v3.3.0.
@@ -196,3 +234,5 @@ func (acc *Tabs) WithTabPosition(tp TabPosition) *Tabs {
 	acc.tp = tp
 	return acc
 }
+
+var _ tui.EventHandler = (*tabsTopPanel)(nil)

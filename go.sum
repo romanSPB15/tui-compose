@@ -4,6 +4,12 @@ github.com/romanSPB15/acell v1.1.2-0.20260926115135-159464f3469d h1:HesDDjLrDEju
 github.com/romanSPB15/acell v1.1.2-0.20260926115135-159464f3469d/go.mod h1:UlRdrDbjciLTAlzaXWHXEAIA/FVIcRqOff1E+iF/eZ8=
 github.com/romanSPB15/acell v1.2.1 h1:R5jaAThihPOIxooOrQ+etMkZXpwa6j3TiI1aDRfLPj8=
 github.com/romanSPB15/acell v1.2.1/go.mod h1:+QJQWGwijHSLpl2V9lWVvee7MZdU1/y2fkEKO73hVts=
+github.com/romanSPB15/acell v1.2.2-0.20261001170120-a660d5cda72b h1:eHQ0RBFI6WkPYlZrgj3zCnPCa/fK6ZYQBfJ6aPAPzmg=
+github.com/romanSPB15/acell v1.2.2-0.20261001170120-a660d5cda72b/go.mod h1:+QJQWGwijHSLpl2V9lWVvee7MZdU1/y2fkEKO73hVts=
+github.com/romanSPB15/acell v1.2.2-0.20261001170353-12e6f21aa786 h1:NfUmHBGVw/y7eCsoe8RsCZqMToqsoh1nmNKbx3p4If0=
+github.com/romanSPB15/acell v1.2.2-0.20261001170353-12e6f21aa786/go.mod h1:+QJQWGwijHSLpl2V9lWVvee7MZdU1/y2fkEKO73hVts=
+github.com/romanSPB15/tcimages v0.0.0-20261004113557-1bb3bef6bef7 h1:bkXWr6QZsDWLe+2Anb7lg+DtJkDqZBDcK6BFy84epMs=
+github.com/romanSPB15/tcimages v0.0.0-20261004113557-1bb3bef6bef7/go.mod h1:bFaeN73lsBdSsp35amZCU/VfSsqWVk/tCdjFc7D1prQ=
 golang.org/x/sys v0.46.0 h1:noSf2Fq6F8DBgS+LysIkx7rIExoNHJsxOAtPp4rthXw=
 golang.org/x/sys v0.46.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=
 golang.org/x/sys v0.48.0 h1:bbX/i/6MgT9BVLM9RT1thmxL04yeTAhbEz4SyadbXoo=

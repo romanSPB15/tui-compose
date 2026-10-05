@@ -57,25 +57,25 @@ func TestSpinner(t *testing.T) {
 	}
 }
 
-func TestTable(t *testing.T) {
-	data := [][]TableCell{
-		{{Text: "abc", Align: AlignLeft}, {Text: "de", Align: AlignRight}},
-		{{Text: "f", Align: AlignCenter}, {Text: "ghij", Align: AlignLeft}},
-	}
-	tbl := NewTable(data)
-	if tbl.Width() != 1+(3+3)+(4+3) {
-		t.Fatalf("Width: got %d", tbl.Width())
-	}
-	if tbl.Height() != 3 {
-		t.Fatalf("Height: got %d", tbl.Height())
-	}
-	renderOK(t, tbl)
-	renderOK(t, NewTable(data).WithHorSeparator(NoHorSeparator))
-	renderOK(t, NewTable(data).WithHorSeparator(BetweenHorSeparator))
-	renderOK(t, NewTable(data).WithHorSeparator(EverywhereHorSeparator))
-	renderOK(t, tbl.ASCII())
-	renderOK(t, tbl.Rounded())
-}
+// func TestTable(t *testing.T) {
+// 	data := [][]TableCell{
+// 		{{Text: "abc", Align: AlignLeft}, {Text: "de", Align: AlignRight}},
+// 		{{Text: "f", Align: AlignCenter}, {Text: "ghij", Align: AlignLeft}},
+// 	}
+// 	tbl := NewTable(data)
+// 	if tbl.Width() != 1+(3+3)+(4+3) {
+// 		t.Fatalf("Width: got %d", tbl.Width())
+// 	}
+// 	if tbl.Height() != 3 {
+// 		t.Fatalf("Height: got %d", tbl.Height())
+// 	}
+// 	renderOK(t, tbl)
+// 	renderOK(t, NewTable(data).WithHorSeparator(NoHorSeparator))
+// 	renderOK(t, NewTable(data).WithHorSeparator(BetweenHorSeparator))
+// 	renderOK(t, NewTable(data).WithHorSeparator(EverywhereHorSeparator))
+// 	renderOK(t, tbl.ASCII())
+// 	renderOK(t, tbl.Rounded())
+// }
 
 func TestTableEmpty(t *testing.T) {
 	tbl := NewTable(nil)

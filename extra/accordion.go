@@ -35,28 +35,26 @@ func NewAccordion(label string, content tui.Widget) *Accordion {
 		CloseRune: '▶',
 		OpenRune:  '▼',
 		text:      label,
-		opened:    true,
+		opened:    false,
 		content:   content,
 	}
-	acc.label = tui.NewButton("", func() {
-		if acc.opened {
-			acc.opened = false
-			acc.label.WithText(fmt.Sprintf("%c %s", acc.CloseRune, acc.text))
-		} else {
-			acc.opened = true
-			acc.label.WithText(fmt.Sprintf("%c %s", acc.OpenRune, acc.text))
-		}
-		if acc.wnd != nil {
-			acc.wnd.Index()
-			acc.wnd.Redraw()
-		}
-	}).WithPaddings(0, 0)
-
-	acc.label.Send(&acell.MouseEvent{Action: acell.MousePress})
-
+	acc.label = tui.NewButton(
+		fmt.Sprintf("%c %s", acc.CloseRune, acc.text),
+		func() {
+			if acc.opened {
+				acc.opened = false
+				acc.label.WithText(fmt.Sprintf("%c %s", acc.CloseRune, acc.text))
+			} else {
+				acc.opened = true
+				acc.label.WithText(fmt.Sprintf("%c %s", acc.OpenRune, acc.text))
+			}
+			if acc.wnd != nil {
+				acc.wnd.Index()
+				acc.wnd.Redraw()
+			}
+		}).WithPaddings(0, 0).WithStyle(tui.Style(0))
 	return acc
 }
-
 func (acc *Accordion) Render([][]acell.Cell) {}
 
 func (acc *Accordion) Child() []tui.Widget {

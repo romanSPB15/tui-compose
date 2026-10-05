@@ -7,10 +7,9 @@
 | [`demo` ](https://github.com/romanSPB15/tui-compose/tree/main/examples/gif)           | Код для demo0.gif                                               | `go run ./examples/gif`                   |
 | [`label`](https://github.com/romanSPB15/tui-compose/tree/main/examples/label)         | Расширенный пример использования `Label`                        | `go run ./examples/label`                 |
 | [`pages`](https://github.com/romanSPB15/tui-compose/tree/main/examples/pages)         | Пример использования `Page`                                     | `go run ./examples/pages`                 |
-| [`progress`](https://github.com/romanSPB15/tui-compose/tree/main/examples/progress)   | Пример использования `ColorProgress` и `TextProgress`           | `go run ./examples/progress`              |
 | [`react`](https://github.com/romanSPB15/tui-compose/tree/main/examples/react)         | Простой счётчик, использующий реактивность                      | `go run ./examples/react`                 |
 | [`task-list`](https://github.com/romanSPB15/tui-compose/tree/main/examples/task-list) | Простой список задач                                            | `go run ./examples/task-list`             |
-| [`dashboard`](https://github.com/romanSPB15/tui-compose/tree/main/examples/dashboard) | **Полноценный дашборд с графиком, вкладками, таблицами и т. д.**| `go run ./examples/dashboard`             |
+| [`dashboard`](https://github.com/romanSPB15/tui-compose/tree/main/examples/dashboard) | **Полноценный дашборд с графиком, вкладками и Flex**            | `go run ./examples/dashboard`             |
 | [`table`](https://github.com/romanSPB15/tui-compose/tree/main/examples/table)         | Пример использования таблиц                                     | `go run ./examples/table`                 |
 | [`spinner`](https://github.com/romanSPB15/tui-compose/tree/main/examples/spinner)     | Пример использования спиннеров                                  | `go run ./examples/spinner`               |
 | [`textview`](https://github.com/romanSPB15/tui-compose/tree/main/examples/textview)   | Пример использования TextView                                   | `go run ./examples/textview`              |
@@ -25,7 +24,6 @@
 | [`hyperlink`](https://github.com/romanSPB15/tui-compose/tree/main/examples/hyperlink) | Пример использования гиперссылок                                | `go run ./examples/hyperlink`             |
 | [`gauge`](https://github.com/romanSPB15/tui-compose/tree/main/examples/gauge)         | Пример использования Gauge                                      | `go run ./examples/gauge`                 |
 | [`slider`](https://github.com/romanSPB15/tui-compose/tree/main/examples/slider)       | Пример использования Slider                                     | `go run ./examples/slider`                |
-| [`image`](https://github.com/romanSPB15/tui-compose/tree/main/examples/image)         | Пример использования Image                                      | `go run ./examples/image`                 |
 | [`tea`](https://github.com/romanSPB15/tui-compose/tree/main/examples/tea)             | Простой счётчик, использующий ELM                               | `go run ./examples/tea`                   |
 | [`worldmap`](https://github.com/romanSPB15/tui-compose/tree/main/examples/worldmap)   | Карта мира в Braille                                            | `go run ./examples/worldmap`              |
 | [`tpick`](https://github.com/romanSPB15/tui-compose/tree/main/examples/tpick)         | Интерактивный выбор строки из stdin                             | `go run ./examples/tpick -t "title" ...`  |

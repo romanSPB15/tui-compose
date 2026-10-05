@@ -135,7 +135,10 @@ func main() {
 		}
 	}()
 
-	wnd.SetContent(tui.NewHBox(tui.NewFrame(tv).WithTitle(tui.Title{Text: "TextView", Pos: tui.TitleTopCenter, Style: tui.FrYellow}).Rounded(), tui.NewFrame(logs).WithTitle(tui.Title{Text: "TextView - Logs", Pos: tui.TitleTopCenter, Style: tui.FrBrightMagenta}).Rounded()))
+	wnd.SetContent(tui.NewHBox(tui.NewFrame(tv).
+		WithTitle(tui.Title{Text: "TextView", Pos: tui.TitleTopCenter, Style: tui.FrYellow}).Rounded(),
+		tui.NewFrame(extra.NewScrollView(logs)).
+			WithTitle(tui.Title{Text: "TextView in ScrollView", Pos: tui.TitleTopCenter, Style: tui.FrBrightMagenta}).Rounded()))
 
 	wnd.Run()
 }

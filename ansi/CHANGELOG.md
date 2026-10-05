@@ -216,26 +216,28 @@
 ### Fixed
 - Исправлена проверка горутины в `Window.RegisterClickHandler` — теперь верно.
 
-## [4.0.0-alpha] - 2026-09-XX
+## [4.0.0-alpha] - 2026-10-XX
 
 ### Added
 - **Новая архитектура рендеринга**: виджеты рисуют напрямую в `[][]acell.Cell` через `Render(buf)`, без промежуточных ANSI-строк. Убрано двойное преобразование `Cell → String → Cell`, что дало кратный прирост производительности.
 - **Универсальная система событий**: единый интерфейс `EventHandler` с методом `Send(Event)` вместо `Focusable`, `Clickable`, `ClickableAt`, `KeyReceiver`. Типы событий: `KeyEvent`, `MouseEvent`, `FocusEvent`, `CheckFocusableEvent`, `ResizeEvent`.
-- **Reflow при ресайзе**: ядро симулирует поведение терминала при изменении размера (включая reflow по ширине), синхронизируя буфер.
-- **Alt-screen**: уменьшение артефактов, сохранение содержимого.
+- **Alt-screen**: уменьшение артефактов, сохранение истории терминала.
 - **Курсор-трекинг**: `Window.cursorPos` хранит позицию курсора между кадрами, что позволяет пропускать избыточные последовательности `\033[y;xH` при смежных изменениях.
+- **Полная поддержка мыши**: клики, отпускание, движение, скролл.
 - Поддержка буфера обмена на Linux/MacOS.
 - Обрезка заголовка `Frame` — вместо паники.
 - `RegisterResizeHandler` — обработка ресайза окна.
-- Полная поддержка мыши — клики, отпускание, движение, скролл.
 - `WindowEvent` — замена `currentWindow`.
 - Mode 2026 — уменьшение мерцаний.
-- **Опции `NewWindow`**: `WithIO(in, out, err)`, `WithSize(w, h)`,
-  `WithSkipRawMode(v)`, `WithAltScreen(v)`, `Window.SetSize(w, h int)`. Позволяют подменить потоки
-  ввода-вывода (SSH-сессии, встраивание в пайпы, тесты), задать размеры
-  окна вручную и управлять режимом raw и alt-screen без глобального
-  состояния процесса.
 - `Slider` — интерактивный слайдер с поддержкой мыши.
+- **`Flex`** — контейнер с весами для распределения свободного места между детьми.
+  - `NewFlex(items...)`, `FlexItem(w, weight)`, `.Horizontal()`, `.Vertical()`, `.WithGap(n)`.
+  - Вес `0` — виджет по своему размеру (intrinsic), вес `>0` — растягивается пропорционально.
+- **`MeasureEvent`** — событие для двустороннего согласования размеров.
+  - `Window.Index` шлёт его корневому виджету, контейнеры (`Flex`, `Frame`) — детям с уменьшенным бюджетом.
+  - Виджеты сохраняют принятый размер в себе; `Width()`/`Height()` возвращают именно его.
+  - Не обрабатывающие `MeasureEvent` виджеты продолжают работать через intrinsic-размеры.
+- **Многострочные `Label`** — `NewStaticLabel` и `NewDynamicLabel` теперь могут принимать принимают текст с `\n`(и `\r\n`).
 
 ### Changed
 - `WithHeight` у графиков переименован в `WithDataHeight`.
@@ -246,10 +248,35 @@
 - Баг `Window.LogInfo` — теперь нет `%!EXTRA`.
 
 ### Removed
-- **`Color`** — legacy v3, заменены на `tui.Style` (битовые маски).
-- **`Canvas`, `CanvasRGB`** — заменены на `tui.Image` (тот же функционал, меньше кода, встроен в ядро).
-- **`ColorProgress`, `TextProgress`** — deprecated, заменены на `tui.Gauge`.
-- **Интерфейсы `Focusable`, `Clickable`, `ClickableAt`, `KeyReceiver`**.
-- Старая Overlay-система
-- CGO для сборки под Windows
-- Глобальный `currentWindow` — теперь ядро шлёт `WindowEvent`.
+- `Color`, `Canvas`, `CanvasRGB`, `ColorProgress`, `TextProgress` — замены:
+  - `Color` → `tui.Style` (битовые маски, `FrRed`, `BgBlue`, `Bold` и т.д.)
+  - `Canvas`, `CanvasRGB` → `tui.Image` (тот же функционал, встроен в ядро)
+  - `ColorProgress`, `TextProgress` → `tui.Gauge`
+- Интерфейсы `Focusable`, `Clickable`, `ClickableAt`, `KeyReceiver` → единый `EventHandler` с `Send(Event)`.
+- Старая Overlay-система → `Window.SetOverlay` / `ShowOverlay` / `HideOverlay`.
+- CGO для сборки под Windows — теперь pure-go сборка.
+- Глобальный `currentWindow` → событие `WindowEvent`, приходит через `Send`.
+- `tui-compose Image` → `tc-images/compose Image`.
+- `Widget.MaxWidth, Widget.MaxHeight` → `Widget.Width, Widget.Height`.
+
+### Migration to acell
+
+Внутренние пакеты `term`, `input`, `ansi`, `cell` и `builder` удалены.
+Их роль теперь выполняет [`acell`](https://github.com/romanSPB15/acell) —
+новый низкоуровневый терминальный слой.
+
+**Соответствие старых путей новым:**
+
+| v3                              |v4        |
+|---------------------------------|---|
+| `tui-compose/v3/term`           | `acell/term` |
+| `tui-compose/v3/input`          | `acell` (корневой пакет) |
+| `tui-compose/v3/ansi` | `acell/ansi` |
+| `tui-compose/v3/builder` | `acell/builder` |
+| `tui-compose/v3/cell.Cell` | `acell.Cell` (корневой пакет) |
+| `tui-compose/v3/cell.Style` | `acell.Style` (корневой пакет) |
+| `tui-compose/v3/input.KeyboardEvent` | `acell.KeyboardEvent` |
+| `tui-compose/v3/input.MouseEvent` | `acell.MouseEvent` |
+| `tui-compose/v3/input.Point` | `acell.Point` |
+| `tui-compose/v3/input.Key*` | `acell.Key*` |
+| ``tui-compose Image` | `tc-images/compose Image` |

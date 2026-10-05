@@ -7,7 +7,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/romanSPB15/acell"
 	"github.com/romanSPB15/acell/builder"
+	"github.com/romanSPB15/tcimages/compose"
 	"github.com/romanSPB15/tui-compose/v4"
 	"github.com/romanSPB15/tui-compose/v4/extra"
 )
@@ -50,8 +52,8 @@ func makeRGBANSIFg(r, g, b uint8, buf *builder.Builder) string {
 func main() {
 	w := tui.NewWindow()
 	w.SetTitle("TUI Compose")
-	img := tui.NewImage()
-	img = img.LoadBraille(ReadLogoAsBrailleMatrix(), tui.Style(0))
+	img := compose.NewImage()
+	img = img.LoadBraille(ReadLogoAsBrailleMatrix(), acell.Style{})
 
 	buf := builder.Builder{}
 	for i := range len(img[0]) {

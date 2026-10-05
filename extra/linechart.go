@@ -33,10 +33,12 @@ type LineChart struct {
 	AxisStyle      tui.Style // стиль осей
 	AxisLabelStyle tui.Style // стиль подписей
 	AxisRunes      AxisRunes // символы осей
+
+	flexible bool
 }
 
-func NewLineChart() *LineChart {
-	return &LineChart{
+func NewLineChart(height ...int) *LineChart {
+	lc := &LineChart{
 		PointRune:     '●',
 		LineRune:      '·',
 		DataHeight:    20,
@@ -48,6 +50,16 @@ func NewLineChart() *LineChart {
 			Corner: '└',
 		},
 	}
+	if len(height) == 0 {
+		lc.flexible = true
+		return lc
+	}
+	h := height[0]
+	if h < 1 {
+		h = 1
+	}
+	lc.DataHeight = h
+	return lc
 }
 
 func (bc *LineChart) Width() int {
@@ -260,6 +272,53 @@ func (bc *LineChart) Render(cells [][]acell.Cell) {
 	}
 }
 
+// Send обрабатывает событие.
+func (lc *LineChart) Send(ev tui.Event) {
+	e, ok := ev.(*tui.MeasureEvent)
+	if !ok {
+		return
+	}
+	if !lc.flexible {
+		return
+	}
+
+	extraH := 0
+	if len(lc.YLabels) > 0 {
+		extraH++
+	}
+	if len(lc.XLabels) > 0 {
+		extraH += 2
+	}
+	h := e.MaxHeight - extraH
+	if h < 1 {
+		h = 1
+	}
+	lc.DataHeight = h
+
+	n := 0
+	for _, s := range lc.Data {
+		if len(s.Values) > n {
+			n = len(s.Values)
+		}
+	}
+	if n < 2 {
+		return
+	}
+
+	avail := e.MaxWidth
+	if len(lc.YLabels) > 0 {
+		avail -= 4
+	}
+	avail--
+	if avail < 0 {
+		avail = 0
+	}
+	lc.PointDistance = avail / (n - 1)
+	if lc.PointDistance < 1 {
+		lc.PointDistance = 1
+	}
+}
+
 // Default — стандартные Unicode-символы (─ │ └ ·)
 func (lc *LineChart) WithDefaultAxis() *LineChart {
 	lc.AxisRunes = AxisRunes{
@@ -420,3 +479,11 @@ func (lc *LineChart) WithDisplayPoints(b bool) *LineChart {
 	lc.DisplayPoints = b
 	return lc
 }
+
+// Fixed отключает автоматическую подстройку размеров под MeasureEvent.
+func (lc *LineChart) Fixed() *LineChart {
+	lc.flexible = false
+	return lc
+}
+
+var _ tui.EventHandler = (*LineChart)(nil)
