@@ -7,9 +7,6 @@ import (
 
 // ScrollView — контейнер с прокруткой. Обрезает дочерний виджет
 // по своим габаритам, сдвигая его на (offsetX, offsetY).
-//
-// Если MeasureEvent не приходит, ScrollView принимает размер
-// своего содержимого и показывает всё без обрезки.
 type ScrollView struct {
 	child tui.Widget
 
@@ -18,6 +15,9 @@ type ScrollView struct {
 
 	width  int
 	height int
+
+	fixedW int
+	fixedH int
 
 	wnd tui.Window
 }
@@ -30,6 +30,27 @@ func NewScrollView(child tui.Widget) *ScrollView {
 // SetChild заменяет дочерний виджет.
 func (sv *ScrollView) SetChild(w tui.Widget) {
 	sv.child = w
+}
+
+// WithFixedWidth задаёт фиксированную ширину окна.
+// 0 — автоматически (по содержимому или MeasureEvent).
+func (sv *ScrollView) WithFixedWidth(w int) *ScrollView {
+	sv.fixedW = w
+	return sv
+}
+
+// WithFixedHeight задаёт фиксированную высоту окна.
+// 0 — автоматически (по содержимому или MeasureEvent).
+func (sv *ScrollView) WithFixedHeight(h int) *ScrollView {
+	sv.fixedH = h
+	return sv
+}
+
+// WithFixedSize задаёт и ширину, и высоту окна.
+func (sv *ScrollView) WithFixedSize(w, h int) *ScrollView {
+	sv.fixedW = w
+	sv.fixedH = h
+	return sv
 }
 
 // Offset возвращает текущее смещение.
@@ -50,8 +71,12 @@ func (sv *ScrollView) ScrollBy(dx, dy int) {
 	sv.clamp()
 }
 
-// Width возвращает ширину окна. Если окно не задано — ширину содержимого.
+// Width возвращает ширину окна.
+// Приоритет: fixedW → width (из MeasureEvent) → intrinsic ребёнка.
 func (sv *ScrollView) Width() int {
+	if sv.fixedW > 0 {
+		return sv.fixedW
+	}
 	if sv.width > 0 {
 		return sv.width
 	}
@@ -61,8 +86,12 @@ func (sv *ScrollView) Width() int {
 	return sv.child.Width()
 }
 
-// Height возвращает высоту окна. Если окно не задано — высоту содержимого.
+// Height возвращает высоту окна.
+// Приоритет: fixedH → height (из MeasureEvent) → intrinsic ребёнка.
 func (sv *ScrollView) Height() int {
+	if sv.fixedH > 0 {
+		return sv.fixedH
+	}
 	if sv.height > 0 {
 		return sv.height
 	}
@@ -131,12 +160,20 @@ func (sv *ScrollView) Send(ev tui.Event) {
 	case *tui.WindowEvent:
 		sv.wnd = e.Window
 	case *tui.MeasureEvent:
-		sv.width = e.MaxWidth
-		sv.height = e.MaxHeight
+		if sv.fixedW > 0 {
+			sv.width = sv.fixedW
+		} else {
+			sv.width = e.MaxWidth
+		}
+		if sv.fixedH > 0 {
+			sv.height = sv.fixedH
+		} else {
+			sv.height = e.MaxHeight
+		}
 
 		if evh, ok := sv.child.(tui.EventHandler); ok {
 			evh.Send(&tui.MeasureEvent{
-				MaxWidth:  e.MaxWidth,
+				MaxWidth:  sv.Width(),
 				MaxHeight: 1 << 20,
 			})
 		}
@@ -175,13 +212,13 @@ func (sv *ScrollView) handleKey(e *acell.KeyboardEvent) {
 func (sv *ScrollView) handleMouse(e *acell.MouseEvent) {
 	switch e.Action {
 	case acell.MouseWheelDown:
-		sv.ScrollBy(0, 1)
+		sv.ScrollBy(0, 3)
 	case acell.MouseWheelUp:
-		sv.ScrollBy(0, -1)
+		sv.ScrollBy(0, -3)
 	case acell.MouseWheelRight:
-		sv.ScrollBy(1, 0)
+		sv.ScrollBy(3, 0)
 	case acell.MouseWheelLeft:
-		sv.ScrollBy(-1, 0)
+		sv.ScrollBy(-3, 0)
 	default:
 		return
 	}
