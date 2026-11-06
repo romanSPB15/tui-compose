@@ -16,7 +16,7 @@ func main() {
 	check1 := tui.NewCheck("Option 1")
 	check2 := tui.NewCheck("Option 2")
 	check3 := tui.NewCheck("Option 3")
-	field := tui.NewInputField(20).WithPlaceholder("Type here...")
+	field := tui.NewInput(20).WithPlaceholder("Type here...")
 	link := tui.NewHyperlink("GitHub", "https://github.com/romanSPB15/tui-compose")
 	spinner := extra.NewSpinner(extra.SpinnerBrailleReverse)
 	chart := extra.NewBarChart().WithValues([]int{10, 25, 40, 55, 30, 15, 5})
@@ -32,7 +32,7 @@ func main() {
 					WithFocusedStyle(tui.BgBrightBlue|tui.FrWhite|tui.Bold).
 					WithPaddings(3, 1)
 			}
-		case *tui.InputField:
+		case *tui.Input:
 			x.WithStyle(tui.BgBlack | tui.FrWhite).
 				WithFocusedStyle(tui.BgBlue | tui.FrBrightWhite)
 		case *tui.Label:

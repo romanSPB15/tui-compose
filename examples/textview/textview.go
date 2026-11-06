@@ -82,7 +82,7 @@ func main() {
 	wnd := tui.NewWindow()
 	wnd.SetTitle("TUI Compose - TextView Demo")
 
-	tv := extra.NewTextView(2).WithLines([]string{
+	tv := extra.NewTextView().WithLines([]string{
 		"Text [fg-red]Red [bold]Red Bold[-] [fg-blue]Blue[-]",
 		"[bg-yellow]Yellow Background[reset]",
 		"[italic]Italic[-]",
@@ -91,32 +91,7 @@ func main() {
 		"[underline]Underline[-]",
 	}).WithFixedWidth(25)
 
-	go func() {
-		for {
-			for range 5 {
-				select {
-				case <-wnd.OnQuit():
-					return
-				default:
-					wnd.Commit(tv.ScrollDown)
-					time.Sleep(time.Second / 3)
-				}
-
-			}
-			for range 5 {
-				select {
-				case <-wnd.OnQuit():
-					return
-				default:
-					wnd.Commit(tv.ScrollUp)
-					time.Sleep(time.Second / 3)
-				}
-
-			}
-		}
-	}()
-
-	logs := extra.NewTextView(10).WithLines([]string{"[bold]You can look at logs here...[-]"}).WithFixedWidth(75)
+	logs := extra.NewTextView().WithLines([]string{"[bold]You can look at logs here...[-]"}).WithFixedWidth(80)
 
 	go func() {
 		ticker := time.NewTicker(time.Second / 2)
@@ -127,7 +102,6 @@ func main() {
 				wnd.Commit(func() {
 					_ = t
 					logs.Append(generateLog())
-					logs.ScrollDown()
 				})
 			case <-wnd.OnQuit():
 				return
@@ -137,7 +111,7 @@ func main() {
 
 	wnd.SetContent(tui.NewHBox(tui.NewFrame(tv).
 		WithTitle(tui.Title{Text: "TextView", Pos: tui.TitleTopCenter, Style: tui.FrYellow}).Rounded(),
-		tui.NewFrame(extra.NewScrollView(logs)).
+		tui.NewFrame(extra.NewScrollView(logs).WithFixedHeight(10)).
 			WithTitle(tui.Title{Text: "TextView in ScrollView", Pos: tui.TitleTopCenter, Style: tui.FrBrightMagenta}).Rounded()))
 
 	wnd.Run()

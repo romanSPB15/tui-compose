@@ -9,35 +9,16 @@ import (
 
 // TextView — виджет многострочного текста с поддержкой тегов стилей.
 // Теги задаются в квадратных скобках: [fg-red], [bold], [bg-blue] и т.д.
-// Поддерживает прокрутку содержимого.
+// Высота виджета равна количеству строк.
 //
-//	tv := extra.NewTextView(2).WithLines([]string{
+//	tv := extra.NewTextView().WithLines([]string{
 //			"Text [fg-red]Red [bold]Red Bold[-] [fg-blue]Blue[-]",
 //			"[bg-yellow]Yellow Background[reset]",
 //			"[italic]Italic[-]",
-//			"[cursive]Cursive[-]",
-//			"[reverse]Reversed[-]",
-//			"[underline]Underline[-]",
 //		})
-//
-// Добавлено в TUI v3.3.0.
 type TextView struct {
-	lines  []string
-	offset int
-	height int
-	width  int
-}
-
-func (tv *TextView) ScrollUp() {
-	if tv.offset > 0 {
-		tv.offset--
-	}
-}
-
-func (tv *TextView) ScrollDown() {
-	if tv.offset < len(tv.lines)-tv.height {
-		tv.offset++
-	}
+	lines []string
+	width int
 }
 
 var replaceList = map[string]string{
@@ -93,18 +74,13 @@ var replaceList = map[string]string{
 	"-":     "0",
 }
 
-func NewTextView(h int) *TextView {
-	return &TextView{
-		height: h,
-	}
+// NewTextView создаёт пустой TextView.
+func NewTextView() *TextView {
+	return &TextView{}
 }
 
+// Render рисует все строки в буфер.
 func (tv *TextView) Render(buf [][]acell.Cell) {
-	start := tv.offset
-	end := start + tv.height
-	if end > len(tv.lines) {
-		end = len(tv.lines)
-	}
 	w := tv.width
 	if w == 0 {
 		w = tv.Width()
@@ -112,8 +88,8 @@ func (tv *TextView) Render(buf [][]acell.Cell) {
 
 	var cellBuf []acell.Cell
 
-	for y, lineIdx := start, 0; y < end && y < len(buf); y, lineIdx = y+1, lineIdx+1 {
-		line := tv.lines[lineIdx]
+	for y := 0; y < len(tv.lines) && y < len(buf); y++ {
+		line := tv.lines[y]
 
 		ansiLine := line
 		for k, v := range replaceList {
@@ -136,20 +112,24 @@ func (tv *TextView) Render(buf [][]acell.Cell) {
 	}
 }
 
+// Height возвращает количество строк.
 func (tv *TextView) Height() int {
-	return tv.height
+	return len(tv.lines)
 }
 
+// WithLines устанавливает содержимое.
 func (tv *TextView) WithLines(s []string) *TextView {
 	tv.lines = s
 	return tv
 }
 
+// WithFixedWidth задаёт фиксированную ширину.
 func (tv *TextView) WithFixedWidth(w int) *TextView {
 	tv.width = w
 	return tv
 }
 
+// Append добавляет строку.
 func (tv *TextView) Append(s string) *TextView {
 	tv.lines = append(tv.lines, s)
 	return tv
@@ -157,6 +137,7 @@ func (tv *TextView) Append(s string) *TextView {
 
 var tagRegex = regexp.MustCompile(`\[([a-z_-]+)\]`)
 
+// Width возвращает ширину содержимого или фиксированную ширину.
 func (tv *TextView) Width() int {
 	if tv.width != 0 {
 		return tv.width

@@ -7,8 +7,8 @@ import (
 func main() {
 	wnd := tui.NewWindow()
 
-	name := tui.NewInputField(30).WithPlaceholder("Введите имя...").WithStyle(tui.BgBlue).WithFocusedStyle(tui.BgBrightBlue)
-	com := tui.NewInputField(30).WithPlaceholder("Введите комментарий...").WithStyle(tui.BgBlue).WithFocusedStyle(tui.BgBrightBlue)
+	name := tui.NewInput(30).WithPlaceholder("Введите имя...").WithStyle(tui.BgBlue).WithFocusedStyle(tui.BgBrightBlue)
+	com := tui.NewInput(30).WithPlaceholder("Введите комментарий...").WithStyle(tui.BgBlue).WithFocusedStyle(tui.BgBrightBlue)
 
 	pro := tui.NewCheck("Pro").WithStyle(tui.FrMagenta)
 

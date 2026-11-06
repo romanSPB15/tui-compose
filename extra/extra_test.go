@@ -85,8 +85,8 @@ func TestTableEmpty(t *testing.T) {
 }
 
 func TestTabs(t *testing.T) {
-	tv1 := NewTextView(2).WithLines([]string{"abc", "de"})
-	tv2 := NewTextView(1).WithLines([]string{"x"})
+	tv1 := NewTextView().WithLines([]string{"abc", "de"})
+	tv2 := NewTextView().WithLines([]string{"x"})
 	tabs := NewTabs([]Tab{
 		{Title: "A", Content: tv1},
 		{Title: "BB", Content: tv2},
@@ -124,7 +124,7 @@ func TestTextArea(t *testing.T) {
 }
 
 func TestTextView(t *testing.T) {
-	tv := NewTextView(3).WithLines([]string{
+	tv := NewTextView().WithLines([]string{
 		"[fg-red]hi[-]",
 		"longer line",
 		"[bold]x[-]",
@@ -163,7 +163,7 @@ func TestTree(t *testing.T) {
 }
 
 func TestAccordion(t *testing.T) {
-	content := NewTextView(1).WithLines([]string{"hello world"})
+	content := NewTextView().WithLines([]string{"hello world"})
 	acc := NewAccordion("Title", content)
 	if acc.Width() < 1 {
 		t.Fatalf("Width: got %d", acc.Width())

@@ -537,8 +537,8 @@ func (c *Check) Send(ev Event) {
 	}
 }
 
-// InputField — однострочное поле ввода.
-type InputField struct {
+// Input — однострочное поле ввода.
+type Input struct {
 	Text      string
 	CursorPos int
 	width     int
@@ -564,9 +564,9 @@ type InputField struct {
 	blinkOnce     sync.Once
 }
 
-// NewInputField создаёт поле ввода заданной ширины.
-func NewInputField(width int) *InputField {
-	return &InputField{
+// NewInput создаёт поле ввода заданной ширины.
+func NewInput(width int) *Input {
+	return &Input{
 		width:            width,
 		intrinsic:        width,
 		style:            acell.Style{Bg: "44"},
@@ -579,31 +579,31 @@ func NewInputField(width int) *InputField {
 }
 
 // WithStyle задаёт стиль поля без фокуса.
-func (f *InputField) WithStyle(s Style) *InputField {
+func (f *Input) WithStyle(s Style) *Input {
 	f.style = ConvertToCellStyle(s)
 	return f
 }
 
 // WithFocusedStyle задаёт стиль поля в фокусе.
-func (f *InputField) WithFocusedStyle(s Style) *InputField {
+func (f *Input) WithFocusedStyle(s Style) *Input {
 	f.styleF = ConvertToCellStyle(s)
 	return f
 }
 
 // WithHoverStyle задаёт стиль поля при наведении.
-func (f *InputField) WithHoverStyle(s Style) *InputField {
+func (f *Input) WithHoverStyle(s Style) *Input {
 	f.styleH = ConvertToCellStyle(s)
 	return f
 }
 
 // WithCursorStyle задаёт стиль курсора.
-func (f *InputField) WithCursorStyle(s Style) *InputField {
+func (f *Input) WithCursorStyle(s Style) *Input {
 	f.cursorStyle = ConvertToCellStyle(s)
 	return f
 }
 
 // WithText устанавливает текст поля.
-func (f *InputField) WithText(text string) *InputField {
+func (f *Input) WithText(text string) *Input {
 	l := utf8.RuneCountInString(text)
 	if l > f.width {
 		l = f.width
@@ -615,61 +615,61 @@ func (f *InputField) WithText(text string) *InputField {
 }
 
 // WithPlaceholder задаёт текст-подсказку.
-func (f *InputField) WithPlaceholder(text string) *InputField {
+func (f *Input) WithPlaceholder(text string) *Input {
 	f.placeholder = text
 	return f
 }
 
 // WithPlaceholderStyle задаёт стиль подсказки.
-func (f *InputField) WithPlaceholderStyle(s Style) *InputField {
+func (f *Input) WithPlaceholderStyle(s Style) *Input {
 	f.placeholderStyle = ConvertToCellStyle(s)
 	return f
 }
 
 // WithOnChanged задаёт обработчик изменения текста.
-func (f *InputField) WithOnChanged(h func(string)) *InputField {
+func (f *Input) WithOnChanged(h func(string)) *Input {
 	f.OnChanged = h
 	return f
 }
 
 // WithOnEnter задаёт обработчик нажатия Enter.
-func (f *InputField) WithOnEnter(h func(string)) *InputField {
+func (f *Input) WithOnEnter(h func(string)) *Input {
 	f.OnEnter = h
 	return f
 }
 
 // WithBlinkInterval задаёт интервал мигания курсора.
-func (f *InputField) WithBlinkInterval(d time.Duration) *InputField {
+func (f *Input) WithBlinkInterval(d time.Duration) *Input {
 	f.blinkInterval = d
 	return f
 }
 
 // DisableBlink отключает мигание и оставляет курсор постоянно видимым.
-func (f *InputField) DisableBlink() *InputField {
+func (f *Input) DisableBlink() *Input {
 	f.blinkEnabled = false
 	f.cursorVisible = true
 	return f
 }
 
 // EnableBlink включает мигание курсора.
-func (f *InputField) EnableBlink() *InputField {
+func (f *Input) EnableBlink() *Input {
 	f.blinkEnabled = true
 	return f
 }
 
 // WithOverwrite включает или выключает режим затирания.
-func (f *InputField) WithOverwrite(v bool) *InputField {
+func (f *Input) WithOverwrite(v bool) *Input {
 	f.overwrite = v
 	return f
 }
 
 // IsOverwrite возвращает true, если включён режим затирания.
-func (f *InputField) IsOverwrite() bool {
+func (f *Input) IsOverwrite() bool {
 	return f.overwrite
 }
 
 // Render рисует поле ввода в буфер.
-func (f *InputField) Render(buf [][]acell.Cell) {
+func (f *Input) Render(buf [][]acell.Cell) {
 	fieldStyle := f.style
 	switch {
 	case f.focused:
@@ -724,17 +724,17 @@ func (f *InputField) Render(buf [][]acell.Cell) {
 }
 
 // Width возвращает ширину поля.
-func (f *InputField) Width() int {
+func (f *Input) Width() int {
 	return f.width
 }
 
 // Height возвращает высоту поля.
-func (f *InputField) Height() int {
+func (f *Input) Height() int {
 	return 1
 }
 
 // Send обрабатывает событие.
-func (f *InputField) Send(ev Event) {
+func (f *Input) Send(ev Event) {
 	switch ev := ev.(type) {
 	case *MeasureEvent:
 		f.width = f.intrinsic
@@ -865,7 +865,7 @@ func (f *InputField) Send(ev Event) {
 }
 
 // startBlink запускает цикл мигания курсора один раз за жизнь виджета.
-func (f *InputField) startBlink() {
+func (f *Input) startBlink() {
 	if f.wnd == nil {
 		return
 	}
@@ -876,7 +876,7 @@ func (f *InputField) startBlink() {
 
 // blinkLoop переключает видимость курсора с заданным интервалом,
 // пока виджет в фокусе и мигание включено.
-func (f *InputField) blinkLoop() {
+func (f *Input) blinkLoop() {
 	ticker := time.NewTicker(f.blinkInterval)
 	defer ticker.Stop()
 
@@ -901,7 +901,7 @@ func init() {
 	var _ EventHandler = (*Label)(nil)
 	var _ EventHandler = (*Button)(nil)
 	var _ EventHandler = (*Check)(nil)
-	var _ EventHandler = (*InputField)(nil)
+	var _ EventHandler = (*Input)(nil)
 	var _ EventHandler = (*Gauge)(nil)
 }
 

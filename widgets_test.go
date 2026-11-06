@@ -147,7 +147,7 @@ func TestCheck(t *testing.T) {
 }
 
 func TestInputField(t *testing.T) {
-	f := NewInputField(10)
+	f := NewInput(10)
 	if f.Width() != 10 {
 		t.Fatalf("Width: got %d, want 10", f.Width())
 	}

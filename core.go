@@ -167,6 +167,7 @@ func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]acell.Cell) {
 	if wgt == nil {
 		return
 	}
+
 	if c, ok := wgt.(Container); ok {
 		contBottom := rect[0].Line + wgt.Height()
 		contRight := rect[0].Col + wgt.Width()
@@ -180,6 +181,7 @@ func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]acell.Cell) {
 		for i, ch := range c.Child() {
 			offLine := c.Pos(i).Line
 			offCol := c.Pos(i).Col
+
 			childRect := [2]Pos{
 				{Line: rect[0].Line + offLine, Col: rect[0].Col + offCol},
 				{Line: contBottom, Col: contRight},
@@ -228,35 +230,53 @@ func (wnd *window) draw(wgt Widget, rect [2]Pos, buf [][]acell.Cell) {
 
 	wgt.Render(subBuf)
 
-	// Копируем с обрезкой по всем четырём сторонам.
-	for y := 0; y < h; y++ {
-		dstY := rect[0].Line + y
+	srcYOffset := 0
+	dstYBase := rect[0].Line
+	if dstYBase < 0 {
+		srcYOffset = -dstYBase
+		dstYBase = 0
+	}
+
+	srcXOffset := 0
+	dstXBase := rect[0].Col
+	if dstXBase < 0 {
+		srcXOffset = -dstXBase
+		dstXBase = 0
+	}
+
+	clipBottom := rect[1].Line
+	if clipBottom > len(buf) {
+		clipBottom = len(buf)
+	}
+
+	for y := 0; y+srcYOffset < h; y++ {
+		dstY := dstYBase + y
+		if dstY >= clipBottom {
+			break
+		}
 		if dstY < 0 || dstY >= len(buf) {
 			continue
 		}
-		if dstY >= rect[1].Line {
-			break
-		}
-		srcRow := subBuf[y]
+
+		srcRow := subBuf[y+srcYOffset]
 		dstRow := buf[dstY]
 
-		// горизонтальная обрезка
-		xStart := 0
+		xStart := srcXOffset
 		xEnd := w
-		if rect[0].Col < 0 {
-			xStart = -rect[0].Col
+		if rect[1].Col >= 0 {
+			if dstXBase+(xEnd-xStart) > rect[1].Col {
+				xEnd = rect[1].Col - dstXBase + xStart
+			}
 		}
-		if rect[0].Col+xEnd > rect[1].Col {
-			xEnd = rect[1].Col - rect[0].Col
-		}
-		if rect[0].Col+xEnd > len(dstRow) {
-			xEnd = len(dstRow) - rect[0].Col
+		if dstXBase+(xEnd-xStart) > len(dstRow) {
+			xEnd = len(dstRow) - dstXBase + xStart
 		}
 		if xStart >= xEnd {
 			continue
 		}
-		dstX := rect[0].Col + xStart
-		copy(dstRow[dstX:dstX+xEnd-xStart], srcRow[xStart:xEnd])
+
+		dstX := dstXBase + (xStart - srcXOffset)
+		copy(dstRow[dstX:dstX+(xEnd-xStart)], srcRow[xStart:xEnd])
 	}
 }
 
