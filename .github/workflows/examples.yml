@@ -67,8 +67,8 @@ jobs:
       - name: Build tools
         if: steps.check.outputs.skip != 'true'
         run: |
-          go build -o ./snap ./tools/snap
-          go build -o ./readmegen ./tools/readmegen
+          go -C tools/snap build -o ../../snap .
+          go -C tools/readmegen build -o ../../readmegen .
 
       - name: Generate screenshots
         if: steps.check.outputs.skip != 'true'
