@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/romanSPB15/tui-compose/v3/cell"
-	"github.com/romanSPB15/tui-compose/v3/tools/snap/render"
+	"github.com/romanSPB15/acell"
+	"github.com/romanSPB15/tui-compose/v4/tools/snap/render"
 )
 
 func main() {
@@ -98,11 +98,11 @@ func capture(pkg, bin, out string, w, h int) error {
 		_ = cmd.Wait()
 	}()
 
-	var cells [][]cell.Cell
+	var cells [][]acell.Cell
 	sc := bufio.NewScanner(stdout)
 	sc.Buffer(make([]byte, 1<<20), 1<<24)
 	for sc.Scan() {
-		var frame [][]cell.Cell
+		var frame [][]acell.Cell
 		if err := json.Unmarshal(sc.Bytes(), &frame); err == nil {
 			cells = frame
 			break

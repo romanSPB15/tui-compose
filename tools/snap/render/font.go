@@ -7,11 +7,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/romanSPB15/acell"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/math/fixed"
-
-	"github.com/romanSPB15/tui-compose/v3/cell"
 )
 
 //go:embed fonts/CascadiaCode-Regular.ttf
@@ -47,7 +46,7 @@ func init() {
 	}
 }
 
-func renderRune(img *image.RGBA, x, y int, r rune, style cell.Style) {
+func renderRune(img *image.RGBA, x, y int, r rune, style acell.Style) {
 	fg, bg := getColor(style)
 
 	if bg != nil {
@@ -67,7 +66,7 @@ func renderRune(img *image.RGBA, x, y int, r rune, style cell.Style) {
 	}
 	d.DrawString(string(r))
 
-	if style.Args&cell.Underline != 0 {
+	if style.Args&acell.Underline != 0 {
 		uy := y + ascent + 2
 		for dx := 0; dx < charWidth; dx++ {
 			img.Set(x+dx, uy, fg)
@@ -75,7 +74,7 @@ func renderRune(img *image.RGBA, x, y int, r rune, style cell.Style) {
 	}
 }
 
-func getColor(style cell.Style) (fg, bg color.Color) {
+func getColor(style acell.Style) (fg, bg color.Color) {
 	fg = defaultTextForeground
 	bg = defaultTextBackground
 
@@ -125,7 +124,7 @@ func getColor(style cell.Style) (fg, bg color.Color) {
 		}
 	}
 
-	if style.Args&cell.Reverse != 0 {
+	if style.Args&acell.Reverse != 0 {
 		fg, bg = bg, fg
 	}
 	return

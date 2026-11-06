@@ -5,7 +5,7 @@ import (
 	"image/color"
 	"math"
 
-	"github.com/romanSPB15/tui-compose/v3/cell"
+	"github.com/romanSPB15/acell"
 )
 
 var (
@@ -34,7 +34,7 @@ var (
 	macOSDiameter = 12
 )
 
-func Frame(cells [][]cell.Cell) image.Image {
+func Frame(cells [][]acell.Cell) image.Image {
 	if len(cells) == 0 || len(cells[0]) == 0 {
 		return image.NewRGBA(image.Rect(0, 0, 300, 300))
 	}
